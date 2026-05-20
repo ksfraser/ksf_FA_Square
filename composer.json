@@ -1,0 +1,6 @@
+{
+    "require": {
+        "php": ">=7.3",
+        "square/square": "^41.0.0"
+    }
+}
