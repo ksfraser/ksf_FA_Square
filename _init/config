@@ -1,0 +1,10 @@
+Package: ksf_FA_Square
+Name: Frontaccounting to Square POS Connector
+Description: This module works with Square POS and is used to import square sales orders into the FA database and export items and prices to Square.
+Author: Braath Waate <braathwaate@whitewaterhill.com>, Kevin Fraser <kevin@ksfraser.ca>
+Maintenance:: Kevin Fraser <kevin@ksfraser.ca>
+Homepage: ksfraser.ca
+Type: extension
+InstallPath: modules/ksf_FA_square
+Filename: square-2.4.0-1
+Version: 2.4.0-1
