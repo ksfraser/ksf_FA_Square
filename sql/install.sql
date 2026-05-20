@@ -2,7 +2,7 @@
 -- These tables are created by StagingTableManager but kept here for reference/manual install.
 
 -- Config table (existing, extended)
-CREATE TABLE IF NOT EXISTS {TB_PREF}square (
+CREATE TABLE IF NOT EXISTS 0_square (
     `name` char(15) NOT NULL default '',
     `value` varchar(100) NOT NULL default '',
     `type` varchar(16) DEFAULT NULL,
@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS {TB_PREF}square (
 ) ENGINE=MyISAM;
 
 -- Transaction staging table
-CREATE TABLE IF NOT EXISTS {TB_PREF}square_staging_transactions (
+CREATE TABLE IF NOT EXISTS 0_square_staging_transactions (
     id INT(11) NOT NULL AUTO_INCREMENT,
     source VARCHAR(16) NOT NULL DEFAULT 'api',
     square_transaction_id VARCHAR(32) NOT NULL,
@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS {TB_PREF}square_staging_transactions (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Item staging table
-CREATE TABLE IF NOT EXISTS {TB_PREF}square_staging_items (
+CREATE TABLE IF NOT EXISTS 0_square_staging_items (
     id INT(11) NOT NULL AUTO_INCREMENT,
     staging_transaction_id INT(11) DEFAULT NULL,
     sku VARCHAR(64) DEFAULT NULL,
@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS {TB_PREF}square_staging_items (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Customer mapping table
-CREATE TABLE IF NOT EXISTS {TB_PREF}square_customer_mappings (
+CREATE TABLE IF NOT EXISTS 0_square_customer_mappings (
     id INT(11) NOT NULL AUTO_INCREMENT,
     square_customer_id VARCHAR(32) NOT NULL,
     fa_debtor_no INT(11) NOT NULL,
@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS {TB_PREF}square_customer_mappings (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- Import log table
-CREATE TABLE IF NOT EXISTS {TB_PREF}square_import_log (
+CREATE TABLE IF NOT EXISTS 0_square_import_log (
     id INT(11) NOT NULL AUTO_INCREMENT,
     run_date DATETIME NOT NULL,
     source VARCHAR(16) NOT NULL DEFAULT 'api',

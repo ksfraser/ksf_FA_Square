@@ -4,7 +4,7 @@ Author: Braath Waate
 Name: Square POS Connector
 Free software under GNU GPL
 ***********************************************/
-$page_security = 'SA_SQUARE';
+$page_security = 'SA_ksf_FA_Square';
 $path_to_root  = "../..";
 
 include $path_to_root . "/includes/session.inc";
@@ -20,8 +20,11 @@ include_once $path_to_root . "/sales/includes/ui/sales_order_ui.inc";
 include_once $path_to_root . "/inventory/includes/db/items_prices_db.inc";
 include_once $path_to_root . "/taxes/db/item_tax_types_db.inc";
 
-include_once $path_to_root . "/modules/square/connect-php-sdk-master/autoload.php";
-include_once $path_to_root . "/modules/square/vendor/autoload.php";
+//include_once $path_to_root . "/modules/square/connect-php-sdk-master/autoload.php";
+
+include_once __DIR__  . "/vendor/autoload.php";
+//include_once $path_to_root . "/modules/square/vendor/autoload.php";
+
 use Square\SquareClient;
 use Square\LocationsApi;
 use Square\Exceptions\ApiException;
@@ -355,6 +358,7 @@ function square_locs($date = null) {
 			$locationsList = $listLocationsResponse->getLocations();
 		} else {
 			print_r($apiResponse->getErrors());
+			return null;
 		}
 	} catch (ApiException $e) {
 		display_notification("Recieved error while calling listLocations: " . $e->getMessage());
@@ -618,7 +622,14 @@ if ($found) {
 	$sql     = "SELECT * FROM ".TB_PREF."square WHERE name = 'access_token'";
 	$result  = db_query($sql, "could not get host name");
 	$row     = db_fetch_row($result);
-	$access_Token = $row[1];
+	if( is_array( $row ) )
+	{
+		$access_Token = $row[1];
+	}
+	else
+	{
+		$access_Token = "ACCESSTOKEN";
+	}
 
 	// Get last order imported
 	$sql = "SELECT * FROM ".TB_PREF."square WHERE name = 'lastdate'";
@@ -634,7 +645,14 @@ if ($found) {
 	$sql        = "SELECT * FROM ".TB_PREF."square WHERE name = 'destCust'";
 	$result     = db_query($sql, "could not get destCust");
 	$row        = db_fetch_row($result);
-	$destCust  = $row[1];
+	if( is_array( $row ) )
+	{
+		$destCust = $row[1];
+	}
+	else
+	{
+		$destCust = "DESTCUST";
+	}
 }
 
 $num_price_errors = -1;
@@ -1204,10 +1222,12 @@ if ( in_array($action, array('summary', 'oimport'))  ) {
 }
 
 $js = "";
-if ($SysPrefs->use_popup_windows)
+if (isset( $SysPrefs->use_popup_windows) AND ($SysPrefs->use_popup_windows) )
 	$js .= get_js_open_window(800, 500);
+/*
 if (user_use_date_picker())
 	$js .= get_js_date_picker();
+*/
 
 $help_context="Square Connector";
 page(_($help_context), false, false, "", $js);
