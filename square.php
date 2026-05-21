@@ -1,6 +1,7 @@
 <?php
 /**********************************************
-Author: Braath Waate
+Author: Braath Waate (Original)
+Author: Kevin Fraser
 Name: Square POS Connector
 Free software under GNU GPL
 ***********************************************/
@@ -37,288 +38,41 @@ define ("SQUARE_RFC3339", "Y-m-d\TH:i:s.u\Z");
 display_posts();
 
 function getTransactions($category, $location, $item_like) {
-	global $SysPrefs;
-	$sql = "SELECT item.category_id,
-            category.description AS cat_description,
-            item.stock_id, item.units,
-            item.description, item.inactive,
-            IF(move.stock_id IS NULL, '', move.loc_code) AS loc_code,
-            SUM(IF(move.stock_id IS NULL,0,move.qty)) AS QtyOnHand,
-            tt.name as tax_name,
-            tt.exempt
-        FROM ("
-		.TB_PREF."stock_master item,"
-		.TB_PREF."stock_category category)
-            LEFT JOIN ".TB_PREF."stock_moves move ON item.stock_id=move.stock_id
-            LEFT JOIN ".TB_PREF."item_tax_types tt ON item.tax_type_id=tt.id
-        WHERE item.category_id=category.category_id
-        AND item.inactive = 0";
-	if ($category  != -1)
-		$sql .= " AND item.category_id = ".db_escape($category);
-	if ($location != 'all')
-		$sql .= " AND IF(move.stock_id IS NULL, '1=1',move.loc_code = ".db_escape($location).")";
-	if ($item_like) {
-		$regexp = null;
-
-		if (sscanf($item_like, "/%s", $regexp)==1)
-			$sql .= " AND item.stock_id RLIKE ".db_escape($regexp);
-		else
-			$sql .= " AND item.stock_id LIKE ".db_escape($item_like);
-	}
-	$sql .= " GROUP BY item.category_id,
-        category.description,
-        item.stock_id,
-        item.description
-        ORDER BY item.category_id,";
-
-	if (@$SysPrefs->sort_item_list_desc)
-		$sql .= "item.description";
-	else
-		$sql .= "item.stock_id";
-
-	return db_query($sql, "No transactions were returned");
+	require_once( 'getTransactions.php' );
+	$t = new getTransactions($category, $location, $item_like);
+	return $t->do_query();
 }
 
 
 function square_thumbnail_with_proportion($src_file, $destination_file, $square_dimensions, $jpeg_quality=90) {
-	// Step one: Rezise with proportion the src_file *** I found this in many places.
-
-	$src_img = imagecreatefromjpeg($src_file);
-	if ($src_img === false)
-		return false;
-
-	$old_x=imagesx($src_img);
-	$old_y=imagesy($src_img);
-
-	$ratio1=$old_x/$square_dimensions;
-	$ratio2=$old_y/$square_dimensions;
-
-	if ($ratio1>$ratio2) {
-		$thumb_w=$square_dimensions;
-		$thumb_h=$old_y/$ratio1;
-	}
-	else {
-		$thumb_h=$square_dimensions;
-		$thumb_w=$old_x/$ratio2;
-	}
-
-	// we create a new image with the new dimmensions
-	$smaller_image_with_proportions=imagecreatetruecolor($thumb_w, $thumb_h);
-
-	// resize the big image to the new created one
-	imagecopyresampled($smaller_image_with_proportions, $src_img, 0, 0, 0, 0, $thumb_w, $thumb_h, $old_x, $old_y);
-
-	// *** End of Step one ***
-
-	// Step Two (this is new): "Copy and Paste" the $smaller_image_with_proportions in the center of a white image of the desired square dimensions
-
-	// Create image of $square_dimensions x $square_dimensions in white color (white background)
-	$final_image = imagecreatetruecolor($square_dimensions, $square_dimensions);
-	$bg = imagecolorallocate( $final_image, 255, 255, 255 );
-	imagefilledrectangle($final_image, 0, 0, $square_dimensions, $square_dimensions, $bg);
-
-	// need to center the small image in the squared new white image
-	if ($thumb_w>$thumb_h) {
-		// more width than height we have to center height
-		$dst_x=0;
-		$dst_y=($square_dimensions-$thumb_h)/2;
-	}
-	elseif ($thumb_h>$thumb_w) {
-		// more height than width we have to center width
-		$dst_x=($square_dimensions-$thumb_w)/2;
-		$dst_y=0;
-
-	}
-	else {
-		$dst_x=0;
-		$dst_y=0;
-	}
-
-	$src_x=0; // we copy the src image complete
-	$src_y=0; // we copy the src image complete
-
-	$src_w=$thumb_w; // we copy the src image complete
-	$src_h=$thumb_h; // we copy the src image complete
-
-	$pct=100; // 100% over the white color ... here you can use transparency. 100 is no transparency.
-
-	imagecopymerge($final_image, $smaller_image_with_proportions, $dst_x, $dst_y, $src_x, $src_y, $src_w, $src_h, $pct);
-
-	imagejpeg($final_image, $destination_file, $jpeg_quality);
-
-	// destroy aux images (free memory)
-	imagedestroy($src_img);
-	imagedestroy($smaller_image_with_proportions);
-	imagedestroy($final_image);
-
+	require_once( 'Thumbnail.php' );
+	$t = new Thumbnail( $src_file, $destination_file, $square_dimensions, $jpeg_quality );
+	$t->resample();
+	$t->copyToWhite();
 	return true;
 }
 
 
 function uploadItemImage($sq_id, $image_path_on_server) {
 	global $accessToken;
-	$output = tempnam( sys_get_temp_dir(), "sq") . ".jpeg";
-	if (!square_thumbnail_with_proportion($image_path_on_server, $output, 600)) {
-		display_error("$image_path_on_server not a valid image file");
-		return;
-	}
-	// scale_image($image_path_on_server, $output);
-
-
-	$idem=uniqid();
-	$command=<<<EOT
-#!/bin/bash
-curl -v -X POST \
--H 'Accept: application/json' \
--H 'Authorization: Bearer $accessToken' \
--H 'Cache-Control: no-cache' \
--H 'Square-Version:  2019-03-27' \
--F 'file=@$output' \
--F 'request=
-{
-    "idempotency_key":"$idem",
-    "object_id":"$sq_id",
-    "image":{
-        "id":"#TEMP_ID",
-        "type":"IMAGE",
-        "image_data":{
-            "caption":"Image"
-        }
-    }
-}' \
-'https://connect.squareup.com/v2/catalog/images'
-
-EOT;
-
-	$result = array();
-	exec($command, $result);
-	// display_notification(print_r($result, true));
-
-	/*
-$cfile = new CURLFile($output, 'image/jpeg', 'image_data');
-$image_data = array('image_data' => $cfile);
-
-$curl = curl_init();
-curl_setopt($curl, CURLOPT_HTTPHEADER, array(
-  'Authorization: Bearer ' . $access_token,
-  'Accept: application/json',
-));
-curl_setopt($curl, CURLOPT_POST, TRUE);
-curl_setopt($curl, CURLOPT_POSTFIELDS, $image_data);
-curl_setopt($curl, CURLOPT_URL, $square_url);
-curl_setopt($curl, CURLOPT_SAFE_UPLOAD, TRUE);
-curl_setopt($curl, CURLOPT_BINARYTRANSFER, TRUE);
-curl_setopt($curl, CURLOPT_RETURNTRANSFER, TRUE);
-curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, FALSE);
-curl_setopt($curl, CURLOPT_SSL_VERIFYHOST, FALSE);
-curl_setopt($curl, CURLOPT_VERBOSE, TRUE);
-$json = curl_exec($curl);
-curl_close($curl);
-*/
-
-
-
-	unlink($output);
+	require_once( 'SquareUploadItemImage.php' );
+	$i = new SquareUploadItemImage( $sq_id, $image_path_on_server );
+	$i->uploadItemImage($access_token);
 }
 
 
 function square_variation($stock_id, $sq_item, $locationId) {
-	$myprice = get_kit_price($stock_id, $_POST['currency'], $_POST['sales_type']);
-
-	// items used for discounts are not supported in square
-	if ($myprice < 0)
-		$myprice = 0;
-
-    // get the bar code, if any
-    $sku = null;
-	$result = get_all_item_codes($stock_id);
-	$row    = db_fetch($result);
-    if ($row)
-        $sku = $row['item_code'];
-
-	if (isset($sq_item))
-		$obj = $sq_item["item_data"]["variations"][0];
-	else {
-		$obj = array(
-			"type" => "ITEM_VARIATION",
-			"id" => "#foovar",
-			"version" => null,
-			"item_variation_data" => array(
-				"name" => $stock_id,
-				"pricing_type" => "FIXED_PRICING"),
-		);
-	}
-
-	$obj["item_variation_data"] = array_merge($obj["item_variation_data"],
-		array(
-
-			// square searches for barcodes using the sku instead of upc
-			// which is what I would have thought
-
-			"sku" => $sku,
-			"price_money" => array(
-				"amount" => round(100 * $myprice),
-				"currency" => "USD"
-			)
-		)
-	);
-
-	$obj = array_merge($obj,
-		array(
-			"present_at_all_locations" => ($locationId == '0' ? true : false),
-		)
-	);
-
-	if ($_POST['online'] == 1)
-		$obj = array_merge($obj, array("available online" => true));
-	if ($locationId != '0')
-		$obj = array_merge($obj, array("present_at_location_ids" => array($locationId)));
-
+	require_once( 'SquareVariation.php' );
+	$v = new SquareVariation( $stock_id, $sq_item, $locationId );
+	$obj = $v->squareVariation( $_POST['currency'], $_POST['sales_type'] );
 	return $obj;
 }
 
 
 function square_v2body($stock_id, $sq_cat, $sq_item, $trans, $locationId, $locationName, $taxName) {
-	if (isset($sq_item))
-		$obj = $sq_item;
-	else {
-		$obj = array(
-			"type" => "ITEM",
-			"id" => "#foo",
-			"present_at_all_locations" => ($locationId == '0' ? true : false),
-			"item_data" => array()
-		);
-	}
-
-	$obj["item_data"] = array_merge($obj["item_data"],
-		array("name" => str_replace("Whitewater Hill ", "", $trans['description']),
-			"category_id" => $sq_cat,
-			"variations" => array(square_variation($stock_id, $sq_item, $locationId))
-		));
-
-	if ($locationId != '0')
-		$obj = array_merge($obj, array("present_at_location_ids" => array($locationId)));
-
-    $tax_array = array();
-	if (!$trans['exempt']) {
-		foreach ($locationName as $loc_key => $loc_name)
-			if ($locationId == '0' || $loc_key == $locationId) {
-				$tax_name = $loc_name . " " . $trans['tax_name'];
-
-				// if "location taxrate" is not defined in Square Taxes
-				// check for just "location" to apply Square tax rate to all non-exempt items
-
-				if (!isset($taxName[$tax_name]))
-					$tax_name = $loc_name;
-				if (isset($taxName[$tax_name]))
-					$tax_array = array_merge($tax_array, array($taxName[$tax_name]));
-
-			}
-		// $obj["item_data"] = array_merge($obj["item_data"], array("tax_ids" => $tax_array));
-
-	}
-    $obj["item_data"]["tax_ids"] = $tax_array;
-
+	require_once( 'SquareV2Body.php' );
+	$i = new SquareV2Body($stock_id, $sq_cat, $sq_item, $trans, $locationId, $locationName, $taxName);
+	$obj = $i->build();
 	return $obj;
 }
 
@@ -617,6 +371,8 @@ $min_iid = 0;
 $max_iid = 0;
 $order_count = 0;
 
+
+/******************* UAT 20260521 Access Token Select tested OK *****/
 if ($found) {
 	// Get Access Token
 	$sql     = "SELECT * FROM ".TB_PREF."square WHERE name = 'access_token'";
@@ -631,6 +387,7 @@ if ($found) {
 		$access_Token = "ACCESSTOKEN";
 	}
 
+/******************* UAT 20260521 Last Date Select tested OK *****/
 	// Get last order imported
 	$sql = "SELECT * FROM ".TB_PREF."square WHERE name = 'lastdate'";
 	$result = db_query($sql, "could not get DB name");
@@ -745,7 +502,15 @@ if (isset($_POST['action'])) {
                 }
 
 				// setup authorization
-				SquareConnect\Configuration::getDefaultConfiguration()->setAccessToken($accessToken);
+		try 
+		{
+			//SquareConnect\Configuration::getDefaultConfiguration()->setAccessToken($accessToken);
+			$c = SquareConnect\Configuration::getDefaultConfiguration();
+			$c->setAccessToken($accessToken);
+		} catch( Exception $e )
+		{
+			display_error( print_r( $e, true ) );
+		}
 
 				$cat_api = new \SquareConnect\Api\CatalogApi();
                 foreach ($locationsList as $location) {
