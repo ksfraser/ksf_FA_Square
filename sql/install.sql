@@ -2,8 +2,10 @@
 -- These tables are created by StagingTableManager but kept here for reference/manual install.
 
 -- Config table (existing, extended)
+-- Note: name column enlarged from char(15) to varchar(50) to fit sandbox_access_token etc.
+-- If upgrading from an older version, run: ALTER TABLE 0_square MODIFY name varchar(50) NOT NULL default '';
 CREATE TABLE IF NOT EXISTS 0_square (
-    `name` char(15) NOT NULL default '',
+    `name` varchar(50) NOT NULL default '',
     `value` varchar(100) NOT NULL default '',
     `type` varchar(16) DEFAULT NULL,
     `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

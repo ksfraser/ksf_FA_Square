@@ -27,17 +27,21 @@ class Settings implements SettingsInterface
         $config = [];
 
         $result = db_query("SELECT `name`, `value` FROM {$tablePrefix}square");
-        while ($row = db_fetch($result)) {
-            $map = [
-                'access_token' => 'access_token',
-                'sandbox_access_token' => 'sandbox_access_token',
-                'production_access_token' => 'production_access_token',
-                'lastdate' => 'last_import_date',
-                'destCust' => 'destination_customer',
-            ];
+        if ($result !== false) {
+            while ($row = db_fetch($result)) {
+                $map = [
+                    'access_token' => 'access_token',
+                    'sandbox_access_token' => 'sandbox_access_token',
+                    'sandbox_access_' => 'sandbox_access_token',
+                    'production_access_token' => 'production_access_token',
+                    'production_acce' => 'production_access_token',
+                    'lastdate' => 'last_import_date',
+                    'destCust' => 'destination_customer',
+                ];
 
-            $configKey = $map[$row['name']] ?? $row['name'];
-            $config[$configKey] = $row['value'];
+                $configKey = $map[$row['name']] ?? $row['name'];
+                $config[$configKey] = $row['value'];
+            }
         }
 
         return new self($config);
