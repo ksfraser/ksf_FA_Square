@@ -371,7 +371,7 @@ class CatalogExporter implements CatalogExporterInterface
         $variationData->getPriceMoney()->setCurrency($currency);
         $variationData->setTrackInventory(true);
 
-        $variationObject = new CatalogObject('ITEM_VARIATION', '#' . $sku);
+        $variationObject = new CatalogObject('ITEM_VARIATION', '#' . $sku . '_var');
         $variationObject->setItemVariationData($variationData);
 
         $item = new CatalogItem();
