@@ -12,7 +12,7 @@ This document maps the ksf_FA_Square project to the **Business Analysis Body of 
 | Element | Application |
 |---------|-------------|
 | Approach | Agile BA — iterative discovery with working software as primary deliverable. Requirements refined through working module demos. |
-| Techniques | — Stakeholder List (2.5.1) <br>— Business Process Modeling (10.4) <br>— Scope Modeling (10.42) |
+| Techniques | Stakeholder List, Business Process Modeling, Scope Modeling |
 | Outputs | This BABOK document, Requirements.md, RTM.md, UML.md |
 
 ### Task: Plan Stakeholder Engagement
@@ -45,17 +45,19 @@ This document maps the ksf_FA_Square project to the **Business Analysis Body of 
 ### Task: Prepare for Elicitation
 | Source | Technique | Outcome |
 |--------|-----------|---------|
-| Square SDK v40 API docs | Document Analysis (10.18) | Catalog of 43 API endpoints |
-| Existing square.php (v2.4.0) | Interface Analysis (10.25) | Current capability map |
-| Square Developer Docs | [https://developer.squareup.com/docs](https://developer.squareup.com/docs) | API capability inventory |
-| CSV import module (pre-existing) | Document Analysis (10.18) | Requirements merge |
+| Square SDK v40 API docs | Document Analysis | Catalog of relevant API endpoints |
+| Existing Marty's square.php (legacy) | Interface Analysis | Current capability map |
+| New refactored src/ classes | Code Analysis | Current state of refactoring |
+| Square Developer Docs | Document Analysis | API capability inventory |
+| Export_Woocommerce repo | Interface Analysis | WooCommerce staging approach |
+| FA_ImportSquareUp repo | Interface Analysis | CSV import approach |
 
 ### Task: Conduct Elicitation
 | Session | Technique | Result |
 |---------|-----------|--------|
-| API Capability Review | Document Analysis (10.18) | Mapped Square SDK endpoints -> Business needs |
-| Code Review | Interface Analysis (10.25) | Identified gaps: InventoryApi, TerminalApi, CustomersApi |
-| Contextual inquiry: FA workflow | Observation (10.33) | Understood invoice flow, stock management, debtor mgmt |
+| API Capability Review | Document Analysis | Mapped Square SDK endpoints -> Business needs |
+| Code Review | Interface Analysis | Identified gaps: tests, DI, staging unification |
+| Unified Import Staging Plan | Stakeholder Interview | Shared staging library across Square + WooCommmerce |
 
 ### Task: Confirm Elicitation Results
 Requirements confirmed via:
@@ -83,16 +85,18 @@ See **RTM.md** for the full Requirements Traceability Matrix. Every functional r
 ### Task: Prioritize Requirements
 Using MoSCoW:
 
-**Must Have (MVP)**
-- FR-01.01 through FR-01.08: Product catalog export (existing + inventory)
-- FR-03.01 through FR-03.10: Sales import from Square (existing)
-- FR-06.01 through FR-06.06: Configuration
+**Must Have (Next 30 hours — Export Priority)**
+- FR-01.01 through FR-01.10: Product catalog export (SKU, description, category, price, QoH)
+- FR-07.01 through FR-07.06: Configuration
+- SquareClientFactory extraction (DRY)
 
-**Should Have (v2.0)**
+**Should Have (This weekend — Import Priority)**
+- FR-03.01 through FR-03.11: Sales import from Square API
+- FR-04.01 through FR-04.05: Customer matching
+- FR-06.01 through FR-06.05: Unified import staging foundation
+
+**Could Have (v2.0+)**
 - FR-02.01 through FR-02.06: Terminal payments
-- FR-04.01 through FR-04.05: Customer sync
-
-**Could Have (v2.1+)**
 - FR-05.01 through FR-05.07: CSV import merging
 
 **Won't Have (v3.0+)**
@@ -106,18 +110,19 @@ Using MoSCoW:
 | Element | Current State |
 |---------|---------------|
 | Business Process | Manual: Products entered in both FA and Square. Sales reconciled manually from Square Dashboard CSV export. |
-| Technology | Square SDK v3-era module, PHP 7.3 production, PHP 7.4 UAT, FA 2.4.3 |
+| Technology | Square SDK v40, PHP 7.3/7.4/8.1, FA 2.4.3, PSR-4 modules |
 | Pain Points | Dual data entry, manual reconciliation, no inventory sync, no integrated card payments |
-| API Gap | Existing code uses Square v3 APIs. Current SDK v40 has 43 APIs — many new capabilities unused. |
+| Legacy Code | Marty's square.php (6+ years old, SquareConnect SDK v3, not used in production). New src/ classes cover same functionality. |
 
 ### Task: Define Future State
 | Element | Future State |
 |---------|--------------|
 | Product Sync | One-click push of FA inventory to Square catalog + stock counts |
 | Payments | FA invoice -> Square Terminal checkout -> FA payment recording |
-| Sales Import | Automated/scheduled pull of Square sales -> FA invoices |
+| Sales Import | Automated/scheduled pull of Square sales -> staging -> FA invoices |
 | Customer Sync | Bi-directional customer matching and creation |
-| Technology | modular PHP code following AGENTS.md conventions |
+| Import Staging | Unified schema for Square API, Square CSV, and WooCommerce imports |
+| Technology | Modular PSR-4 PHP, SOLID/DRY/DI, shared libraries |
 
 ### Task: Assess Risks
 | Risk | Likelihood | Impact | Mitigation |
@@ -130,11 +135,11 @@ Using MoSCoW:
 ### Task: Define Change Strategy
 | Phase | Scope | Timeline |
 |-------|-------|----------|
-| Phase 1: Stabilize | Migrate existing square.php to SDK v40, refactor to modular structure | Current |
-| Phase 2: Inventory Sync | Add InventoryApi integration for stock-on-hand push | Next |
-| Phase 3: Terminal Payments | Add TerminalApi integration for card reader payments | Next+ |
-| Phase 4: CSV Merge | Integrate existing CSV import module | Future |
-| Phase 5: Customer Sync | Add CustomersApi integration | Future |
+| Phase 1: Export Stabilize | SquareClientFactory, refactor export.php to use CatalogExporter, add tests | Next 30 hours |
+| Phase 2: Import | Wire OrderImporter into import.php properly, add unit tests | This weekend |
+| Phase 3: Unified Staging | Extract ksf_ImportStaging shared library | After Phase 2 |
+| Phase 4: Terminal Payments | Add Terminal API integration | Future |
+| Phase 5: CSV Merge | Integrate FA_ImportSquareUp into unified staging | Future |
 
 ---
 
@@ -143,25 +148,27 @@ Using MoSCoW:
 ### Task: Specify and Model Requirements
 | Artifact | Technique | Content |
 |----------|-----------|---------|
-| Requirements.md | User Stories / FR Specification | 39 functional requirements, 8 NFRs |
-| RTM.md | Traceability Matrix (10.47) | FR -> UC -> Code -> Test |
-| UML.md | UML diagrams (10.48) | Class, sequence, component diagrams |
+| Requirements.md | FR Specification | Functional + non-functional requirements |
+| RTM.md | Traceability Matrix | FR -> UC -> Code -> Test |
+| UML.md | UML diagrams | Class, sequence, component diagrams |
 
 ### Task: Define Design Options
 | Option | Description | Recommendation |
 |--------|-------------|----------------|
-| Monolithic (current) | Single square.php handles all actions | Rejected — violates SRP |
-| Modular (recommended) | Separate files per API domain: catalog_api.php, inventory_api.php, terminal_api.php, customers_api.php, csv_import.php | **Recommended** — aligns with AGENTS.md |
-| FA REST API alternative | Use FA's REST plugin for Square to call | Rejected — Square needs front-end for Terminal |
+| Monolithic (Marty's legacy) | Single square.php handles all actions | Rejected — violates SRP |
+| Modular (current) | PSR-4 src/ classes per domain | **Implemented** — aligns with AGENTS.md |
+| SquareClientFactory (planned) | Extract duplicate ::create() methods | **Next** — DRY |
 
 ### Task: Recommend Solution
 **Modular re-architecture** following AGENTS.md:
-- `src/Services/` — Business logic (Square API wrappers)
-- `src/Contracts/` — Interfaces for Square API adapters
-- `src/Models/` — Value objects (Money, OrderItem, etc.)
+- `src/Push/` — Catalog export and Terminal payment services
+- `src/Pull/` — Order/payment import from Square API
+- `src/Staging/` — FA database staging and processing
+- `src/Config/` — Settings DTO
+- `src/Contracts/` — Service interfaces
 - `src/Exceptions/` — Custom exceptions
-- `pages/` — FA UI pages (existing square.php refactored)
-- `includes/` — FA-specific glue code
+- `pages/` — FA UI pages (thin controllers)
+- Future: `ksf_ImportStaging` shared library
 
 ---
 
@@ -198,7 +205,7 @@ Performance gaps will be identified through:
 | Data Modeling | 10.15 | staging tables, mapping tables |
 | Document Analysis | 10.18 | Square SDK API reference |
 | Functional Decomposition | 10.20 | Requirements -> Use Cases -> Code |
-| Interface Analysis | 10.25 | square.php -> Square API surface |
+| Interface Analysis | 10.25 | Legacy square.php -> new src/ classes |
 | Metrics and KPIs | 10.28 | success rate, accuracy, latency |
 | Process Modeling | 10.35 | Export, Import, Payment workflows |
 | Risk Analysis | 10.39 | API changes, PHP EOL, idempotency |
@@ -214,3 +221,4 @@ Performance gaps will be identified through:
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 0.1 | 2026-05-20 | KSFraser | Initial BABOK alignment for Square SDK v40 |
+| 0.2 | 2026-05-21 | KSFraser | Updated to reflect current state, refactoring progress, and unified staging plan |

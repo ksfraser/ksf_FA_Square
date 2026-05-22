@@ -20,28 +20,38 @@ $msg = '';
 
 $settings = Settings::fromFADatabase($tablePrefix);
 $stagingManager = new StagingTableManager($tablePrefix);
+$env = $settings->getEnvironment();
 
 if (isset($_POST['action'])) {
     if ($_POST['action'] == 'update') {
-        $token = $_POST['access_token'] ?? '';
-        if ($token !== '') {
-            $table = $tablePrefix . 'square';
-            $sql = "SELECT COUNT(*) AS cnt FROM {$table} WHERE name = 'access_token'";
-            $result = db_query($sql);
-            $row = db_fetch_assoc($result);
-            if ($row['cnt'] > 0) {
-                $sql = "UPDATE {$table} SET value = " . db_escape($token) . " WHERE name = 'access_token'";
-            } else {
-                $sql = "INSERT INTO {$table} (name, value) VALUES ('access_token', " . db_escape($token) . ")";
+        $table = $tablePrefix . 'square';
+
+        $tokenFields = [
+            'access_token',
+            'sandbox_access_token',
+            'production_access_token',
+        ];
+
+        foreach ($tokenFields as $field) {
+            $value = $_POST[$field] ?? '';
+            if ($value !== '') {
+                $sql = "SELECT COUNT(*) AS cnt FROM {$table} WHERE name = " . db_escape($field);
+                $result = db_query($sql);
+                $row = db_fetch_assoc($result);
+                if ((int)$row['cnt'] > 0) {
+                    $sql = "UPDATE {$table} SET value = " . db_escape($value) . " WHERE name = " . db_escape($field);
+                } else {
+                    $sql = "INSERT INTO {$table} (name, value) VALUES (" . db_escape($field) . ", " . db_escape($value) . ")";
+                }
+                db_query($sql);
             }
-            db_query($sql);
         }
 
         $env = $_POST['environment'] ?? 'sandbox';
         $sql = "SELECT COUNT(*) AS cnt FROM {$table} WHERE name = 'environment'";
         $result = db_query($sql);
         $row = db_fetch_assoc($result);
-        if ($row['cnt'] > 0) {
+        if ((int)$row['cnt'] > 0) {
             $sql = "UPDATE {$table} SET value = " . db_escape($env) . " WHERE name = 'environment'";
         } else {
             $sql = "INSERT INTO {$table} (name, value) VALUES ('environment', " . db_escape($env) . ")";
@@ -63,26 +73,48 @@ if (isset($_POST['action'])) {
     }
 }
 
+$env = $settings->getEnvironment();
+$badgeColor = $env === 'production' ? '#dc3545' : '#ffc107';
+$badgeText = $env === 'production' ? _('LIVE') : _('SANDBOX');
+
 $help_context = "Square Configuration";
 page(_($help_context), false, false, "", "");
+echo '<style>
+.square-env-badge {
+    display: inline-block; padding: 4px 12px; border-radius: 4px;
+    font-weight: bold; font-size: 0.85em; color: #fff;
+    background-color: ' . $badgeColor . ';
+}
+.square-env-section { border: 2px solid ' . $badgeColor . '; border-radius: 6px; padding: 10px; margin-bottom: 10px; }
+</style>';
 
 start_form();
 
 start_table(TABLESTYLE);
 
-table_section_title(_("Square API Configuration"));
+table_section_title(_("Square API Configuration") . ' <span class="square-env-badge">' . $badgeText . '</span>');
 
-text_row(_("Access Token:"), 'access_token', $settings->getAccessToken() ?? '', 50, 100);
-
-$env_options = array(
+$envOptions = [
     'sandbox' => _('Sandbox'),
     'production' => _('Production'),
-);
-$selected_env = $settings->getEnvironment();
-if (!isset($env_options[$selected_env])) {
-    $selected_env = 'sandbox';
-}
-environments_list_row(_("Environment:"), 'environment', $selected_env, $env_options);
+];
+environments_list_row(_("Environment:"), 'environment', $env, $envOptions);
+
+echo '</table>';
+echo '<div class="square-env-section">';
+start_table(TABLESTYLE2);
+
+text_row(_("Sandbox Access Token:"), 'sandbox_access_token', $settings->getSandboxAccessToken() ?? '', 50, 100);
+label_row('', _('(Used when Environment is set to Sandbox)'));
+text_row(_("Production Access Token:"), 'production_access_token', $settings->getProductionAccessToken() ?? '', 50, 100);
+label_row('', _('(Used when Environment is set to Production)'));
+text_row(_("Legacy Access Token:"), 'access_token', $settings->getAccessToken() ?? '', 50, 100);
+label_row('', _('(Fallback if env-specific token is empty)'));
+
+end_table(1);
+echo '</div>';
+
+start_table(TABLESTYLE);
 
 label_row(_("Last Import Date:"), $settings->getLastImportDate()?->format('Y-m-d H:i:s') ?? _('Never'));
 

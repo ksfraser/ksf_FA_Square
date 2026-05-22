@@ -5,6 +5,12 @@ Author: Kevin Fraser
 Name: Square POS Connector
 Free software under GNU GPL
 ***********************************************/
+/**
+ * @deprecated since v2.5.0
+ * @see pages/export.php, pages/import.php, pages/dashboard.php, pages/config.php
+ * Replaced by src/Push/CatalogExporter, src/Pull/OrderImporter, etc.
+ * Will be removed in v3.0.0
+ */
 $page_security = 'SA_ksf_FA_Square';
 $path_to_root  = "../..";
 

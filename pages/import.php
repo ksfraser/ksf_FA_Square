@@ -19,12 +19,10 @@ include_once $path_to_root . "/taxes/db/item_tax_types_db.inc";
 include_once __DIR__ . "/../vendor/autoload.php";
 
 use Ksfraser\Frontaccounting\SquareUp\Config\Settings;
+use Ksfraser\Frontaccounting\SquareUp\Infrastructure\SquareClientFactory;
 use Ksfraser\Frontaccounting\SquareUp\Pull\OrderImporter;
 use Ksfraser\Frontaccounting\SquareUp\Staging\StagingTableManager;
-use Ksfraser\Frontaccounting\SquareUp\Staging\CustomerMatcher;
-use Ksfraser\Frontaccounting\SquareUp\Staging\InvoiceCreator;
-use Square\SquareClient;
-use Square\Environment;
+
 use Square\Exceptions\ApiException;
 
 $tablePrefix = '0_';
@@ -34,6 +32,15 @@ $accessToken = $settings->getAccessToken();
 $help_context = "Import Square Orders";
 page(_($help_context), false, false, "", "");
 
+$env = $settings->getEnvironment();
+$badgeColor = $env === 'production' ? '#dc3545' : '#ffc107';
+$badgeText = $env === 'production' ? _('LIVE') : _('SANDBOX');
+echo '<style>
+.square-env-badge { display: inline-block; padding: 4px 12px; border-radius: 4px; font-weight: bold; font-size: 0.85em; color: #fff; background-color: ' . $badgeColor . '; margin-left: 8px; }
+body { background-color: ' . ($env === 'production' ? '#fff5f5' : '#fffde7') . '; }
+</style>';
+echo '<span class="square-env-badge">' . $badgeText . '</span>';
+
 if ($accessToken === null || $accessToken === '') {
     display_error(_("Access Token not configured. Please configure in Square Configuration first."));
     end_page();
@@ -41,13 +48,7 @@ if ($accessToken === null || $accessToken === '') {
 }
 
 try {
-    $client = new SquareClient([
-        'accessToken' => $accessToken,
-        'environment' => $settings->getEnvironment() === 'production'
-            ? Environment::PRODUCTION
-            : Environment::SANDBOX,
-    ]);
-
+    $client = SquareClientFactory::create($settings);
     $locationsApi = $client->getLocationsApi();
     $locResponse = $locationsApi->listLocations();
     $locations = [];
@@ -95,16 +96,17 @@ if (isset($_POST['action']) && $_POST['action'] == 'o_import') {
             ];
 
             try {
-                $paymentsApi = $client->getPaymentsApi();
-                $fromDateTime = gmdate('Y-m-d\TH:i:s\Z', strtotime($fromDate));
-                $toDateTime = gmdate('Y-m-d\TH:i:s\Z', strtotime('+1 day', strtotime($toDate)));
+                $orderImporter = new OrderImporter($client, $settings);
+
+                $fromDateTime = new \DateTimeImmutable($fromDate);
+                $toDateTime = new \DateTimeImmutable($toDate);
 
                 foreach ($locations as $locId => $locName) {
                     if ($locationFilter !== '' && $locationFilter !== $locId) {
                         continue;
                     }
 
-                    $sql = "SELECT branch_code FROM {$tablePrefix}cust_branch "
+                    $sql = "SELECT * FROM {$tablePrefix}cust_branch "
                         . "WHERE debtor_no = " . $destCust . " AND br_name = " . db_escape($locName);
                     $branchResult = db_query($sql);
                     $branch = db_fetch_assoc($branchResult);
@@ -113,160 +115,145 @@ if (isset($_POST['action']) && $_POST['action'] == 'o_import') {
                         continue;
                     }
 
-                    $cursor = null;
-                    do {
-                        $apiResponse = $paymentsApi->listPayments(
-                            $fromDateTime, $toDateTime, null, $cursor, $locId, null
-                        );
-                        if ($apiResponse->isSuccess()) {
-                            $payments = $apiResponse->getResult()->getPayments();
-                            if ($payments !== null) {
-                                foreach ($payments as $payment) {
-                                    $paymentMethod = str_replace("CREDIT_CARD", "CARD", $payment->getSourceType());
-                                    if ($paymentMethod === "NO_SALE") {
-                                        continue;
-                                    }
+                    $payments = $orderImporter->listPayments($fromDateTime, $toDateTime, $locId);
 
-                                    $sql = "SELECT COUNT(*) AS cnt FROM {$tablePrefix}sales_orders "
-                                        . "WHERE customer_ref = " . db_escape($payment->getId());
-                                    $chkResult = db_query($sql);
-                                    $chkRow = db_fetch_assoc($chkResult);
-                                    if ($chkRow['cnt'] > 0) {
-                                        display_notification(_("Skipping (already imported): ") . $payment->getId());
-                                        $importResults['skipped']++;
-                                        continue;
-                                    }
+                    foreach ($payments as $payment) {
+                        $paymentMethod = str_replace("CREDIT_CARD", "CARD", $payment->getSourceType());
+                        if ($paymentMethod === "NO_SALE") {
+                            continue;
+                        }
 
-                                    $refunded = $payment->getRefundedMoney();
-                                    if ($refunded !== null && $refunded->getAmount() != 0) {
-                                        display_notification(_("Skipping refund: ") . $payment->getId());
-                                        $importResults['skipped']++;
-                                        continue;
-                                    }
+                        $sql = "SELECT COUNT(*) AS cnt FROM {$tablePrefix}sales_orders "
+                            . "WHERE customer_ref = " . db_escape($payment->getId());
+                        $chkResult = db_query($sql);
+                        $chkRow = db_fetch_assoc($chkResult);
+                        if ($chkRow['cnt'] > 0) {
+                            display_notification(_("Skipping (already imported): ") . $payment->getId());
+                            $importResults['skipped']++;
+                            continue;
+                        }
 
-                                    $orderId = $payment->getOrderId();
-                                    if ($orderId === null) {
-                                        continue;
-                                    }
+                        $refunded = $payment->getRefundedMoney();
+                        if ($refunded !== null && $refunded->getAmount() != 0) {
+                            display_notification(_("Skipping refund: ") . $payment->getId());
+                            $importResults['skipped']++;
+                            continue;
+                        }
 
-                                    $ordersApi = $client->getOrdersApi();
-                                    $orderResponse = $ordersApi->retrieveOrder($orderId);
-                                    if (!$orderResponse->isSuccess()) {
-                                        display_notification(_("Cannot retrieve order: ") . $orderId);
-                                        $importResults['skipped']++;
-                                        continue;
-                                    }
+                        $orderId = $payment->getOrderId();
+                        if ($orderId === null) {
+                            continue;
+                        }
 
-                                    $order = $orderResponse->getResult()->getOrder();
-                                    $lineItems = $order->getLineItems();
-                                    if ($lineItems === null) {
-                                        continue;
-                                    }
+                        $result = $orderImporter->getPaymentWithOrder($payment->getId());
+                        $order = $result['order'];
+                        if ($order === null) {
+                            display_notification(_("Cannot retrieve order: ") . $orderId);
+                            $importResults['skipped']++;
+                            continue;
+                        }
 
-                                    if ($trialRun) {
-                                        display_notification(_("TRIAL: Would import ") . $payment->getId()
-                                            . " (" . $payment->getTotalMoney()->getAmount() / 100 . " "
-                                            . $payment->getTotalMoney()->getCurrency() . ")");
-                                    } else {
-                                        $cart = new Cart(ST_SALESINVOICE);
-                                        $cart->customer_id = $customer['debtor_no'];
-                                        $cart->customer_currency = $customer['curr_code'];
-                                        $cart->Comments = 'Imported from Square: ' . $payment->getId();
+                        $lineItems = $order->getLineItems();
+                        if ($lineItems === null) {
+                            continue;
+                        }
 
-                                        $dt = \DateTime::createFromFormat(
-                                            'Y-m-d\TH:i:s\Z',
-                                            $payment->getCreatedAt(),
-                                            new \DateTimeZone('UTC')
-                                        );
-                                        if ($dt) {
-                                            $dt->setTimezone(new \DateTimeZone(date_default_timezone_get()));
-                                            $cart->document_date = $dt->format('Y-m-d');
-                                            $cart->due_date = $dt->format('Y-m-d');
-                                        }
+                        if ($trialRun) {
+                            display_notification(_("TRIAL: Would import ") . $payment->getId()
+                                . " (" . $payment->getTotalMoney()->getAmount() / 100 . " "
+                                . $payment->getTotalMoney()->getCurrency() . ")");
+                        } else {
+                            $cart = new Cart(ST_SALESINVOICE);
+                            $cart->customer_id = $customer['debtor_no'];
+                            $cart->customer_currency = $customer['curr_code'];
+                            $cart->Comments = 'Imported from Square: ' . $payment->getId();
 
-                                        $cart->set_branch(
-                                            $branch['branch_code'],
-                                            $branch['tax_group_id'],
-                                            $branch['br_address']
-                                        );
-                                        $cart->cust_ref = $payment->getId();
+                            $dt = \DateTime::createFromFormat(
+                                'Y-m-d\TH:i:s\Z',
+                                $payment->getCreatedAt(),
+                                new \DateTimeZone('UTC')
+                            );
+                            if ($dt) {
+                                $dt->setTimezone(new \DateTimeZone(date_default_timezone_get()));
+                                $cart->document_date = $dt->format('Y-m-d');
+                                $cart->due_date = $dt->format('Y-m-d');
+                            }
 
-                                        $taxType = '';
-                                        $orderTaxes = $order->getTaxes();
-                                        if ($orderTaxes !== null && count($orderTaxes) > 0) {
-                                            $taxType = $orderTaxes[0]->getType();
-                                        }
+                            $cart->set_branch(
+                                $branch['branch_code'],
+                                $branch['tax_group_id'],
+                                $branch['br_address']
+                            );
+                            $cart->cust_ref = $payment->getId();
 
-                                        $catApi = $client->getCatalogApi();
-                                        foreach ($lineItems as $item) {
-                                            $catObjId = $item->getCatalogObjectId();
-                                            $sku = $item->getName();
-                                            if ($catObjId !== null) {
-                                                try {
-                                                    $catResponse = $catApi->retrieveCatalogObject($catObjId, false);
-                                                    if ($catResponse->isSuccess()) {
-                                                        $catObj = $catResponse->getResult()->getObject();
-                                                        if ($catObj !== null) {
-                                                            $varData = $catObj->getItemVariationData();
-                                                            if ($varData !== null && $varData->getSku() !== null) {
-                                                                $sku = $varData->getSku();
-                                                            }
-                                                        }
-                                                    }
-                                                } catch (Exception $e) {
+                            $taxType = '';
+                            $orderTaxes = $order->getTaxes();
+                            if ($orderTaxes !== null && count($orderTaxes) > 0) {
+                                $taxType = $orderTaxes[0]->getType();
+                            }
+
+                            $catApi = $client->getCatalogApi();
+                            foreach ($lineItems as $item) {
+                                $catObjId = $item->getCatalogObjectId();
+                                $sku = $item->getName();
+                                if ($catObjId !== null) {
+                                    try {
+                                        $catResponse = $catApi->retrieveCatalogObject($catObjId, false);
+                                        if ($catResponse->isSuccess()) {
+                                            $catObj = $catResponse->getResult()->getObject();
+                                            if ($catObj !== null) {
+                                                $varData = $catObj->getItemVariationData();
+                                                if ($varData !== null && $varData->getSku() !== null) {
+                                                    $sku = $varData->getSku();
                                                 }
                                             }
-
-                                            $basePrice = $item->getBasePriceMoney();
-                                            $unitPrice = $basePrice !== null ? $basePrice->getAmount() / 100 : 0;
-
-                                            $discount = 0;
-                                            if ($taxType === "INCLUSIVE") {
-                                                $totalPrice = $item->getVariationTotalPriceMoney();
-                                                $totalAmt = $totalPrice !== null ? $totalPrice->getAmount() : 1;
-                                                $discMoney = $item->getTotalDiscountMoney();
-                                                if ($discMoney !== null && $totalAmt > 0) {
-                                                    $discount = $discMoney->getAmount() / $totalAmt;
-                                                }
-                                            } else {
-                                                $grossSales = $item->getGrossSalesMoney();
-                                                $grossAmt = $grossSales !== null ? $grossSales->getAmount() : 1;
-                                                $discMoney = $item->getTotalDiscountMoney();
-                                                if ($discMoney !== null && $grossAmt > 0) {
-                                                    $discount = $discMoney->getAmount() / $grossAmt;
-                                                }
-                                            }
-
-                                            add_to_order($cart, $sku, $item->getQuantity(), $unitPrice, $discount);
                                         }
-
-                                        $tipMoney = $payment->getTipMoney();
-                                        if ($tipMoney !== null && $tipMoney->getAmount() != 0 && $tipsItem !== '') {
-                                            add_to_order($cart, $tipsItem, 1, $tipMoney->getAmount() / 100, 0);
-                                        }
-
-                                        $total = $cart->get_trans_total();
-                                        $totalOrder = $payment->getTotalMoney()->getAmount() / 100;
-                                        $adj = round($totalOrder - $total, 2);
-                                        if ($adj != 0 && $adjustmentItem !== '') {
-                                            display_warning(_("Adjustment needed: ") . $adj);
-                                            add_to_order($cart, $adjustmentItem, 1, $adj, 0);
-                                        }
-
-                                        $orderNo = $cart->write(1);
-                                        display_notification(_("Created invoice #") . $orderNo
-                                            . _(" for ") . $payment->getId());
-                                        $importResults['imported']++;
+                                    } catch (Exception $e) {
                                     }
                                 }
+
+                                $basePrice = $item->getBasePriceMoney();
+                                $unitPrice = $basePrice !== null ? $basePrice->getAmount() / 100 : 0;
+
+                                $discount = 0;
+                                if ($taxType === "INCLUSIVE") {
+                                    $totalPrice = $item->getVariationTotalPriceMoney();
+                                    $totalAmt = $totalPrice !== null ? $totalPrice->getAmount() : 1;
+                                    $discMoney = $item->getTotalDiscountMoney();
+                                    if ($discMoney !== null && $totalAmt > 0) {
+                                        $discount = $discMoney->getAmount() / $totalAmt;
+                                    }
+                                } else {
+                                    $grossSales = $item->getGrossSalesMoney();
+                                    $grossAmt = $grossSales !== null ? $grossSales->getAmount() : 1;
+                                    $discMoney = $item->getTotalDiscountMoney();
+                                    if ($discMoney !== null && $grossAmt > 0) {
+                                        $discount = $discMoney->getAmount() / $grossAmt;
+                                    }
+                                }
+
+                                add_to_order($cart, $sku, $item->getQuantity(), $unitPrice, $discount);
                             }
-                            $cursor = $apiResponse->getCursor();
-                        } else {
-                            $importResults['failed']++;
-                            $importResults['errors'][] = _("API Error at location ") . $locName;
-                            break;
+
+                            $tipMoney = $payment->getTipMoney();
+                            if ($tipMoney !== null && $tipMoney->getAmount() != 0 && $tipsItem !== '') {
+                                add_to_order($cart, $tipsItem, 1, $tipMoney->getAmount() / 100, 0);
+                            }
+
+                            $total = $cart->get_trans_total();
+                            $totalOrder = $payment->getTotalMoney()->getAmount() / 100;
+                            $adj = round($totalOrder - $total, 2);
+                            if ($adj != 0 && $adjustmentItem !== '') {
+                                display_warning(_("Adjustment needed: ") . $adj);
+                                add_to_order($cart, $adjustmentItem, 1, $adj, 0);
+                            }
+
+                            $orderNo = $cart->write(1);
+                            display_notification(_("Created invoice #") . $orderNo
+                                . _(" for ") . $payment->getId());
+                            $importResults['imported']++;
                         }
-                    } while ($cursor !== null);
+                    }
                 }
 
                 if (!$trialRun) {

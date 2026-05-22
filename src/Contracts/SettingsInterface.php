@@ -9,6 +9,14 @@ interface SettingsInterface
 
     public function setAccessToken(string $token): void;
 
+    public function getSandboxAccessToken(): ?string;
+
+    public function setSandboxAccessToken(string $token): void;
+
+    public function getProductionAccessToken(): ?string;
+
+    public function setProductionAccessToken(string $token): void;
+
     public function getEnvironment(): string;
 
     public function setEnvironment(string $env): void;

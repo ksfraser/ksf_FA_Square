@@ -18,6 +18,12 @@ include_once $path_to_root . "/taxes/db/item_tax_types_db.inc";
 */
 
 
+/**
+ * @deprecated since v2.5.0
+ * @see pages/export.php
+ * Query logic now inline in export.php or via FA stock_master queries.
+ * Will be removed in v3.0.0
+ */
 class getTransactions
 {
 	protected $category;

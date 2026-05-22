@@ -13,6 +13,8 @@ class Settings implements SettingsInterface
     {
         $this->config = array_merge([
             'access_token' => null,
+            'sandbox_access_token' => null,
+            'production_access_token' => null,
             'environment' => 'sandbox',
             'last_import_date' => null,
             'destination_customer' => null,
@@ -28,6 +30,8 @@ class Settings implements SettingsInterface
         while ($row = db_fetch($result)) {
             $map = [
                 'access_token' => 'access_token',
+                'sandbox_access_token' => 'sandbox_access_token',
+                'production_access_token' => 'production_access_token',
                 'lastdate' => 'last_import_date',
                 'destCust' => 'destination_customer',
             ];
@@ -41,12 +45,38 @@ class Settings implements SettingsInterface
 
     public function getAccessToken(): ?string
     {
-        return $this->config['access_token'] ?? null;
+        $env = $this->getEnvironment();
+
+        if ($env === 'production') {
+            return $this->getProductionAccessToken() ?? $this->config['access_token'] ?? null;
+        }
+
+        return $this->getSandboxAccessToken() ?? $this->config['access_token'] ?? null;
     }
 
     public function setAccessToken(string $token): void
     {
         $this->config['access_token'] = $token;
+    }
+
+    public function getSandboxAccessToken(): ?string
+    {
+        return $this->config['sandbox_access_token'] ?? null;
+    }
+
+    public function setSandboxAccessToken(string $token): void
+    {
+        $this->config['sandbox_access_token'] = $token;
+    }
+
+    public function getProductionAccessToken(): ?string
+    {
+        return $this->config['production_access_token'] ?? null;
+    }
+
+    public function setProductionAccessToken(string $token): void
+    {
+        $this->config['production_access_token'] = $token;
     }
 
     public function getEnvironment(): string

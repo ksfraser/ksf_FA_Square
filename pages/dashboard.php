@@ -13,10 +13,8 @@ include_once $path_to_root . "/includes/data_checks.inc";
 include_once __DIR__ . "/../vendor/autoload.php";
 
 use Ksfraser\Frontaccounting\SquareUp\Config\Settings;
-use Square\SquareClient;
-use Square\Environment;
+use Ksfraser\Frontaccounting\SquareUp\Infrastructure\SquareClientFactory;
 use Square\Exceptions\ApiException;
-use Square\Models\ListLocationsResponse;
 
 $tablePrefix = '0_';
 $settings = Settings::fromFADatabase($tablePrefix);
@@ -24,6 +22,18 @@ $accessToken = $settings->getAccessToken();
 
 $help_context = "Square Dashboard";
 page(_($help_context), false, false, "", "");
+
+$env = $settings->getEnvironment();
+$badgeColor = $env === 'production' ? '#dc3545' : '#ffc107';
+$badgeText = $env === 'production' ? _('LIVE') : _('SANDBOX');
+echo '<style>
+.square-env-badge { display: inline-block; padding: 4px 12px; border-radius: 4px; font-weight: bold; font-size: 0.85em; color: #fff; background-color: ' . $badgeColor . '; margin-left: 8px; }
+.square-sandbox { background: #fffde7; }
+.square-production { background: #fff5f5; }
+body { background-color: ' . ($env === 'production' ? '#fff5f5' : '#fffde7') . '; }
+</style>';
+
+echo '<div class="square-env-badge">' . $badgeText . '</div>';
 
 start_table(TABLESTYLE);
 
@@ -36,17 +46,13 @@ if ($accessToken === null || $accessToken === '') {
     return;
 }
 
-$env = $settings->getEnvironment();
 label_row(_("Environment:"), $env === 'production' ? _("Production") : _("Sandbox"));
 label_row(_("Last Import Date:"), $settings->getLastImportDate()?->format('Y-m-d H:i:s') ?? _('Never'));
 
 end_table(1);
 
 try {
-    $client = new SquareClient([
-        'accessToken' => $accessToken,
-        'environment' => $env === 'production' ? Environment::PRODUCTION : Environment::SANDBOX,
-    ]);
+    $client = SquareClientFactory::create($settings);
 
     $locationsApi = $client->getLocationsApi();
     $apiResponse = $locationsApi->listLocations();

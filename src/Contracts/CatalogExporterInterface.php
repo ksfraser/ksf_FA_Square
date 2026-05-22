@@ -32,4 +32,13 @@ interface CatalogExporterInterface
     public function searchProductBySku(string $sku): ?CatalogObject;
 
     public function listAllItems(): array;
+
+    public function uploadImage(
+        string $catalogObjectId,
+        string $stockId,
+        string $description,
+        string $imageDir,
+        int $imageIndex = 0,
+        bool $isPrimary = false
+    ): bool;
 }

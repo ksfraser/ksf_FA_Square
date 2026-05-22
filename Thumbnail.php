@@ -6,6 +6,11 @@ Name: Square POS Connector
 Free software under GNU GPL
 ***********************************************/
 
+/**
+ * @deprecated since v2.5.0
+ * Image resizing logic now inline in pages/export.php.
+ * Will be removed in v3.0.0
+ */
 class Thumbnail
 {
 	protected $src_file;

@@ -1,6 +1,6 @@
 # UML Documentation — ksf_FA_Square
 
-## 1. Component Diagram: System Architecture
+## 1. Component Diagram: Current Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -9,44 +9,41 @@
 │  │              ksf_FA_Square Module                     │ │
 │  │                                                       │ │
 │  │  ┌──────────────┐  ┌──────────────┐  ┌───────────┐  │ │
-│  │  │  Export       │  │  Import      │  │  Terminal  │  │ │
-│  │  │  Inventory    │  │  Sales       │  │  Payments  │  │ │
-│  │  │  (i_export)   │  │  (o_import)  │  │  (new)    │  │ │
+│  │  │  Config      │  │  Dashboard   │  │  Import   │  │ │
+│  │  │  Page        │  │  Page        │  │  Page     │  │ │
 │  │  └──────┬───────┘  └──────┬───────┘  └─────┬─────┘  │ │
-│  │         │                 │                 │         │ │
 │  │  ┌──────┴─────────────────┴─────────────────┴──────┐ │ │
-│  │  │           Square API Adapter Layer                │ │ │
+│  │  │               Layer: Square Services              │ │ │
 │  │  │  ┌──────────┐ ┌──────────┐ ┌──────────────────┐ │ │ │
-│  │  │  │CatalogApi│ │Inventory │ │  Orders/Payments │ │ │ │
-│  │  │  │Adapter   │ │ApiAdapter│ │  ApiAdapter      │ │ │ │
+│  │  │  │CatalogEx │ │Terminal  │ │  OrderImporter   │ │ │ │
+│  │  │  │porter    │ │Payment   │ │  (Pull)          │ │ │ │
 │  │  │  └──────────┘ └──────────┘ └──────────────────┘ │ │ │
-│  │  │  ┌──────────┐ ┌──────────┐ ┌──────────────────┐ │ │ │
-│  │  │  │Customers │ │ Terminal │ │  CSV Import      │ │ │ │
-│  │  │  │ApiAdapter│ │ApiAdapter│ │  Processor       │ │ │ │
-│  │  │  └──────────┘ └──────────┘ └──────────────────┘ │ │ │
+│  │  │  ┌─────────────────────────────────────────────┐ │ │ │
+│  │  │  │  Staging: CustomerMatcher, InvoiceCreator,  │ │ │ │
+│  │  │  │            StagingTableManager               │ │ │ │
+│  │  │  └─────────────────────────────────────────────┘ │ │ │
 │  │  └─────────────────────────────────────────────────┘ │ │
-│  │                                                       │ │
 │  │  ┌────────────────────────────────────────────────┐  │ │
-│  │  │          FA Database Layer                      │  │ │
+│  │  │          FA Database Layer                       │  │ │
 │  │  │  stock_master, sales_orders, debtors_master,    │  │ │
-│  │  │  cust_branch, square (config), square_mappings, │  │ │
-│  │  │  square_staging_*, square_import_log            │  │ │
+│  │  │  cust_branch, square (config),                  │  │ │
+│  │  │  square_staging_transactions,                   │  │ │
+│  │  │  square_staging_items, square_customer_mappings,│  │ │
+│  │  │  square_import_log                              │  │ │
 │  │  └────────────────────────────────────────────────┘  │ │
 │  └─────────────────────────────────────────────────────┘ │
 │                                                           │
 │  PHP 7.3/7.4 | MySQL/MariaDB                              │
 └─────────────────────────────────────────────────────────┘
-                           │
-                           │ HTTPS / OAuth
-                           ▼
+                            │
+                            │ HTTPS / OAuth
+                            ▼
 ┌─────────────────────────────────────────────────────────┐
 │                   Square Platform                        │
-│                                                          │
 │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌────────┐ │
 │  │ Catalog  │  │ Inventory│  │ Orders & │  │Terminal│ │
 │  │ API      │  │ API      │  │ Payments │  │ API    │ │
 │  └──────────┘  └──────────┘  └──────────┘  └────────┘ │
-│                                                          │
 │  ┌──────────┐  ┌──────────┐                              │
 │  │ Customers│  │ Locations│                              │
 │  │ API      │  │ API      │                              │
@@ -56,154 +53,185 @@
 
 ---
 
-## 2. Class Diagram: Core Domain Model
+## 2. Class Diagram: Core Domain
 
 ```
-┌──────────────────────────────────────┐
-│          SquareClient (SDK)          │
-├──────────────────────────────────────┤
-│ + __construct(config)                │
-├──────────────────────────────────────┤
-│ + getCatalogApi(): CatalogApi        │
-│ + getInventoryApi(): InventoryApi    │
-│ + getOrdersApi(): OrdersApi          │
-│ + getPaymentsApi(): PaymentsApi      │
-│ + getCustomersApi(): CustomersApi    │
-│ + getTerminalApi(): TerminalApi      │
-│ + getLocationsApi(): LocationsApi    │
-│ + getRefundsApi(): RefundsApi        │
-└──────────┬───────────────────────────┘
-           │
-           │ 1
-           ├──────────────────────────────────────────────┐
-           │                                              │
-┌──────────┴──────────────────────────┐    ┌──────────────┴──────────────┐
-│      SquareApiAdapterInterface      │    │    SquareApiAdapter         │
-├─────────────────────────────────────┤    ├─────────────────────────────┤
-│ + getLocationList(): Location[]     │    │ - client: SquareClient      │
-│ + getCatalogItem(sku): CatalogItem  │    │ - config: array             │
-│ + upsertProduct(item): CatalogItem  │    ├─────────────────────────────┤
-│ + pushInventory(sku, qty): bool     │    │ + getLocationList()          │
-│ + createOrder(items): Order         │    │ + getCatalogItem()           │
-│ + createTerminalCheckout(): Tx      │    │ + upsertProduct()            │
-│ + listPayments(from, to): Payment[] │    │ + pushInventory()            │
-│ + retrieveOrder(id): Order          │    │ + createOrder()              │
-│ + searchCustomers(q): Customer[]    │    │ + createTerminalCheckout()   │
-│ + createCustomer(data): Customer    │    │ + listPayments()             │
-│ + getLocations(): Location[]        │    │ + ...                        │
-└─────────────────────────────────────┘    └─────────────────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│                SettingsInterface                          │
+├──────────────────────────────────────────────────────────┤
+│ + getAccessToken(): ?string                               │
+│ + getEnvironment(): string                                │
+│ + getLastImportDate(): ?DateTimeInterface                 │
+│ + getDestinationCustomer(): ?int                          │
+│ + getDefaultLocation(): ?string                           │
+└──────────────────────────┬───────────────────────────────┘
+                           │ implements
+┌──────────────────────────┴───────────────────────────────┐
+│  Settings                                                 │
+├──────────────────────────────────────────────────────────┤
+│ - config: array                                           │
+├──────────────────────────────────────────────────────────┤
+│ + __construct(array $config)                              │
+│ + static fromFADatabase(string $prefix): self             │
+│ + get/set*(): mixed                                       │
+│ + toArray(): array                                        │
+└──────────────────────────────────────────────────────────┘
 
-┌──────────────────────────────────────┐
-│         FASquareService              │
-├──────────────────────────────────────┤
-│ - adapter: SquareApiAdapterInterface │
-│ - db: FADatabase                     │
-├──────────────────────────────────────┤
-│ + exportInventory(items, loc): array │
-│ + importSales(from, to): ImportResult│
-│ + processTerminalPayment(inv_id): Tx │
-│ + syncCustomers(): SyncResult        │
-│ + processCSV(file): StageResult      │
-│ + getConfig(key): string             │
-│ + saveConfig(key, value): void       │
-└──────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│          SquareClientFactory  (NEW)                       │
+├──────────────────────────────────────────────────────────┤
+│ + static create(SettingsInterface): SquareClient         │
+│   (Replaces 3x duplicate ::create() methods)             │
+└──────────────────────────────────────────────────────────┘
 
-┌──────────────────────────────────────┐
-│         ProductModel                 │
-├──────────────────────────────────────┤
-│ - stockId: string                    │
-│ - description: string                │
-│ - category: string                   │
-│ - price: Money                       │
-│ - quantityOnHand: float              │
-│ - unit: string                       │
-│ - taxType: string                    │
-│ - imagePath: string                  │
-│ - squareObjectId: string             │
-│ - squareVersion: int                 │
-├──────────────────────────────────────┤
-│ + toCatalogObject(): CatalogObject   │
-│ + fromFAItem(row): ProductModel      │
-│ + fromSquareObject(obj): ProductModel│
-└──────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│ <<interface>>          <<interface>>                     │
+│ CatalogExporterInterface TerminalPaymentInterface        │
+├─────────────────────────├────────────────────────────────┤
+│ + upsertProduct()       │ + createOrderFromInvoice()     │
+│ + batchUpsertProducts() │ + createTerminalCheckout()     │
+│ + pushInventory()       │ + getCheckoutStatus()          │
+│ + batchPushInventory()  │ + cancelCheckout()             │
+│ + getInventoryCount()   └──────────┬─────────────────────┘
+│ + deleteProduct()                  │ implements
+│ + searchProductBySku()  ┌──────────┴─────────────────────┐
+│ + listAllItems()        │  TerminalPayment               │
+└──────────┬──────────────├────────────────────────────────┤
+           │ implements   │ - client: SquareClient         │
+┌──────────┴──────────────┤ - settings: SettingsInterface  │
+│  CatalogExporter        ├────────────────────────────────┤
+├─────────────────────────┤ + __construct(client,settings) │
+│ - client: SquareClient  └────────────────────────────────┘
+│ - settings: Settings
+├─────────────────────────┘
+│ + __construct(client,settings)
+│ + resolveCategory(name): ?string
+│ + resolveTax(name,rate): ?string
+└─────────────────────────┘
 
-┌──────────────────────────────────────┐
-│         SalesOrderModel              │
-├──────────────────────────────────────┤
-│ - squareOrderId: string              │
-│ - faOrderReference: string           │
-│ - location: string                   │
-│ - customer: CustomerModel            │
-│ - lineItems: OrderLineItem[]         │
-│ - taxes: TaxItem[]                   │
-│ - discounts: DiscountItem[]          │
-│ - tip: Money                         │
-│ - total: Money                       │
-│ - status: string                     │
-│ - createdAt: DateTime                │
-├──────────────────────────────────────┤
-│ + toFASalesInvoice(): bool           │
-│ + toSquareOrder(): CreateOrderRequest│
-│ + fromSquareOrder(order): static     │
-└──────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│ <<interface>>                                            │
+│ OrderImporterInterface                                   │
+├──────────────────────────────────────────────────────────┤
+│ + listPayments(from,to,loc): Payment[]                   │
+│ + getPaymentWithOrder(id): array                         │
+│ + getOrder(id): ?Order                                   │
+│ + getOrders(ids): Order[]                                │
+└──────────┬───────────────────────────────────────────────┘
+           │ implements
+┌──────────┴───────────────────────────────────────────────┐
+│  OrderImporter                                           │
+├──────────────────────────────────────────────────────────┤
+│ - client: SquareClient                                   │
+│ - settings: SettingsInterface                            │
+├──────────────────────────────────────────────────────────┤
+│ + __construct(client,settings)                           │
+└──────────────────────────────────────────────────────────┘
 
-┌──────────────────────────────────────┐
-│         CustomerModel                │
-├──────────────────────────────────────┤
-│ - squareCustomerId: string           │
-│ - faDebtorId: string                 │
-│ - givenName: string                  │
-│ - familyName: string                 │
-│ - companyName: string                │
-│ - email: string                      │
-│ - phone: string                      │
-│ - referenceId: string                │
-├──────────────────────────────────────┤
-│ + toSquareCustomer(): CreateRequest  │
-│ + toFADebtor(): array                │
-│ + matchConfidence(): float           │
-└──────────────────────────────────────┘
-```
+┌──────────────────────────────────────────────────────────┐
+│ <<interface>>                                            │
+│ CustomerMatcherInterface                                 │
+├──────────────────────────────────────────────────────────┤
+│ + findOrCreateDebtor(data): int                          │
+│ + findOrCreateBranch(debtorNo, data): int                │
+│ + matchSquareCustomerToFaDebtor(id): ?int                │
+│ + linkSquareCustomer(id, debtorNo): void                 │
+└──────────┬───────────────────────────────────────────────┘
+           │ implements
+┌──────────┴───────────────────────────────────────────────┐
+│  CustomerMatcher                                         │
+├──────────────────────────────────────────────────────────┤
+│ - tablePrefix: string                                    │
+│ - mappings: array                                        │
+├──────────────────────────────────────────────────────────┤
+│ + __construct(tablePrefix)                               │
+│ - getNextDebtorNo(): int                                 │
+│ - insertDebtor(no, data): void                           │
+└──────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────┐
+│ <<interface>>                                            │
+│ InvoiceCreatorInterface                                  │
+├──────────────────────────────────────────────────────────┤
+│ + createSalesInvoice(...): int                           │
+│ + recordPayment(invoice, amount, date, pos): int         │
+└──────────┬───────────────────────────────────────────────┘
+           │ implements
+┌──────────┴───────────────────────────────────────────────┐
+│  InvoiceCreator                                          │
+├──────────────────────────────────────────────────────────┤
+│ - tablePrefix: string                                    │
+├──────────────────────────────────────────────────────────┤
+│ + __construct(tablePrefix)                               │
+│ - getNextReference(): string                             │
+│ - createBlankOrder(...): int                             │
+│ - addOrderLine(orderNo, item): void                      │
+│ - processOrder(orderNo): void                            │
+└──────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────┐
+│  StagingTableManager                                     │
+├──────────────────────────────────────────────────────────┤
+│ - tablePrefix: string                                    │
+├──────────────────────────────────────────────────────────┤
+│ + __construct(tablePrefix)                               │
+│ + createStagingTables(): void                            │
+│ + dropStagingTables(): void                              │
+│ + insertStagingTransaction(data): int                    │
+│ + getUnprocessedTransactions(source): array              │
+│ + markProcessed(id): void                                │
+│ + markFailed(id, error): void                            │
+└──────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────┐
+│  Exceptions                                              │
+├──────────────────────────────────────────────────────────┤
+│ SquareException extends FAException                      │
+│   + apiError(endpoint, msg, errors): self                │
+│   + configurationError(key): self                        │
+│   + importFailed(reason): self                           │
+│   + exportFailed(reason): self                           │
+│                                                          │
+│ ProductNotFoundException extends FAEntityNotFoundException│
+│   + bySku(sku): self                                     │
+│   + byStockId(stockId): self                             │
+└──────────────────────────────────────────────────────────┘
 
 ---
 
-## 3. Sequence Diagram: Export Inventory
+## 3. Sequence Diagram: Export Inventory (with SquareClientFactory)
 
 ```
-FA_Admin          ExportUI              FASquareService        SquareApiAdapter         Square API
+FA_Admin          ExportUI              CatalogExporter       SquareClientFactory        Square API
    │                  │                      │                      │                     │
    │   Click Export   │                      │                      │                     │
    │─────────────────>│                      │                      │                     │
-   │                  │  getItems(category)  │                      │                     │
+   │                  │  new CatalogExporter  │                      │                     │
    │                  │─────────────────────>│                      │                     │
-   │                  │                      │  query FA stock_master, stock_moves          │
-   │                  │                      │──────────────────────│                     │
-   │                  │                      │<─── ProductModel[] ──│                     │
-   │                  │                      │                      │                     │
-   │                  │                      │  searchCatalog(sku)  │                     │
+   │                  │                      │  create(settings)    │                     │
    │                  │                      │─────────────────────>│                     │
-   │                  │                      │                      │ searchCatalogObjects │
+   │                  │                      │                      │ new SquareClient()  │
+   │                  │                      │<─── SquareClient ────│                     │
+   │                  │                      │                      │                     │
+   │                  │  query FA items      │                      │                     │
+   │                  │─────────────────────>│                      │                     │
+   │                  │                      │  (loop per item)     │                     │
+   │                  │                      │  resolveCategory()   │                     │
+   │                  │                      │─────────────────────>│ searchCatalogObjects│
    │                  │                      │                      │────────────────────>│
    │                  │                      │                      │<─── CatalogObject ───│
-   │                  │                      │<── exists/new ───────│                     │
-   │                  │                      │                      │                     │
-   │                  │                      │  upsertProduct(item) │                     │
-   │  (loop per item) │                      │─────────────────────>│                     │
-   │                  │                      │                      │ upsertCatalogObject  │
+   │                  │                      │  upsertProduct()     │                     │
+   │                  │                      │─────────────────────>│ upsertCatalogObject │
    │                  │                      │                      │────────────────────>│
-   │                  │                      │                      │<── CatalogObject ────│
+   │                  │                      │                      │<─── CatalogObject ───│
    │                  │                      │<── success ──────────│                     │
    │                  │                      │                      │                     │
-   │                  │                      │  pushInventory(sku,qty,loc)                  │
-   │                  │                      │─────────────────────>│                     │
-   │                  │                      │                      │ batchChangeInventory │
+   │                  │                      │  pushInventory()     │                     │
+   │                  │                      │─────────────────────>│ batchChangeInventor │
    │                  │                      │                      │────────────────────>│
-   │                  │                      │                      │<─── success ─────────│
-   │                  │                      │<── success ──────────│                     │
-   │                  │                      │                      │                     │
+   │                  │                      │                      │<──── success ───────│
    │                  │<── ExportResult ─────│                      │                     │
-   │                  │                      │                      │                     │
-   │<─── Summary ─────│                      │                      │                     │
+   │<── Summary ─────│                      │                      │                     │
 ```
 
 ---
@@ -211,122 +239,94 @@ FA_Admin          ExportUI              FASquareService        SquareApiAdapter 
 ## 4. Sequence Diagram: Terminal Payment Flow
 
 ```
-SalesOp          FA_InvoiceUI           FASquareService        SquareApiAdapter         Square API        Square_Reader
+SalesOp          FA_InvoiceUI           TerminalPayment         SquareClientFactory       Square API        Square_Reader
    │                  │                      │                      │                     │                  │
    │ Create Invoice   │                      │                      │                     │                  │
    │─────────────────>│                      │                      │                     │                  │
    │                  │  processTerminal     │                      │                     │                  │
    │                  │  Payment(inv_id)     │                      │                     │                  │
    │                  │─────────────────────>│                      │                     │                  │
-   │                  │                      │  createOrder(items)  │                     │                  │
-   │                  │                      │─────────────────────>│                     │                  │
-   │                  │                      │                      │ createOrder()        │                  │
+   │                  │                      │  createOrderFrom     │                     │                  │
+   │                  │                      │  Invoice(items)      │                     │                  │
+   │                  │                      │─────────────────────>│ createOrder()        │                  │
    │                  │                      │                      │────────────────────>│                  │
-   │                  │                      │                      │<─── Order ───────────│                  │
+   │                  │                      │                      │<─────── Order ───────│                  │
    │                  │                      │<── Order ────────────│                     │                  │
    │                  │                      │                      │                     │                  │
    │                  │                      │  createTerminal      │                     │                  │
-   │                  │                      │  Checkout(orderId)   │                     │                  │
-   │                  │                      │─────────────────────>│                     │                  │
-   │                  │                      │                      │ createTerminal       │                  │
+   │                  │                      │  Checkout(order)     │                     │                  │
+   │                  │                      │─────────────────────>│ createTerminal       │                  │
    │                  │                      │                      │ Checkout()           │                  │
    │                  │                      │                      │────────────────────>│                  │
-   │                  │                      │                      │                     │  Push Checkout   │
+   │                  │                      │                      │                     │ Push Checkout    │
    │                  │                      │                      │                     │─────────────────>│
-   │                  │                      │                      │<── TerminalCheckout ─│                  │
-   │                  │                      │<── checkoutId ───────│                     │                  │
-   │                  │                      │                      │                     │                  │
+   │                  │                      │                      │< TerminalCheckout ───│                  │
+   │                  │                      │< checkoutId ────────│                     │                  │
    │                  │  Awaiting Reader...  │                      │                     │                  │
    │                  │<─────────────────────│                      │                     │                  │
-   │                  │                      │                      │                     │  Customer Taps   │
-   │                  │                      │                      │                     │  /Dips Card      │
+   │                  │                      │                      │                     │ Customer Taps    │
    │                  │                      │                      │                     │<─────────────────│
-   │                  │                      │  pollCheckout(id)    │                     │                  │
-   │                  │                      │────(loop every 5s)──>│                     │                  │
-   │                  │                      │                      │ getTerminalCheckout  │                  │
+   │                  │                      │  getCheckoutStatus() │                     │                  │
+   │                  │                      │────(poll loop)──────>│ getTerminalCheckout │                  │
    │                  │                      │                      │────────────────────>│                  │
    │                  │                      │                      │<── COMPLETED ────────│                  │
-   │                  │                      │<── completed ────────│                     │                  │
-   │                  │                      │                      │                     │                  │
-   │                  │                      │  retrieveOrder(id)   │                     │                  │
-   │                  │                      │─────────────────────>│                     │                  │
-   │                  │                      │                      │ retrieveOrder()      │                  │
-   │                  │                      │                      │────────────────────>│                  │
-   │                  │                      │                      │<─── Order ───────────│                  │
-   │                  │                      │<── Order ────────────│                     │                  │
-   │                  │                      │                      │                     │                  │
-   │                  │                      │  recordPayment       │                     │                  │
-   │                  │                      │  inFA(order)         │                     │                  │
-   │                  │                      │───(creates FA        │                     │                  │
-   │                  │                      │   payment, links     │                     │                  │
-   │                  │                      │   to invoice) ───────│                     │                  │
-   │                  │                      │                      │                     │                  │
-   │                  │<── PaymentResult ────│                      │                     │                  │
-   │<── Invoice       │                      │                      │                     │                  │
-   │   Marked Paid    │                      │                      │                     │                  │
+   │                  │                      │< completed ──────────│                     │                  │
+   │                  │< PaymentResult ──────│                      │                     │                  │
+   │< Invoice Paid    │                      │                      │                     │                  │
 ```
 
 ---
 
-## 5. Sequence Diagram: Import Sales (Square -> FA)
+## 5. Sequence Diagram: Import Sales (Square -> Staging -> FA)
 
 ```
-FA_Admin          ImportUI              FASquareService        SquareApiAdapter         Square API
-   │                  │                      │                      │                     │
-   │  Click Import    │                      │                      │                     │
-   │─────────────────>│                      │                      │                     │
-   │                  │  importSales(from,   │                      │                     │
-   │                  │  to)                 │                      │                     │
-   │                  │─────────────────────>│                      │                     │
-   │                  │                      │  listLocations()     │                     │
-   │                  │                      │─────────────────────>│                     │
-   │                  │                      │                      │ listLocations()      │
-   │                  │                      │                      │────────────────────>│
-   │                  │                      │                      │<─── Location[] ──────│
-   │                  │                      │<── Location[] ───────│                     │
-   │                  │                      │                      │                     │
-   │                  │                      │  listPayments(from,to)│                     │
-   │                  │                      │─────────────────────>│                     │
-   │                  │                      │                      │ listPayments()       │
-   │                  │                      │                      │────────────────────>│
-   │                  │                      │                      │<─── Payment[] ───────│
-   │                  │                      │<── Payment[] ────────│                     │
-   │                  │                      │                      │                     │
-   │                  │                      │  (filter by: location,                      │
-   │                  │                      │   status=COMPLETED,                          │
-   │                  │                      │   not already imported)                      │
-   │                  │                      │                      │                     │
-   │                  │(loop per payment)    │                      │                     │
-   │                  │                      │  retrieveOrder(id)   │                     │
-   │                  │                      │─────────────────────>│                     │
-   │                  │                      │                      │ retrieveOrder()      │
-   │                  │                      │                      │────────────────────>│
-   │                  │                      │                      │<─── Order ───────────│
-   │                  │                      │<── Order ────────────│                     │
-   │                  │                      │                      │                     │
-   │                  │                      │  retrieveCustomer()  │                     │
-   │                  │                      │─────────────────────>│                     │
-   │                  │                      │                      │ retrieveCustomer()   │
-   │                  │                      │                      │────────────────────>│
-   │                  │                      │<── Customer ─────────│                     │
-   │                  │                      │                      │                     │
-   │                  │                      │  map to FA structures│                     │
-   │                  │                      │  (branch, items,     │                     │
-   │                  │                      │   taxes, discounts,  │                     │
-   │                  │                      │   tips, customer)    │                     │
-   │                  │                      │                      │                     │
-   │                  │                      │  create FA Sales     │                     │
-   │                  │                      │  Invoice + Payment   │                     │
-   │                  │                      │───(FA DB writes)─────│                     │
-   │                  │                      │                      │                     │
-   │                  │<── ImportResult ─────│                      │                     │
-   │                  │                      │                      │                     │
-   │<── Results ──────│                      │                      │                     │
+FA_Admin          ImportUI              OrderImporter          StagingTableManager     InvoiceCreator      Square API
+   │                  │                      │                      │                     │                  │
+   │  Click Import    │                      │                      │                     │                  │
+   │─────────────────>│                      │                      │                     │                  │
+   │                  │  listPayments(from,  │                      │                     │                  │
+   │                  │  to)                 │                      │                     │                  │
+   │                  │─────────────────────>│                      │                     │                  │
+   │                  │                      │─── listPayments() ────────────────────────>│                  │
+   │                  │                      │<─── Payment[] ─────────────────────────────│                  │
+   │                  │<── Payment[] ────────│                      │                     │                  │
+   │                  │                      │                      │                     │                  │
+   │                  │  (loop per payment)  │                      │                     │                  │
+   │                  │  getPaymentWithOrder │                      │                     │                  │
+   │                  │  (paymentId)         │                      │                     │                  │
+   │                  │─────────────────────>│                      │                     │                  │
+   │                  │                      │─── getPayment() ──────────────────────────>│                  │
+   │                  │                      │<── payment+order ──────────────────────────│                  │
+   │                  │<── {payment,order} ──│                      │                     │                  │
+   │                  │                      │                      │                     │                  │
+   │                  │  insertStaging       │                      │                     │                  │
+   │                  │  Transaction(data)   │                      │                     │                  │
+   │                  │────────────────────────────────────────────>│                     │                  │
+   │                  │                      │                      │<── staging_id ──────│                  │
+   │                  │                      │                      │                     │                  │
+   │                  │  (manual review)     │                      │                     │                  │
+   │                  │                      │                      │                     │                  │
+   │                  │  createSalesInvoice  │                      │                     │                  │
+   │                  │  (staging record)    │                      │                     │                  │
+   │                  │──────────────────────────────────────────────────────────────────>│                  │
+   │                  │                      │                      │  (creates FA        │                  │
+   │                  │                      │                      │   sales invoice)    │                  │
+   │                  │                      │                      │<── invoice_no ──────│                  │
+   │                  │  recordPayment()     │                      │                     │                  │
+   │                  │──────────────────────────────────────────────────────────────────>│                  │
+   │                  │                      │                      │  (records payment   │                  │
+   │                  │                      │                      │   in FA)            │                  │
+   │                  │                      │                      │<── success ─────────│                  │
+   │                  │                      │                      │                     │                  │
+   │                  │  markProcessed(id)   │                      │                     │                  │
+   │                  │────────────────────────────────────────────>│                     │                  │
+   │                  │                      │                      │                     │                  │
+   │<── Results ──────│                      │                      │                     │                  │
 ```
 
 ---
 
-## 6. Database Schema Diagram
+## 6. Database Schema: Current Staging Tables
 
 ```
 ┌─────────────────────────┐    ┌─────────────────────────┐
@@ -338,13 +338,10 @@ FA_Admin          ImportUI              FASquareService        SquareApiAdapter 
 │ tax_type_id             │    │ reference, comments      │
 │ units                   │    │ freight_cost             │
 │ mb_flag                 │    │ delivery_address         │
-│ inactive                │    │ ────────────────────────│
-└────────────┬────────────┘    │ square_payment_id (ext) │
-             │                 │ square_order_id (ext)   │
-             │                 └────────────┬────────────┘
-             │                              │
+│ inactive                │    └────────────┬────────────┘
+└────────────┬────────────┘                 │
              │                 ┌────────────┴────────────┐
-             │                 │   sales_order_details(FA)│
+             │                 │ sales_order_details(FA) │
              │                 ├─────────────────────────┤
              │                 │ PK: order_no + stk_code │
              │                 │ unit_price, quantity     │
@@ -354,75 +351,119 @@ FA_Admin          ImportUI              FASquareService        SquareApiAdapter 
 ┌────────────┴────────────┐
 │       square (config)   │
 ├─────────────────────────┤
-│ PK: name                │    ┌─────────────────────────┐
-│ value (varchar)         │    │   square_mappings       │
-│ type (ext)              │    ├─────────────────────────┤
-└─────────────────────────┘    │ PK: id                  │
-                               │ fa_type, fa_id          │
-┌─────────────────────────┐    │ square_type, square_id  │
-│  square_import_log      │    │ created_at              │
-├─────────────────────────┤    └─────────────────────────┘
-│ PK: id                  │
-│ run_date                │    ┌─────────────────────────┐
-│ location_id             │    │  square_staging_orders  │
-│ orders_imported         │    ├─────────────────────────┤
-│ orders_skipped          │    │ PK: id                  │
-│ orders_failed           │    │ raw_json (TEXT)          │
-│ status                  │    │ status (staged/imported) │
-│ error_log               │    │ created_at              │
-└─────────────────────────┘    └─────────────────────────┘
+│ PK: name                │
+│ value (varchar)         │
+│ type (nullable)         │
+└─────────────────────────┘
+
+┌─────────────────────────────┐
+│  square_staging_transactions│
+├─────────────────────────────┤
+│ PK: id                      │
+│ source (api/csv/woo)        │
+│ square_transaction_id       │
+│ square_order_id             │
+│ square_payment_id           │
+│ location_id                 │
+│ customer_id                 │
+│ customer_name               │
+│ transaction_date            │
+│ total_amount, tax_amount    │
+│ tip_amount, discount_amount │
+│ currency                    │
+│ raw_json (LONGTEXT)         │
+│ status (staged/imported/    │
+│         failed)             │
+│ error_log                   │
+│ fa_invoice_no               │
+│ created_at / updated_at     │
+└─────────────────────────────┘
+
+┌─────────────────────────────┐
+│  square_staging_items       │
+├─────────────────────────────┤
+│ PK: id                      │
+│ staging_transaction_id (FK) │
+│ sku, name                   │
+│ quantity, unit_price        │
+│ total, tax, discount        │
+│ raw_json                    │
+│ created_at                  │
+└─────────────────────────────┘
+
+┌─────────────────────────────┐
+│  square_customer_mappings   │
+├─────────────────────────────┤
+│ PK: id                      │
+│ square_customer_id (UQ)     │
+│ fa_debtor_no                │
+│ created_at                  │
+└─────────────────────────────┘
+
+┌─────────────────────────────┐
+│  square_import_log          │
+├─────────────────────────────┤
+│ PK: id                      │
+│ run_date                    │
+│ source                      │
+│ orders_imported             │
+│ orders_skipped              │
+│ orders_failed               │
+│ status                      │
+│ error_log                   │
+│ created_at                  │
+└─────────────────────────────┘
 ```
 
 ---
 
-## 7. Data Flow Diagram: Information Flows
+## 7. Data Flow: Export
 
 ```
-                    ┌──────────────────────────────────────┐
-                    │          FA User Interface            │
-                    │  (square.php and new pages)           │
-                    └──┬──────────┬──────────┬─────────────┘
-                       │          │          │
-              ┌────────┘    ┌─────┘     ┌───┘
-              ▼             ▼           ▼
-     ┌──────────────┐ ┌──────────┐ ┌──────────┐
-     │   Export     │ │  Import  │ │ Terminal │
-     │  Inventory   │ │  Sales   │ │ Payments │
-     └──────┬───────┘ └────┬─────┘ └─────┬────┘
-            │              │              │
-            ▼              ▼              ▼
-     ┌──────────────────────────────────────────┐
-     │          FASquareService Layer            │
-     │  (business logic, mapping, validation)    │
-     └──────────────────────────────────────────┘
-            │              │              │
-            ├──────────────┼──────────────┤
-            ▼              ▼              ▼
-     ┌──────────────────────────────────────────┐
-     │          Square API Adapter Layer         │
-     └──────────────────────────────────────────┘
-            │              │              │
-            ▼              ▼              ▼
-     ┌──────────┐ ┌──────────┐ ┌──────────────────┐
-     │  Square  │ │  Square  │ │   Square Terminal│
-     │ Catalog  │ │  Orders  │ │   / Payments API │
-     │ & Invent │ │ & Cust   │ │                  │
-     └──────────┘ └──────────┘ └──────────────────┘
+FA stock_master ───> CatalogExporter ───> Square Catalog API
+     │                      │                      │
+     ├─ stock_id ───────────┼──────────> item_variation.sku
+     ├─ description ────────┼──────────> item.name, item.description
+     ├─ category_id ────────┼─ resolveCategory() ──> category.id
+     ├─ price via           │                      │
+     │  get_kit_price() ────┼──────────> variation.price_money
+     └─ tax_type_id ────────┼─ resolveTax() ───────> tax.id
 
-Data Flows:
-─────────────────────────────────────────────────────
-Products Export:       FA stock_master ────────> Square Catalog
-Stock Counts:          FA stock_moves ─────────> Square Inventory
-Prices:                FA sales_prices ────────> Square ItemVariation
-Images:                FA file system ─────────> Square CatalogImage
+FA stock_moves ───> CatalogExporter ───> Square Inventory API
+     │                      │                      │
+     └─ qty on hand ────────┼─ pushInventory() ────> batchChangeInventory
+```
 
-Orders Import:         Square Orders ──────────> FA sales_orders
-Payments Import:       Square Payments ────────> FA debtor_trans + 0_00
-Customers:             Square Customers ───────> FA debtors_master
-                       FA debtors_master ──────> Square Customers
+---
 
-Terminal Payments:     FA invoice ─────────────> Square TerminalCheckout
-                       Square TerminalCheckout ─> FA payment record
+## 8. Future: Unified Import Staging Architecture
+
+```
+                    ┌──────────────────────────────┐
+                    │     ksf_ImportStaging         │
+                    │   (Shared Composer Package)   │
+                    ├──────────────────────────────┤
+                    │  import_staging_transactions  │
+                    │  import_staging_line_items    │
+                    │  import_customer_mappings     │
+                    │  import_log                   │
+                    │                              │
+                    │  StagingTableManager          │
+                    │  CustomerMatcher              │
+                    │  InvoiceCreator               │
+                    └──────────┬───────────────────┘
+                               │ "require"
+              ┌────────────────┼────────────────┐
+              │                │                │
+              ▼                ▼                ▼
+┌─────────────────────┐ ┌─────────────┐ ┌──────────────┐
+│   ksf_FA_Square     │ │FA_Import    │ │Export_       │
+│   (this module)     │ │SquareUp     │ │Woocommerce   │
+├─────────────────────┤ ├─────────────┤ ├──────────────┤
+│ Pull from API ──────┼─┤ CSV import  │ │ Pull from    │
+│ Square Terminal     │ │ → staging   │ │ WooCommerce  │
+│ Catalog Export      │ │             │ │ → staging    │
+└─────────────────────┘ └─────────────┘ └──────────────┘
 ```
 
 ---
@@ -432,3 +473,4 @@ Terminal Payments:     FA invoice ─────────────> Squar
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 0.1 | 2026-05-20 | KSFraser | Initial UML documentation |
+| 0.2 | 2026-05-21 | KSFraser | Updated to reflect refactored class architecture, SquareClientFactory, unified staging vision |

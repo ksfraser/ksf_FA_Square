@@ -7,7 +7,6 @@ use Ksfraser\Frontaccounting\SquareUp\Contracts\OrderImporterInterface;
 use Ksfraser\Frontaccounting\SquareUp\Contracts\SettingsInterface;
 use Ksfraser\Frontaccounting\SquareUp\Exceptions\SquareException;
 use Square\SquareClient;
-use Square\Environment;
 use Square\Exceptions\ApiException;
 use Square\Models\Order;
 use Square\Models\SearchOrdersRequest;
@@ -27,23 +26,6 @@ class OrderImporter implements OrderImporterInterface
         $this->settings = $settings;
     }
 
-    public static function create(SettingsInterface $settings): self
-    {
-        $accessToken = $settings->getAccessToken();
-        if ($accessToken === null) {
-            throw SquareException::configurationError('access_token');
-        }
-
-        $client = new SquareClient([
-            'accessToken' => $accessToken,
-            'environment' => $settings->getEnvironment() === 'production'
-                ? Environment::PRODUCTION
-                : Environment::SANDBOX,
-        ]);
-
-        return new self($client, $settings);
-    }
-
     public function listPayments(
         \DateTimeInterface $from,
         \DateTimeInterface $to,
@@ -54,20 +36,14 @@ class OrderImporter implements OrderImporterInterface
 
         try {
             do {
-                $request = new \Square\Models\ListPaymentsRequest();
-                $request->setBeginTime($from->format('Y-m-d\TH:i:s\Z'));
-                $request->setEndTime($to->format('Y-m-d\TH:i:s\Z'));
-                $request->setLimit(100);
-
-                if ($locationId !== null) {
-                    $request->setLocationId($locationId);
-                }
-
-                if ($cursor !== null) {
-                    $request->setCursor($cursor);
-                }
-
-                $response = $this->client->getPaymentsApi()->listPayments($request);
+                $response = $this->client->getPaymentsApi()->listPayments(
+                    $from->format('Y-m-d\TH:i:s\Z'),
+                    $to->format('Y-m-d\TH:i:s\Z'),
+                    null,
+                    $cursor,
+                    $locationId,
+                    100
+                );
 
                 if ($response->isSuccess()) {
                     $result = $response->getResult();

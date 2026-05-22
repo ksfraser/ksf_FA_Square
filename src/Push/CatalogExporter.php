@@ -6,9 +6,7 @@ namespace Ksfraser\Frontaccounting\SquareUp\Push;
 use Ksfraser\Frontaccounting\SquareUp\Contracts\CatalogExporterInterface;
 use Ksfraser\Frontaccounting\SquareUp\Contracts\SettingsInterface;
 use Ksfraser\Frontaccounting\SquareUp\Exceptions\SquareException;
-use Ksfraser\Frontaccounting\SquareUp\Exceptions\ProductNotFoundException;
 use Square\SquareClient;
-use Square\Environment;
 use Square\Exceptions\ApiException;
 use Square\Models\CatalogObject;
 use Square\Models\CatalogItem;
@@ -22,6 +20,9 @@ use Square\Models\CatalogObjectBatch;
 use Square\Models\BatchChangeInventoryRequest;
 use Square\Models\InventoryChange;
 use Square\Models\InventoryAdjustment;
+use Square\Models\CatalogImage;
+use Square\Models\CreateCatalogImageRequest;
+use Square\Utils\FileWrapper;
 
 class CatalogExporter implements CatalogExporterInterface
 {
@@ -32,23 +33,6 @@ class CatalogExporter implements CatalogExporterInterface
     {
         $this->client = $client;
         $this->settings = $settings;
-    }
-
-    public static function create(SettingsInterface $settings): self
-    {
-        $accessToken = $settings->getAccessToken();
-        if ($accessToken === null) {
-            throw SquareException::configurationError('access_token');
-        }
-
-        $client = new SquareClient([
-            'accessToken' => $accessToken,
-            'environment' => $settings->getEnvironment() === 'production'
-                ? Environment::PRODUCTION
-                : Environment::SANDBOX,
-        ]);
-
-        return new self($client, $settings);
     }
 
     public function upsertProduct(
@@ -84,9 +68,7 @@ class CatalogExporter implements CatalogExporterInterface
                 $item->setTaxIds([$taxId]);
             }
 
-            $body = new CatalogObject();
-            $body->setType('ITEM');
-            $body->setId('#' . $sku);
+            $body = new CatalogObject('ITEM', '#' . $sku);
             $body->setItemData($item);
 
             $request = new UpsertCatalogObjectRequest(uniqid('', true), $body);
@@ -146,9 +128,7 @@ class CatalogExporter implements CatalogExporterInterface
                 $item->setTaxIds([$taxId]);
             }
 
-            $body = new CatalogObject();
-            $body->setType('ITEM');
-            $body->setId('#' . $sku);
+            $body = new CatalogObject('ITEM', '#' . $sku);
             $body->setItemData($item);
 
             $objects[] = $body;
@@ -275,16 +255,13 @@ class CatalogExporter implements CatalogExporterInterface
     public function searchProductBySku(string $sku): ?CatalogObject
     {
         try {
-            $query = new \Square\Models\SearchCatalogObjectsRequest();
-            $query->setObjectTypes(['ITEM']);
-            $query->setQuery(new \Square\Models\SearchCatalogObjectsQuery(
-                new \Square\Models\CatalogQueryPrefix(
-                    'variations',
-                    ['sku' => $sku]
-                )
-            ));
+            $searchRequest = new \Square\Models\SearchCatalogObjectsRequest();
+            $searchRequest->setObjectTypes(['ITEM']);
+            $query = new \Square\Models\CatalogQuery();
+            $query->setPrefixQuery(new \Square\Models\CatalogQueryPrefix('sku', $sku));
+            $searchRequest->setQuery($query);
 
-            $response = $this->client->getCatalogApi()->searchCatalogObjects($query);
+            $response = $this->client->getCatalogApi()->searchCatalogObjects($searchRequest);
 
             if (!$response->isSuccess() || empty($response->getResult()->getObjects())) {
                 return null;
@@ -303,13 +280,7 @@ class CatalogExporter implements CatalogExporterInterface
 
         try {
             do {
-                $request = new \Square\Models\ListCatalogRequest();
-                $request->setTypes('ITEM');
-                if ($cursor !== null) {
-                    $request->setCursor($cursor);
-                }
-
-                $response = $this->client->getCatalogApi()->listCatalog($request);
+                $response = $this->client->getCatalogApi()->listCatalog($cursor, 'ITEM');
 
                 if ($response->isSuccess()) {
                     $result = $response->getResult();
@@ -328,16 +299,92 @@ class CatalogExporter implements CatalogExporterInterface
         }
     }
 
+    public function uploadImage(
+        string $catalogObjectId,
+        string $stockId,
+        string $description,
+        string $imageDir,
+        int $imageIndex = 0,
+        bool $isPrimary = false
+    ): bool {
+        $filename = $imageIndex === 0
+            ? $stockId . '.jpg'
+            : $stockId . '-' . $imageIndex . '.jpg';
+        $filePath = rtrim($imageDir, '/') . '/' . $filename;
+
+        if (!file_exists($filePath)) {
+            return false;
+        }
+
+        try {
+            $srcImg = @imagecreatefromjpeg($filePath);
+            if ($srcImg === false) {
+                return false;
+            }
+
+            $oldX = imagesx($srcImg);
+            $oldY = imagesy($srcImg);
+            $dim = 600;
+            $ratio1 = $oldX / $dim;
+            $ratio2 = $oldY / $dim;
+            if ($ratio1 > $ratio2) {
+                $thumbW = $dim;
+                $thumbH = (int)($oldY / $ratio1);
+            } else {
+                $thumbH = $dim;
+                $thumbW = (int)($oldX / $ratio2);
+            }
+
+            $finalImg = imagecreatetruecolor($dim, $dim);
+            $bg = imagecolorallocate($finalImg, 255, 255, 255);
+            imagefilledrectangle($finalImg, 0, 0, $dim, $dim, $bg);
+            $dstX = (int)(($dim - $thumbW) / 2);
+            $dstY = (int)(($dim - $thumbH) / 2);
+            imagecopyresampled($finalImg, $srcImg, $dstX, $dstY, 0, 0, $thumbW, $thumbH, $oldX, $oldY);
+
+            $tempFile = tempnam(sys_get_temp_dir(), 'sq_img_') . '.jpeg';
+            imagejpeg($finalImg, $tempFile, 90);
+            imagedestroy($srcImg);
+            imagedestroy($finalImg);
+
+            $imageObj = new CatalogObject('IMAGE', '#img_' . $stockId . ($imageIndex > 0 ? '_' . $imageIndex : ''));
+            $imgData = new CatalogImage();
+            $imgData->setCaption($description);
+            $imageObj->setImageData($imgData);
+
+            $request = new CreateCatalogImageRequest(uniqid('', true), $imageObj);
+            $request->setObjectId($catalogObjectId);
+            $request->setIsPrimary($isPrimary);
+
+            $imageFile = FileWrapper::createFromPath($tempFile, 'image/jpeg');
+            $response = $this->client->getCatalogApi()->createCatalogImage($request, $imageFile);
+
+            unlink($tempFile);
+
+            return $response->isSuccess();
+        } catch (ApiException $e) {
+            if (isset($tempFile) && file_exists($tempFile)) {
+                @unlink($tempFile);
+            }
+            throw SquareException::apiError('createCatalogImage', $e->getMessage());
+        } catch (\Exception $e) {
+            if (isset($tempFile) && file_exists($tempFile)) {
+                @unlink($tempFile);
+            }
+            return false;
+        }
+    }
+
     private function resolveCategory(string $categoryName): ?string
     {
         try {
-            $query = new \Square\Models\SearchCatalogObjectsRequest();
-            $query->setObjectTypes(['CATEGORY']);
-            $query->setQuery(new \Square\Models\SearchCatalogObjectsQuery(
-                new \Square\Models\CatalogQueryExact('name', $categoryName)
-            ));
+            $searchRequest = new \Square\Models\SearchCatalogObjectsRequest();
+            $searchRequest->setObjectTypes(['CATEGORY']);
+            $query = new \Square\Models\CatalogQuery();
+            $query->setExactQuery(new \Square\Models\CatalogQueryExact('name', $categoryName));
+            $searchRequest->setQuery($query);
 
-            $response = $this->client->getCatalogApi()->searchCatalogObjects($query);
+            $response = $this->client->getCatalogApi()->searchCatalogObjects($searchRequest);
 
             if ($response->isSuccess() && !empty($response->getResult()->getObjects())) {
                 return $response->getResult()->getObjects()[0]->getId();
@@ -346,9 +393,7 @@ class CatalogExporter implements CatalogExporterInterface
             $category = new CatalogCategory();
             $category->setName($categoryName);
 
-            $body = new CatalogObject();
-            $body->setType('CATEGORY');
-            $body->setId('#' . preg_replace('/[^a-zA-Z0-9_]/', '_', $categoryName));
+            $body = new CatalogObject('CATEGORY', '#' . preg_replace('/[^a-zA-Z0-9_]/', '_', $categoryName));
             $body->setCategoryData($category);
 
             $request = new UpsertCatalogObjectRequest(uniqid('', true), $body);
@@ -367,13 +412,13 @@ class CatalogExporter implements CatalogExporterInterface
     private function resolveTax(string $taxName, float $taxRate): ?string
     {
         try {
-            $query = new \Square\Models\SearchCatalogObjectsRequest();
-            $query->setObjectTypes(['TAX']);
-            $query->setQuery(new \Square\Models\SearchCatalogObjectsQuery(
-                new \Square\Models\CatalogQueryExact('name', $taxName)
-            ));
+            $searchRequest = new \Square\Models\SearchCatalogObjectsRequest();
+            $searchRequest->setObjectTypes(['TAX']);
+            $query = new \Square\Models\CatalogQuery();
+            $query->setExactQuery(new \Square\Models\CatalogQueryExact('name', $taxName));
+            $searchRequest->setQuery($query);
 
-            $response = $this->client->getCatalogApi()->searchCatalogObjects($query);
+            $response = $this->client->getCatalogApi()->searchCatalogObjects($searchRequest);
 
             if ($response->isSuccess() && !empty($response->getResult()->getObjects())) {
                 return $response->getResult()->getObjects()[0]->getId();
@@ -386,9 +431,7 @@ class CatalogExporter implements CatalogExporterInterface
             $tax->setInclusionType('ADDITIVE');
             $tax->setEnabled(true);
 
-            $body = new CatalogObject();
-            $body->setType('TAX');
-            $body->setId('#' . preg_replace('/[^a-zA-Z0-9_]/', '_', $taxName));
+            $body = new CatalogObject('TAX', '#' . preg_replace('/[^a-zA-Z0-9_]/', '_', $taxName));
             $body->setTaxData($tax);
 
             $request = new UpsertCatalogObjectRequest(uniqid('', true), $body);

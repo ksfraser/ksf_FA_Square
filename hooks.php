@@ -77,10 +77,6 @@ class hooks_ksf_FA_Square extends hooks {
 
     switch($app->id) {
 			case 'orders':
-				$app->add_rapp_function(2, _('Square POS Connector'), 
-					$path_to_root.'/modules/'.$this->module_name.'/square.php', 'SA_ksf_FA_Square');
-		  $app->add_rapp_function(2, _('Square POS Connector'),
-          $path_to_root.'/modules/'.$this->module_name.'/square.php', 'SA_ksf_FA_Square');
         $app->add_rapp_function(2, _('Square Dashboard'),
           $path_to_root.'/modules/'.$this->module_name.'/pages/dashboard.php', 'SA_ksf_FA_SquareVIEW');
         $app->add_rapp_function(2, _('Square Configuration'),

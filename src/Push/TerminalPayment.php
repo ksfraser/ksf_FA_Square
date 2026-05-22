@@ -7,7 +7,6 @@ use Ksfraser\Frontaccounting\SquareUp\Contracts\TerminalPaymentInterface;
 use Ksfraser\Frontaccounting\SquareUp\Contracts\SettingsInterface;
 use Ksfraser\Frontaccounting\SquareUp\Exceptions\SquareException;
 use Square\SquareClient;
-use Square\Environment;
 use Square\Exceptions\ApiException;
 use Square\Models\Order;
 use Square\Models\CreateOrderRequest;
@@ -26,23 +25,6 @@ class TerminalPayment implements TerminalPaymentInterface
     {
         $this->client = $client;
         $this->settings = $settings;
-    }
-
-    public static function create(SettingsInterface $settings): self
-    {
-        $accessToken = $settings->getAccessToken();
-        if ($accessToken === null) {
-            throw SquareException::configurationError('access_token');
-        }
-
-        $client = new SquareClient([
-            'accessToken' => $accessToken,
-            'environment' => $settings->getEnvironment() === 'production'
-                ? Environment::PRODUCTION
-                : Environment::SANDBOX,
-        ]);
-
-        return new self($client, $settings);
     }
 
     public function createOrderFromInvoice(
@@ -113,20 +95,18 @@ class TerminalPayment implements TerminalPaymentInterface
                 $amount->setCurrency('CAD');
             }
 
-            $checkout = new TerminalCheckout($amount, $deviceId);
-            $checkout->setOrderId($order->getId());
-            $checkout->setReferenceId($order->getReferenceId());
-            $checkout->setNote('FrontAccounting Invoice Payment');
-
-            $deviceOptions = new DeviceCheckoutOptions();
+            $deviceOptions = new DeviceCheckoutOptions($deviceId);
             $deviceOptions->setSkipReceiptScreen(false);
             $deviceOptions->setTipSettings(new \Square\Models\TipSettings());
             $deviceOptions->getTipSettings()->setAllowTipping($tipCents !== null);
             if ($tipCents !== null) {
                 $deviceOptions->getTipSettings()->setCustomTipField(false);
-                $deviceOptions->getTipSettings()->setDefaultTip($tipCents);
             }
-            $checkout->setDeviceOptions($deviceOptions);
+
+            $checkout = new TerminalCheckout($amount, $deviceOptions);
+            $checkout->setOrderId($order->getId());
+            $checkout->setReferenceId($order->getReferenceId());
+            $checkout->setNote('FrontAccounting Invoice Payment');
 
             $request = new CreateTerminalCheckoutRequest($idempotencyKey, $checkout);
 

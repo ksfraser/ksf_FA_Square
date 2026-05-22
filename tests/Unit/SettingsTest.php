@@ -21,8 +21,51 @@ class SettingsTest extends TestCase
     public function testSetAndGetAccessToken(): void
     {
         $settings = new Settings();
-        $settings->setAccessToken('test-token-123');
-        $this->assertSame('test-token-123', $settings->getAccessToken());
+        $settings->setAccessToken('legacy-token');
+        $this->assertSame('legacy-token', $settings->getAccessToken());
+    }
+
+    public function testSandboxTokenTakesPriorityInSandboxEnv(): void
+    {
+        $settings = new Settings([
+            'access_token' => 'legacy',
+            'sandbox_access_token' => 'sandbox-specific',
+            'environment' => 'sandbox',
+        ]);
+        $this->assertSame('sandbox-specific', $settings->getAccessToken());
+    }
+
+    public function testProductionTokenTakesPriorityInProductionEnv(): void
+    {
+        $settings = new Settings([
+            'access_token' => 'legacy',
+            'production_access_token' => 'prod-specific',
+            'environment' => 'production',
+        ]);
+        $this->assertSame('prod-specific', $settings->getAccessToken());
+    }
+
+    public function testFallsBackToLegacyTokenWhenEnvSpecificMissing(): void
+    {
+        $settings = new Settings([
+            'access_token' => 'legacy',
+            'environment' => 'production',
+        ]);
+        $this->assertSame('legacy', $settings->getAccessToken());
+    }
+
+    public function testSetAndGetSandboxAccessToken(): void
+    {
+        $settings = new Settings();
+        $settings->setSandboxAccessToken('sb-token');
+        $this->assertSame('sb-token', $settings->getSandboxAccessToken());
+    }
+
+    public function testSetAndGetProductionAccessToken(): void
+    {
+        $settings = new Settings();
+        $settings->setProductionAccessToken('prod-token');
+        $this->assertSame('prod-token', $settings->getProductionAccessToken());
     }
 
     public function testSetAndGetEnvironment(): void

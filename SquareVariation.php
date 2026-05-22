@@ -32,6 +32,12 @@ use Square\Environment;
 define ("SQUARE_RFC3339", "Y-m-d\TH:i:s.u\Z");
 */
 
+/**
+ * @deprecated since v2.5.0
+ * @see CatalogExporter::upsertProduct()
+ * Replaced by Square SDK v40 CatalogItemVariation via CatalogExporter.
+ * Will be removed in v3.0.0
+ */
 class SquareVariation
 {
 	protected $stockId;
