@@ -78,10 +78,27 @@
 └──────────────────────────────────────────────────────────┘
 
 ┌──────────────────────────────────────────────────────────┐
-│          SquareClientFactory  (NEW)                       │
+│          SquareClientFactory  (DONE)                      │
 ├──────────────────────────────────────────────────────────┤
 │ + static create(SettingsInterface): SquareClient         │
 │   (Replaces 3x duplicate ::create() methods)             │
+└──────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────┐
+│          LocationMapper          (NEW — FR-08)            │
+├──────────────────────────────────────────────────────────┤
+│ - tablePrefix: string                                     │
+│ - db: FA database connection                              │
+├──────────────────────────────────────────────────────────┤
+│ + __construct(string $tablePrefix)                        │
+│ + getMappings(): array                                    │
+│ + getMappingByFaLocation(faLocCode): ?array               │
+│ + getFaLocationsForSquare(sqLocId): array                 │
+│ + saveMapping(faLocCode, sqLocId, aggType): void          │
+│ + deleteMapping(id): void                                 │
+│ + getUnmappedFaLocations(): array                          │
+│ + listSquareLocations(client): array                      │
+│ + aggregateQoh(faLocCodes): int (sum of stock_moves)     │
 └──────────────────────────────────────────────────────────┘
 
 ┌──────────────────────────────────────────────────────────┐
@@ -401,6 +418,16 @@ FA_Admin          ImportUI              OrderImporter          StagingTableManag
 └─────────────────────────────┘
 
 ┌─────────────────────────────┐
+│  square_location_mappings   │   (NEW — FR-08)
+├─────────────────────────────┤
+│ PK: id                      │
+│ fa_location_code (UQ)       │
+│ square_location_id          │
+│ aggregation (DIRECT|SUM)    │
+│ created_at / updated_at     │
+└─────────────────────────────┘
+
+┌─────────────────────────────┐
 │  square_import_log          │
 ├─────────────────────────────┤
 │ PK: id                      │
@@ -417,21 +444,88 @@ FA_Admin          ImportUI              OrderImporter          StagingTableManag
 
 ---
 
-## 7. Data Flow: Export
+## 7. Sequence Diagram: Location Mapping (Export with QOH Aggregation)
 
 ```
-FA stock_master ───> CatalogExporter ───> Square Catalog API
-     │                      │                      │
-     ├─ stock_id ───────────┼──────────> item_variation.sku
-     ├─ description ────────┼──────────> item.name, item.description
-     ├─ category_id ────────┼─ resolveCategory() ──> category.id
-     ├─ price via           │                      │
-     │  get_kit_price() ────┼──────────> variation.price_money
-     └─ tax_type_id ────────┼─ resolveTax() ───────> tax.id
+FA_Admin         ExportUI           CatalogExporter       LocationMapper        FA_DB           Square API
+   │                 │                    │                     │                 │                │
+   │  Click Export   │                    │                     │                 │                │
+   │────────────────>│                    │                     │                 │                │
+   │                 │  For each item:    │                     │                 │                │
+   │                 │  upsertProduct()   │                     │                 │                │
+   │                 │───────────────────>│                     │                 │                │
+   │                 │                    │───── upsert ────────                 │                │
+   │                 │                    │<──── success ───────                 │                │
+   │                 │                    │                     │                 │                │
+   │                 │  pushInventory()   │                     │                 │                │
+   │                 │───────────────────>│                     │                 │                │
+   │                 │                    │ getMappings()       │                 │                │
+   │                 │                    │────────────────────>│                 │                │
+   │                 │                    │                     │── SELECT ──────>│                │
+   │                 │                    │                     │<── mappings ────│                │
+   │                 │                    │                     │                 │                │
+   │                 │                    │  For each Square    │                 │                │
+   │                 │                    │  location:          │                 │                │
+   │                 │                    │                     │                 │                │
+   │                 │                    │  getFaLocations     │                 │                │
+   │                 │                    │  ForSquare(sqLocId) │                 │                │
+   │                 │                    │────────────────────>│                 │                │
+   │                 │                    │<── [faLocCodes] ────│                 │                │
+   │                 │                    │                     │                 │                │
+   │                 │                    │  For DIRECT:        │                 │                │
+   │                 │                    │  query single       │                 │                │
+   │                 │                    │  location QOH       │                 │                │
+   │                 │                    │──────────────────────────────────────>│                │
+   │                 │                    │<── qty ──────────────────────────────│                │
+   │                 │                    │                     │                 │                │
+   │                 │                    │  For SUM:           │                 │                │
+   │                 │                    │  query ALL mapped   │                 │                │
+   │                 │                    │  locations QOH      │                 │                │
+   │                 │                    │──────────────────────────────────────>│                │
+   │                 │                    │<── qty[] ────────────────────────────│                │
+   │                 │                    │  sum(qty[])         │                 │                │
+   │                 │                    │                     │                 │                │
+   │                 │                    │  batchChange         │                 │                │
+   │                 │                    │  Inventory(QOH)     │                 │                │
+   │                 │                    │─────────────────────────────────────────────────────>│
+   │                 │                    │<── success ──────────────────────────────────────────│
+   │                 │<── done ───────────│                     │                 │                │
+   │<── Summary ─────│                    │                     │                 │                │
+```
 
-FA stock_moves ───> CatalogExporter ───> Square Inventory API
-     │                      │                      │
-     └─ qty on hand ────────┼─ pushInventory() ────> batchChangeInventory
+---
+
+## 9. Data Flow: Export (with Location Mapping)
+
+```
+FA stock_master ───────> CatalogExporter ─────────────> Square Catalog API
+     │                            │                            │
+     ├─ stock_id ─────────────────┼──────────> item_variation.sku
+     ├─ description ──────────────┼──────────> item.name, item.description
+     ├─ category_id ──────────────┼─ resolveCategory() ──> category.id
+     ├─ price via                 │                            │
+     │  get_kit_price() ──────────┼──────────> variation.price_money
+     └─ tax_type_id ──────────────┼─ resolveTax() ───────> tax.id
+
+FA stock_moves ──> LocationMapper ──> CatalogExporter ──> Square Inventory API
+     │                   │                   │                      │
+     ├─ loc_code         │                   │                      │
+     ├─ qty              │                   │                      │
+     └─ stock_id         │                   │                      │
+                         │                   │                      │
+           ┌─────────────┴──────────────┐    │                      │
+           │ square_location_mappings   │    │                      │
+           ├────────────────────────────┤    │                      │
+           │ fa_location_code  (UQ)     │    │                      │
+           │ square_location_id         │    │                      │
+           │ aggregation (DIRECT|SUM)   │    │                      │
+           └─────────────┬──────────────┘    │                      │
+                         │                   │                      │
+           Get mapped FA locations ──────────│                      │
+           for the Square location            │                      │
+                         │                   │                      │
+           DIRECT:  single QOH ──────────────┼── pushInventory() ───> batchChangeInventory
+           SUM:     sum(QOH[]) ──────────────┼── pushInventory() ───> batchChangeInventory
 ```
 
 ---
@@ -474,3 +568,4 @@ FA stock_moves ───> CatalogExporter ───> Square Inventory API
 |---------|------|--------|---------|
 | 0.1 | 2026-05-20 | KSFraser | Initial UML documentation |
 | 0.2 | 2026-05-21 | KSFraser | Updated to reflect refactored class architecture, SquareClientFactory, unified staging vision |
+| 0.3 | 2026-05-21 | KSFraser | Added LocationMapper class diagram (§2), square_location_mappings table schema (§6), location mapping sequence diagram (§7), updated data flow with QOH aggregation (§9) |

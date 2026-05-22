@@ -85,10 +85,12 @@ See **RTM.md** for the full Requirements Traceability Matrix. Every functional r
 ### Task: Prioritize Requirements
 Using MoSCoW:
 
-**Must Have (Next 30 hours — Export Priority)**
-- FR-01.01 through FR-01.10: Product catalog export (SKU, description, category, price, QoH)
+**Must Have (Export Priority)**
+- FR-01.01 through FR-01.13: Product catalog export (SKU, description, category, price, QoH, logging, test limit)
 - FR-07.01 through FR-07.06: Configuration
-- SquareClientFactory extraction (DRY)
+- FR-08.01 through FR-08.08: Location mapping with N:1 / 1:1 QOH aggregation
+- Wire `pushInventory()` into export flow
+- SquareClientFactory extraction (DRY) — **DONE**
 
 **Should Have (This weekend — Import Priority)**
 - FR-03.01 through FR-03.11: Sales import from Square API
@@ -111,13 +113,15 @@ Using MoSCoW:
 |---------|---------------|
 | Business Process | Manual: Products entered in both FA and Square. Sales reconciled manually from Square Dashboard CSV export. |
 | Technology | Square SDK v40, PHP 7.3/7.4/8.1, FA 2.4.3, PSR-4 modules |
-| Pain Points | Dual data entry, manual reconciliation, no inventory sync, no integrated card payments |
+| Pain Points | Dual data entry, manual reconciliation, no inventory sync (QOH not pushed), no location mapping, no integrated card payments |
 | Legacy Code | Marty's square.php (6+ years old, SquareConnect SDK v3, not used in production). New src/ classes cover same functionality. |
+| Export Progress (2026-05-21) | Catalog export working with per-item logging, 10-item test limit, UTF-8 sanitization. Categories create in Square. QOH push not yet wired into export flow. |
 
 ### Task: Define Future State
 | Element | Future State |
 |---------|--------------|
-| Product Sync | One-click push of FA inventory to Square catalog + stock counts |
+| Product Sync | One-click push of FA inventory to Square catalog + stock counts with location-aware QOH aggregation |
+| Location Mapping | Configurable N:1 and 1:1 mapping of FA stock locations to Square locations for inventory push |
 | Payments | FA invoice -> Square Terminal checkout -> FA payment recording |
 | Sales Import | Automated/scheduled pull of Square sales -> staging -> FA invoices |
 | Customer Sync | Bi-directional customer matching and creation |
@@ -135,11 +139,12 @@ Using MoSCoW:
 ### Task: Define Change Strategy
 | Phase | Scope | Timeline |
 |-------|-------|----------|
-| Phase 1: Export Stabilize | SquareClientFactory, refactor export.php to use CatalogExporter, add tests | Next 30 hours |
-| Phase 2: Import | Wire OrderImporter into import.php properly, add unit tests | This weekend |
-| Phase 3: Unified Staging | Extract ksf_ImportStaging shared library | After Phase 2 |
-| Phase 4: Terminal Payments | Add Terminal API integration | Future |
-| Phase 5: CSV Merge | Integrate FA_ImportSquareUp into unified staging | Future |
+| Phase 1: Export Stabilize (DONE) | SquareClientFactory, UTF-8 sanitization, per-item logging, test limit, env switcher with Go button | Completed 2026-05-21 |
+| Phase 2: Location Mapping (NEXT) | `square_location_mappings` table, LocationMapper service, mapping UI, wire pushInventory() with aggregation | Current |
+| Phase 3: Import | Wire OrderImporter into import.php properly, add unit tests | After Phase 2 |
+| Phase 4: Unified Staging | Extract ksf_ImportStaging shared library | After Phase 3 |
+| Phase 5: Terminal Payments | Add Terminal API integration | Future |
+| Phase 6: CSV Merge | Integrate FA_ImportSquareUp into unified staging | Future |
 
 ---
 
@@ -222,3 +227,4 @@ Performance gaps will be identified through:
 |---------|------|--------|---------|
 | 0.1 | 2026-05-20 | KSFraser | Initial BABOK alignment for Square SDK v40 |
 | 0.2 | 2026-05-21 | KSFraser | Updated to reflect current state, refactoring progress, and unified staging plan |
+| 0.3 | 2026-05-21 | KSFraser | Updated current/future state, prioritization, and change strategy with Phase 1 completion and Phase 2 (Location Mapping FR-08) |

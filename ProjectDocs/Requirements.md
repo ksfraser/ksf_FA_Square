@@ -44,6 +44,7 @@ FrontAccounting (FA) users need to sell products through Square POS terminals an
 - Employee timecard sync
 - Gift card management
 - Subscription/invoice management
+- Automatic Square location creation from FA locations (API exists but deferred)
 
 ---
 
@@ -51,19 +52,22 @@ FrontAccounting (FA) users need to sell products through Square POS terminals an
 
 ### FR-01: Product Catalog Export (FA -> Square)
 
-| ID | Requirement | Implementation |
-|----|-------------|----------------|
-| FR-01.01 | System shall export FA stock items to Square Catalog via `CatalogApi::upsertCatalogObject` | `CatalogExporter::upsertProduct()` |
-| FR-01.02 | System shall map FA `stock_id` to Square `CatalogItemVariation.sku` | `CatalogExporter` item build |
-| FR-01.03 | System shall map FA `description` to Square `CatalogItem.name` and `description` | `CatalogExporter` item build |
-| FR-01.04 | System shall map FA `stock_category.description` to Square `CatalogCategory` | `CatalogExporter::resolveCategory()` |
-| FR-01.05 | System shall map FA item price (`sales_prices`) to Square `CatalogItemVariation.price_money` | `CatalogExporter` item build |
-| FR-01.06 | System shall push stock-on-hand (QoH) to Square via `InventoryApi::batchChangeInventory` | `CatalogExporter::pushInventory()` / `batchPushInventory()` |
-| FR-01.07 | System shall upload item images via `CatalogApi::createCatalogImage` | Image upload (to refactor into service) |
-| FR-01.08 | System shall assign FA tax types to Square `CatalogTax` objects | `CatalogExporter::resolveTax()` |
-| FR-01.09 | System shall support batched upsert of catalog objects via `batchUpsertCatalogObjects` | `CatalogExporter::batchUpsertProducts()` |
-| FR-01.10 | System shall delete Square catalog objects when FA items are deactivated | `CatalogExporter::deleteProduct()` |
-| FR-01.11 | System shall track export status and token mappings | `FA_SquareUpTokens` integration |
+| ID | Requirement | Implementation | Status |
+|----|-------------|----------------|--------|
+| FR-01.01 | System shall export FA stock items to Square Catalog via `CatalogApi::upsertCatalogObject` | `CatalogExporter::upsertProduct()` | Implemented |
+| FR-01.02 | System shall map FA `stock_id` to Square `CatalogItemVariation.sku` | `CatalogExporter` item build | Implemented |
+| FR-01.03 | System shall map FA `description` to Square `CatalogItem.name` and `description` | `CatalogExporter` item build | Implemented |
+| FR-01.04 | System shall map FA `stock_category.description` to Square `CatalogCategory` | `CatalogExporter::resolveCategory()` | Implemented |
+| FR-01.05 | System shall map FA item price (`sales_prices`) to Square `CatalogItemVariation.price_money` | `CatalogExporter` item build | Implemented |
+| FR-01.06 | System shall push stock-on-hand (QoH) to Square via `InventoryApi::batchChangeInventory` | `CatalogExporter::pushInventory()` / `batchPushInventory()` | Implemented (not wired into export flow) |
+| FR-01.07 | System shall upload item images via `CatalogApi::createCatalogImage` | `pages/export.php` (to refactor into service) | Implemented |
+| FR-01.08 | System shall assign FA tax types to Square `CatalogTax` objects | `CatalogExporter::resolveTax()` | Implemented |
+| FR-01.09 | System shall support batched upsert of catalog objects via `batchUpsertCatalogObjects` | `CatalogExporter::batchUpsertProducts()` | Implemented (not wired into UI) |
+| FR-01.10 | System shall delete Square catalog objects when FA items are deactivated | `CatalogExporter::deleteProduct()` | Implemented |
+| FR-01.11 | System shall sanitize FA data (latin1→UTF-8) before sending to Square API to prevent `json_encode` serialization failure | `CatalogExporter::sanitizeUtf8()` | Implemented 2026-05-21 |
+| FR-01.12 | Export page shall support a configurable item limit for testing | `pages/export.php` (`max_items` field) | Implemented 2026-05-21 |
+| FR-01.13 | Export page shall display per-item progress logging (processing, SKU resolution, API call, result) | `pages/export.php` (detailed notifications) | Implemented 2026-05-21 |
+| FR-01.14 | System shall track export status and token mappings | `FA_SquareUpTokens` integration | Planned |
 
 ### FR-02: Payment Collection (FA -> Square Terminal)
 
@@ -126,14 +130,40 @@ FrontAccounting (FA) users need to sell products through Square POS terminals an
 
 ### FR-07: Configuration & Administration
 
-| ID | Requirement |
-|----|-------------|
-| FR-07.01 | System shall store Square API access token securely |
-| FR-07.02 | System shall support switching between Square Sandbox and Production environments |
-| FR-07.03 | System shall store last import date for incremental pulls |
-| FR-07.04 | System shall store destination customer/branch mapping |
-| FR-07.05 | System shall provide activity log with timestamps and status |
-| FR-07.06 | System shall expose API error messages to administrators |
+| ID | Requirement | Implementation | Status |
+|----|-------------|----------------|--------|
+| FR-07.01 | System shall store Square API access token securely | `src/Config/Settings.php` | Implemented |
+| FR-07.02 | System shall support switching between Square Sandbox and Production environments | `pages/config.php` (env dropdown + Go button) | Implemented |
+| FR-07.03 | System shall store last import date for incremental pulls | `src/Config/Settings::getLastImportDate()` | Implemented |
+| FR-07.04 | System shall store destination customer/branch mapping | `src/Config/Settings::getDestinationCustomer()` | Implemented |
+| FR-07.05 | System shall provide activity log with timestamps and status | `square_import_log` table | Implemented |
+| FR-07.06 | System shall expose API error messages to administrators | `src/Exceptions/SquareException.php` | Implemented |
+
+### FR-08: Location Mapping (FA <-> Square)
+
+| ID | Requirement | Notes |
+|----|-------------|-------|
+| FR-08.01 | System shall provide UI to map FA stock locations to Square locations | Config page or dedicated mapping page |
+| FR-08.02 | System shall store location mappings in a dedicated database table (`square_location_mappings`) | See Data Model §5.5 |
+| FR-08.03 | System shall support **N FA locations → 1 Square location** mapping (aggregation) | QOH summed across mapped FA locations |
+| FR-08.04 | System shall support **1 FA location → 1 Square location** mapping (direct) | QOH passed through directly |
+| FR-08.05 | System shall retrieve available Square locations via `LocationsApi::listLocations()` for the mapping UI | Square supports `createLocation` via API for future auto-creation |
+| FR-08.06 | System shall aggregate FA QOH by summing `stock_moves.qty` across mapped locations when exporting inventory | `SUM` aggregation type |
+| FR-08.07 | System shall pass individual FA location QOH when mapping is 1:1 DIRECT | `DIRECT` aggregation type |
+| FR-08.08 | System shall replace the manual Square Location dropdown on the export page with automatic mapping-based location selection | Export uses `square_location_mappings` instead of user picking |
+| FR-08.09 | System shall optionally support creating Square locations from FA locations via `LocationsApi::createLocation()` | Future enhancement |
+
+#### FR-08 Design Notes
+
+**Aggregation Model:**
+- `square_location_mappings` table stores `fa_location_code` → `square_location_id` with an `aggregation` flag
+- When `aggregation = 'SUM'`: collect all FA locations mapped to the same Square location, query QOH for each, sum them, push total
+- When `aggregation = 'DIRECT'` (1:1): query QOH for that single FA location, push directly
+- An FA location can only map to ONE Square location (prevents double-counting)
+
+**Square `createLocation` API:**
+- `LocationsApi::createLocation(CreateLocationRequest)` exists in SDK v40 — can programmatically create new Square locations
+- Future: during initial setup, offer to create Square locations matching FA location names, then auto-map
 
 ---
 
@@ -183,6 +213,27 @@ square_import_log          - Import run history
 square_tokens              - Maps stock_id to Square catalog_object_id for update-vs-insert
 ```
 
+### 5.5 Location Mappings (New)
+```
+square_location_mappings   - Maps FA locations to Square locations for QOH aggregation
+├── id                     INT PK AUTO_INCREMENT
+├── fa_location_code       VARCHAR(20) NOT NULL  (references FA `locations.loc_code`)
+├── square_location_id     VARCHAR(32) NOT NULL  (Square location ID)
+├── aggregation            ENUM('DIRECT','SUM') NOT NULL DEFAULT 'DIRECT'
+│                          DIRECT  = 1:1 mapping, pass through QOH as-is
+│                          SUM     = N:1 mapping, sum QOH across all FA locs mapped to this Square loc
+├── created_at             TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+├── updated_at             TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+├── UNIQUE KEY (fa_location_code)
+└── KEY (square_location_id)
+
+Constraints:
+- fa_location_code must be unique (an FA location maps to only one Square location)
+- Multiple FA locations can share the same square_location_id (for SUM aggregation)
+- DIRECT mappings must be the only FA location for that square_location_id
+  (enforced at application level, not DB constraint)
+```
+
 ---
 
 ## 6. Architecture Plan
@@ -217,7 +268,13 @@ src/
     └── OrderImporter.php        — Uses factory
 ```
 
-### 6.3 Future: Unified Import Staging
+### 6.3 Current State Summary (as of 2026-05-21)
+- **Catalog Export**: Working with per-item logging and 10-item test limit. Categories created in Square. UTF-8 sanitization added to fix `json_encode` serialization failure on FA data (latin1 encoding).
+- **Configuration**: Env switcher with Go button, context-sensitive token fields, staging table create/drop.
+- **Dashboard**: Displays Square locations, API connection status, and import log.
+- **Pending**: Wire `pushInventory()` into export flow, wire `batchUpsertProducts()` into UI, location mapping (FR-08).
+
+### 6.4 Future: Unified Import Staging
 ```
 ksf_ImportStaging/ (independent Composer package)
 ├── src/

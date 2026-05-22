@@ -22,7 +22,10 @@
 | **FR-01.08** | Map FA tax types to CatalogTax | UC-01 | `src/Push/CatalogExporter::resolveTax()` | TC-01.08 |
 | **FR-01.09** | Batch upsert catalog objects | UC-01 | `src/Push/CatalogExporter::batchUpsertProducts()` | TC-01.09 |
 | **FR-01.10** | Delete deactivated items from Square | UC-01 | `src/Push/CatalogExporter::deleteProduct()` | TC-01.10 |
-| **FR-01.11** | Track export status + tokens | UC-01 | `FA_SquareUpTokens` integration (future) | TC-01.11 |
+| **FR-01.11** | Sanitize FA data (latin1→UTF-8) | UC-01 | `src/Push/CatalogExporter::sanitizeUtf8()` | TC-01.11 |
+| **FR-01.12** | Configurable item limit for export | UC-01 | `pages/export.php` (`max_items` field) | Manual |
+| **FR-01.13** | Per-item progress logging | UC-01 | `pages/export.php` (detailed notifications) | Manual |
+| **FR-01.14** | Track export status + tokens | UC-01 | `FA_SquareUpTokens` integration (future) | TC-01.14 |
 | **FR-02.01** | Create Square order from FA invoice | UC-02: Terminal Payment | `src/Push/TerminalPayment::createOrderFromInvoice()` | TC-02.01 |
 | **FR-02.02** | Initiate Terminal checkout | UC-02 | `src/Push/TerminalPayment::createTerminalCheckout()` | TC-02.02 |
 | **FR-02.03** | Support device selection | UC-02 | `src/Push/TerminalPayment.php` | TC-02.03 |
@@ -63,6 +66,14 @@
 | **FR-07.04** | Customer/branch mapping | UC-06 | `src/Config/Settings::getDestinationCustomer()` | TC-07.04 |
 | **FR-07.05** | Activity log | UC-06 | `square_import_log` table | TC-07.05 |
 | **FR-07.06** | Error message display | UC-06 | `src/Exceptions/SquareException.php` | TC-07.06 |
+| **FR-08.01** | UI to map FA locations to Square locations | UC-08: Location Mapping | Location mapping page (new) | TC-08.01 |
+| **FR-08.02** | Store location mappings in DB | UC-08 | `sql/` (new table `square_location_mappings`) | TC-08.02 |
+| **FR-08.03** | N FA → 1 Square (SUM aggregation) | UC-08 | Location mapper service (new) | TC-08.03 |
+| **FR-08.04** | 1 FA → 1 Square (DIRECT aggregation) | UC-08 | Location mapper service (new) | TC-08.04 |
+| **FR-08.05** | Retrieve Square locations via API | UC-08 | `LocationsApi::listLocations()` | TC-08.05 |
+| **FR-08.06** | Aggregate QOH by SUM across mapped FA locations | UC-01/08 | `CatalogExporter::pushInventory()` enhanced | TC-08.06 |
+| **FR-08.07** | Pass individual QOH for DIRECT mapping | UC-01/08 | `CatalogExporter::pushInventory()` enhanced | TC-08.07 |
+| **FR-08.08** | Replace manual Square Location dropdown with mapping-based selection | UC-01/08 | `pages/export.php` updated | TC-08.08 |
 | **NFR-01** | PHP 7.3/7.4 compatibility | All | composer.json | PHP unit |
 | **NFR-02** | FA 2.4.x integration | All | hooks.php | Manual |
 | **NFR-03** | Square SDK ^40.0.0 | All | composer.json | CI |
@@ -85,6 +96,7 @@
 | UC-05 | Import CSV from Square Dashboard | User uploads CSV file | FA Administrator |
 | UC-06 | Configure Integration | User opens Configuration page | FA Administrator |
 | UC-07 | Unified Import Staging | Any import flow (Square API/CSV/WooCommerce) | System (automatic) |
+| UC-08 | Map Locations | User opens Location Mapping page | FA Administrator |
 
 ---
 
@@ -94,3 +106,4 @@
 |---------|------|--------|---------|
 | 0.1 | 2026-05-20 | KSFraser | Initial draft from Square SDK v40 API analysis |
 | 0.2 | 2026-05-21 | KSFraser | Updated to reflect refactored class-based architecture, added unified staging vision |
+| 0.3 | 2026-05-21 | KSFraser | Added FR-01.11–14 (UTF-8 sanitization, item limit, logging, token tracking), FR-08 (Location Mapping with N:1/1:1 aggregation), UC-08 |
