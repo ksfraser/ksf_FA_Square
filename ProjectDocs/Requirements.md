@@ -292,4 +292,42 @@ Both:
   ksf_FA_Square/composer.json
   Export_Woocommerce/composer.json
     → "require": { "ksfraser/ksf-import-staging": "^1.0" }
+
+---
+
+## 7. Square API → FA Module Mapping (Landscape Analysis)
+
+| Square API | FA Equivalent / Module | Priority | Notes |
+|-----------|----------------------|----------|-------|
+| **Bank Accounts** | GL (ksf_FA_GL) | **WON'T DO** | Risk of corrupting payment records |
+| **Bookings** | ksf_FA_Calendar / ksf_FA_CRM | Future | Meetings/appointments |
+| **Cards** | — | Needs research | Customer CC info — unclear FA mapping |
+| **Cash Drawers / Shifts** | ksf_FA_HRM | Future | Shift portion only; drawers have no FA equivalent |
+| **Catalog** | stock_master (this module) | **NOW** | Core ksf_FA_Square integration |
+| **Checkout** | sales_orders (this module) | **NOW** | Terminal payment flow |
+| **Customers** | debtors_master (this module) | **NOW** | Bi-directional sync |
+| **Devices** | — | N/A | No FA equivalent |
+| **Disputes** | CRM / Sales (orders) | Future | Tie into order dispute tracking |
+| **Employees** | FA Users / ksf_FA_HRM | Future | |
+| **Events** | System logging | N/A | Already handled by Square internally |
+| **Gift Cards / Loyalty** | ksf_FA_Loyalty (CRM sub-module) | Future | |
+| **Inventory** | stock_moves (this module) | **NOW** | QOH push with location mapping |
+| **Invoices** | sales_invoices (this module) | **NOW** | Import flow |
+| **Labor** | ksf_FA_HRM | Future | |
+| **Locations** | FA locations (this module) | **NOW** | Location mapping (FR-08) |
+| **Merchants** | Company setup | N/A | One-time configuration |
+| **Orders** | sales_orders (this module) | **NOW** | Core integration |
+| **Payments** | sales_invoices (this module) | **NOW** | Core integration |
+| **Payouts** | GL / Bank reconciliation | Future | Payout tracking |
+| **Refunds** | sales_invoices (this module) | **NOW** | Credit note / return |
+| **Subscriptions** | Recurring invoices → Sales + CRM | Future | Recurring billing |
+| **Team** | ksf_FA_HRM | Future | |
+| **Terminal** | (this module) | **NOW** | Card-present payments |
+| **Transactions** | sales_invoices / GL | Future | Settlement details |
+
+**Priority Legend:**
+- **NOW**: Active development in ksf_FA_Square
+- **Future**: Planned for post-v1 integration with other ksf_ modules
+- **N/A**: No viable FA equivalent or already handled by Square
+- **WON'T DO**: Explicitly excluded (blocked/risky)
 ```
