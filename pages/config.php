@@ -98,7 +98,9 @@ $envOptions = [
     'sandbox' => _('Sandbox'),
     'production' => _('Production'),
 ];
-array_selector_row(_("Environment:"), 'environment', $env, $envOptions);
+echo '<tr><td class="label">' . _("Environment:") . '</td><td>';
+echo array_selector('environment', $env, $envOptions);
+echo '</td></tr>';
 
 echo '</table>';
 echo '<div class="square-env-section">';

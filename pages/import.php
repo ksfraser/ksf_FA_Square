@@ -311,10 +311,12 @@ date_row(_("To Order Date:"), 'to_date');
 customer_list_row(_("Destination Customer:"), 'destCust', $settings->getDestinationCustomer() ?? 0, false);
 
 if (count($locations) > 0) {
-    array_selector_row(_("Location Filter:"), 'location_id', '', $locations, [
+    echo '<tr><td class="label">' . _("Location Filter:") . '</td><td>';
+    echo array_selector('location_id', '', $locations, [
         'select_submit' => false,
         'async' => false,
     ]);
+    echo '</td></tr>';
 } else {
     hidden('location_id', '');
 }

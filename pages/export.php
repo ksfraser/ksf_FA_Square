@@ -208,10 +208,12 @@ locations_list_row(_("FA Location:"), 'default_location', null);
 
 if (count($squareLocations) > 0) {
     $locList = array_merge(['0' => _('All')], $squareLocations);
-    array_selector_row(_("Square Location:"), 'location_id', '0', $locList, [
+    echo '<tr><td class="label">' . _("Square Location:") . '</td><td>';
+    echo array_selector('location_id', '0', $locList, [
         'select_submit' => false,
         'async' => false,
     ]);
+    echo '</td></tr>';
 } else {
     hidden('location_id', '0');
 }
