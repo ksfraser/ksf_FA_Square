@@ -22,7 +22,12 @@ use Ksfraser\Frontaccounting\SquareUp\Exceptions\SquareException;
 use Square\Exceptions\ApiException;
 
 $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
-$settings = Settings::fromFADatabase($tablePrefix);
+try {
+    $settings = Settings::fromFADatabase($tablePrefix);
+} catch (\Exception $e) {
+    $settings = new Settings();
+    display_error(_("Failed to load configuration: ") . $e->getMessage());
+}
 $accessToken = $settings->getAccessToken();
 
 $help_context = "Export to Square";
@@ -109,12 +114,20 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
         $skipped = 0;
         $deleted = 0;
 
+        if ($itemsResult === false) {
+            throw new \RuntimeException(_("Failed to query stock items"));
+        }
+
         while ($item = db_fetch_assoc($itemsResult)) {
+            if ($item === false) break;
             $stockId = $item['stock_id'];
             $sku = $stockId;
 
             $barcodeResult = get_all_item_codes($stockId);
-            $barcodeRow = db_fetch($barcodeResult);
+            $barcodeRow = false;
+            if ($barcodeResult !== false) {
+                $barcodeRow = db_fetch($barcodeResult);
+            }
             if ($barcodeRow && !empty($barcodeRow['item_code'])) {
                 $sku = $barcodeRow['item_code'];
             }
@@ -176,9 +189,12 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
         foreach ($existingSquareItems as $sqSku => $sqItem) {
             $chkSql = "SELECT COUNT(*) AS cnt FROM {$tablePrefix}stock_master WHERE stock_id = " . db_escape($sqSku) . " AND inactive = 0";
             $chkResult = db_query($chkSql);
-            $chkRow = db_fetch_assoc($chkResult);
+            $chkRow = false;
+            if ($chkResult !== false) {
+                $chkRow = db_fetch_assoc($chkResult);
+            }
 
-            if ($chkRow['cnt'] == 0) {
+            if ($chkRow && (int)$chkRow['cnt'] == 0) {
                 try {
                     $exporter->deleteProduct($sqItem->getId());
                     display_notification(_("Deleted from Square: ") . $sqSku);

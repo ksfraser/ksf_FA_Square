@@ -17,7 +17,12 @@ use Ksfraser\Frontaccounting\SquareUp\Infrastructure\SquareClientFactory;
 use Square\Exceptions\ApiException;
 
 $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
-$settings = Settings::fromFADatabase($tablePrefix);
+try {
+    $settings = Settings::fromFADatabase($tablePrefix);
+} catch (\Exception $e) {
+    $settings = new Settings();
+    display_error(_("Failed to load configuration: ") . $e->getMessage());
+}
 $accessToken = $settings->getAccessToken();
 
 $help_context = "Square Dashboard";
@@ -106,18 +111,20 @@ table_section_title(_("Import Log (Last 10 Runs)"));
 
 $sql = "SELECT * FROM {$tablePrefix}square_import_log ORDER BY run_date DESC LIMIT 10";
 $result = db_query($sql);
-if (db_num_rows($result) > 0) {
+$hasRows = $result !== false && db_num_rows($result) > 0;
+if ($hasRows) {
     $th = array(_("Run Date"), _("Source"), _("Imported"), _("Skipped"), _("Failed"), _("Status"));
     table_header($th);
     $k = 0;
     while ($row = db_fetch_assoc($result)) {
+        if ($row === false) break;
         alt_table_row_color($k);
-        label_cell($row['run_date']);
-        label_cell($row['source']);
-        label_cell($row['orders_imported']);
-        label_cell($row['orders_skipped']);
-        label_cell($row['orders_failed']);
-        label_cell($row['status']);
+        label_cell($row['run_date'] ?? '');
+        label_cell($row['source'] ?? '');
+        label_cell($row['orders_imported'] ?? 0);
+        label_cell($row['orders_skipped'] ?? 0);
+        label_cell($row['orders_failed'] ?? 0);
+        label_cell($row['status'] ?? '');
         end_row();
     }
     end_table(1);

@@ -26,7 +26,12 @@ use Ksfraser\Frontaccounting\SquareUp\Staging\StagingTableManager;
 use Square\Exceptions\ApiException;
 
 $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
-$settings = Settings::fromFADatabase($tablePrefix);
+try {
+    $settings = Settings::fromFADatabase($tablePrefix);
+} catch (\Exception $e) {
+    $settings = new Settings();
+    display_error(_("Failed to load configuration: ") . $e->getMessage());
+}
 $accessToken = $settings->getAccessToken();
 
 $help_context = "Import Square Orders";
@@ -81,7 +86,10 @@ if (isset($_POST['action']) && $_POST['action'] == 'o_import') {
     } else {
         $sql = "SELECT * FROM {$tablePrefix}debtors_master WHERE debtor_no = " . $destCust;
         $result = db_query($sql);
-        $customer = db_fetch_assoc($result);
+        $customer = false;
+        if ($result !== false) {
+            $customer = db_fetch_assoc($result);
+        }
         if (!$customer) {
             $error = _("Customer not found.");
         } else {
@@ -109,7 +117,10 @@ if (isset($_POST['action']) && $_POST['action'] == 'o_import') {
                     $sql = "SELECT * FROM {$tablePrefix}cust_branch "
                         . "WHERE debtor_no = " . $destCust . " AND br_name = " . db_escape($locName);
                     $branchResult = db_query($sql);
-                    $branch = db_fetch_assoc($branchResult);
+                    $branch = false;
+                    if ($branchResult !== false) {
+                        $branch = db_fetch_assoc($branchResult);
+                    }
                     if (!$branch) {
                         display_notification(_("Skipping location: ") . $locName . _(" - no matching FA branch"));
                         continue;
@@ -126,8 +137,11 @@ if (isset($_POST['action']) && $_POST['action'] == 'o_import') {
                         $sql = "SELECT COUNT(*) AS cnt FROM {$tablePrefix}sales_orders "
                             . "WHERE customer_ref = " . db_escape($payment->getId());
                         $chkResult = db_query($sql);
-                        $chkRow = db_fetch_assoc($chkResult);
-                        if ($chkRow['cnt'] > 0) {
+                        $chkRow = false;
+                        if ($chkResult !== false) {
+                            $chkRow = db_fetch_assoc($chkResult);
+                        }
+                        if ($chkRow && (int)$chkRow['cnt'] > 0) {
                             display_notification(_("Skipping (already imported): ") . $payment->getId());
                             $importResults['skipped']++;
                             continue;
@@ -271,8 +285,11 @@ if (isset($_POST['action']) && $_POST['action'] == 'o_import') {
                         $table = $tablePrefix . 'square';
                         $sql = "SELECT COUNT(*) AS cnt FROM {$table} WHERE name = 'lastdate'";
                         $result = db_query($sql);
-                        $row = db_fetch_assoc($result);
-                        if ($row['cnt'] > 0) {
+                        $row = false;
+                        if ($result !== false) {
+                            $row = db_fetch_assoc($result);
+                        }
+                        if ($row && (int)$row['cnt'] > 0) {
                             $sql = "UPDATE {$table} SET value = '{$newLastDate}' WHERE name = 'lastdate'";
                         } else {
                             $sql = "INSERT INTO {$table} (name, value) VALUES ('lastdate', '{$newLastDate}')";

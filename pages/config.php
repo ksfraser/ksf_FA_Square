@@ -17,59 +17,74 @@ use Ksfraser\Frontaccounting\SquareUp\Staging\StagingTableManager;
 
 $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
 $msg = '';
+$error = '';
 
-$settings = Settings::fromFADatabase($tablePrefix);
-$stagingManager = new StagingTableManager($tablePrefix);
+try {
+    $settings = Settings::fromFADatabase($tablePrefix);
+    $stagingManager = new StagingTableManager($tablePrefix);
+} catch (\Exception $e) {
+    $settings = new Settings();
+    $stagingManager = new StagingTableManager($tablePrefix);
+    $error = _("Failed to load configuration: ") . $e->getMessage();
+}
 $env = $settings->getEnvironment();
 
 if (isset($_POST['action'])) {
-    if ($_POST['action'] == 'update') {
-        $table = $tablePrefix . 'square';
+    try {
+        if ($_POST['action'] == 'update') {
+            $table = $tablePrefix . 'square';
 
-        $tokenFields = [
-            'access_token',
-            'sandbox_access_token',
-            'production_access_token',
-        ];
+            $tokenFields = [
+                'access_token',
+                'sandbox_access_token',
+                'production_access_token',
+            ];
 
-        foreach ($tokenFields as $field) {
-            $value = $_POST[$field] ?? '';
-            if ($value !== '') {
-                $sql = "SELECT COUNT(*) AS cnt FROM {$table} WHERE name = " . db_escape($field);
-                $result = db_query($sql);
+            foreach ($tokenFields as $field) {
+                $value = $_POST[$field] ?? '';
+                if ($value !== '') {
+                    $sql = "SELECT COUNT(*) AS cnt FROM {$table} WHERE name = " . db_escape($field);
+                    $result = db_query($sql);
+                    if ($result !== false) {
+                        $row = db_fetch_assoc($result);
+                        if ((int)$row['cnt'] > 0) {
+                            $sql = "UPDATE {$table} SET value = " . db_escape($value) . " WHERE name = " . db_escape($field);
+                        } else {
+                            $sql = "INSERT INTO {$table} (name, value) VALUES (" . db_escape($field) . ", " . db_escape($value) . ")";
+                        }
+                        db_query($sql);
+                    }
+                }
+            }
+
+            $env = $_POST['environment'] ?? 'sandbox';
+            $sql = "SELECT COUNT(*) AS cnt FROM {$table} WHERE name = 'environment'";
+            $result = db_query($sql);
+            if ($result !== false) {
                 $row = db_fetch_assoc($result);
                 if ((int)$row['cnt'] > 0) {
-                    $sql = "UPDATE {$table} SET value = " . db_escape($value) . " WHERE name = " . db_escape($field);
+                    $sql = "UPDATE {$table} SET value = " . db_escape($env) . " WHERE name = 'environment'";
                 } else {
-                    $sql = "INSERT INTO {$table} (name, value) VALUES (" . db_escape($field) . ", " . db_escape($value) . ")";
+                    $sql = "INSERT INTO {$table} (name, value) VALUES ('environment', " . db_escape($env) . ")";
                 }
                 db_query($sql);
             }
+
+            $msg = _("Configuration updated");
+            $settings = Settings::fromFADatabase($tablePrefix);
         }
 
-        $env = $_POST['environment'] ?? 'sandbox';
-        $sql = "SELECT COUNT(*) AS cnt FROM {$table} WHERE name = 'environment'";
-        $result = db_query($sql);
-        $row = db_fetch_assoc($result);
-        if ((int)$row['cnt'] > 0) {
-            $sql = "UPDATE {$table} SET value = " . db_escape($env) . " WHERE name = 'environment'";
-        } else {
-            $sql = "INSERT INTO {$table} (name, value) VALUES ('environment', " . db_escape($env) . ")";
+        if ($_POST['action'] == 'create_tables') {
+            $stagingManager->createStagingTables();
+            $msg = _("Staging tables created");
         }
-        db_query($sql);
 
-        $msg = _("Configuration updated");
-        $settings = Settings::fromFADatabase($tablePrefix);
-    }
-
-    if ($_POST['action'] == 'create_tables') {
-        $stagingManager->createStagingTables();
-        $msg = _("Staging tables created");
-    }
-
-    if ($_POST['action'] == 'drop_tables') {
-        $stagingManager->dropStagingTables();
-        $msg = _("Staging tables dropped");
+        if ($_POST['action'] == 'drop_tables') {
+            $stagingManager->dropStagingTables();
+            $msg = _("Staging tables dropped");
+        }
+    } catch (\Exception $e) {
+        $error = _("Error processing request: ") . $e->getMessage();
     }
 }
 
@@ -124,8 +139,14 @@ $destCust = $settings->getDestinationCustomer();
 if ($destCust !== null) {
     $sql = "SELECT name FROM {$tablePrefix}debtors_master WHERE debtor_no = " . (int)$destCust;
     $result = db_query($sql);
-    $row = db_fetch_assoc($result);
-    label_row(_("Destination Customer:"), ($row ? $row['name'] : (string)$destCust));
+    $customerName = (string)$destCust;
+    if ($result !== false) {
+        $row = db_fetch_assoc($result);
+        if ($row) {
+            $customerName = $row['name'];
+        }
+    }
+    label_row(_("Destination Customer:"), $customerName);
 }
 
 $defaultLoc = $settings->getDefaultLocation();
@@ -137,6 +158,9 @@ end_table(1);
 
 if ($msg !== '') {
     display_notification($msg);
+}
+if ($error !== '') {
+    display_error($error);
 }
 
 hidden('action', 'update');
@@ -154,7 +178,7 @@ table_section_title(_("Staging Tables"));
 
 $sql = "SHOW TABLES LIKE '{$tablePrefix}square_staging_transactions'";
 $result = db_query($sql);
-$tablesExist = db_num_rows($result) > 0;
+$tablesExist = $result !== false && db_num_rows($result) > 0;
 
 label_row(_("Staging Tables Status:"), $tablesExist ? _("Created") : _("Not Created"));
 
