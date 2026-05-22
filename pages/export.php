@@ -57,6 +57,15 @@ try {
         foreach ($locResponse->getResult()->getLocations() as $loc) {
             $squareLocations[$loc->getId()] = $loc->getName();
         }
+    } else {
+        $errors = $locResponse->getErrors();
+        $errMsg = '';
+        if ($errors !== null) {
+            foreach ($errors as $e) {
+                $errMsg .= $e->getCode() . ': ' . $e->getDetail() . '; ';
+            }
+        }
+        display_error(_("Token rejected by Square: ") . $errMsg);
     }
 } catch (Exception $e) {
     display_error(_("API Connection Error: ") . $e->getMessage());
@@ -76,6 +85,20 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
     if ($maxItems < 1) $maxItems = 10;
 
     try {
+        $env = $settings->getEnvironment();
+        $tokenSource = '';
+        if ($env === 'sandbox' && $settings->getSandboxAccessToken() !== null) {
+            $tokenSource = 'sandbox_access_token';
+        } elseif ($env === 'production' && $settings->getProductionAccessToken() !== null) {
+            $tokenSource = 'production_access_token';
+        } else {
+            $tokenSource = 'access_token (legacy fallback)';
+        }
+        $token = $settings->getAccessToken();
+        $tokenPrefix = substr($token ?? '', 0, 8);
+        display_notification(_("Environment: ") . strtoupper($env) . _(" | Token source: ") . $tokenSource . _(" | Prefix: ") . $tokenPrefix . _("..."));
+        display_notification(_("Square API connection: ") . (count($squareLocations) > 0 ? _("OK (") . count($squareLocations) . _(" locations found)") : _("FAILED")));
+
         $exporter = new CatalogExporter($client, $settings);
 
         display_notification(_("Fetching existing Square catalog items..."));
