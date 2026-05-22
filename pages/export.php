@@ -190,6 +190,33 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
                 }
             }
 
+            $changes = [];
+            $newDisplayName = str_replace("Whitewater Hill ", "", $item['description']);
+            if ($existingItem !== null) {
+                $existingData = $existingItem->getItemData();
+                if ($existingData !== null) {
+                    $oldName = $existingData->getName();
+                    $oldDesc = $existingData->getDescription();
+                    $oldVariations = $existingData->getVariations();
+                    $oldPrice = null;
+                    $oldSku = null;
+                    if ($oldVariations !== null && count($oldVariations) > 0) {
+                        $oldVarData = $oldVariations[0]->getItemVariationData();
+                        if ($oldVarData !== null) {
+                            $oldPrice = $oldVarData->getPriceMoney() !== null ? $oldVarData->getPriceMoney()->getAmount() : null;
+                            $oldSku = $oldVarData->getSku();
+                        }
+                    }
+                    if ($oldName !== $newDisplayName) $changes[] = 'desc: "' . ($oldName ?? '') . '" -> "' . $newDisplayName . '"';
+                    if ($oldDesc !== $item['description']) $changes[] = 'full_desc changed';
+                    if ((int)($oldPrice ?? 0) !== $priceCents) $changes[] = 'price: ' . ($oldPrice ?? 0) . ' -> ' . $priceCents;
+                    if ($oldSku !== $sku) $changes[] = 'sku: ' . ($oldSku ?? '') . ' -> ' . $sku;
+                }
+                display_notification(_("  UPDATE (") . (count($changes) > 0 ? implode(', ', $changes) : _('no field changes')) . _(")"));
+            } else {
+                display_notification(_("  INSERT (new item)"));
+            }
+
             try {
                 display_notification(_("  Calling Square API: upsertProduct..."));
                 $catalogObject = $exporter->upsertProduct(
