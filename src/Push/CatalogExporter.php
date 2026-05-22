@@ -46,30 +46,7 @@ class CatalogExporter implements CatalogExporterInterface
         float $taxRate = 0.0
     ): CatalogObject {
         try {
-            $categoryId = $this->resolveCategory($categoryName);
-
-            $variation = new CatalogItemVariation();
-            $variation->setName($name);
-            $variation->setSku($sku);
-            $variation->setPricingType('FIXED_PRICING');
-            $variation->setPriceMoney(new Money());
-            $variation->getPriceMoney()->setAmount($priceCents);
-            $variation->getPriceMoney()->setCurrency($currency);
-            $variation->setTrackInventory(true);
-
-            $item = new CatalogItem();
-            $item->setName($name);
-            $item->setDescription($description);
-            $item->setCategoryId($categoryId);
-            $item->setVariations([$variation]);
-
-            if ($taxName !== '') {
-                $taxId = $this->resolveTax($taxName, $taxRate);
-                $item->setTaxIds([$taxId]);
-            }
-
-            $body = new CatalogObject('ITEM', '#' . $sku);
-            $body->setItemData($item);
+            $body = $this->buildCatalogObject($sku, $name, $description, $categoryName, $priceCents, $currency, $taxName, $taxRate);
 
             $request = new UpsertCatalogObjectRequest(uniqid('', true), $body);
 
@@ -98,39 +75,13 @@ class CatalogExporter implements CatalogExporterInterface
             $sku = $product['sku'];
             $name = $product['name'];
             $description = $product['description'] ?? $name;
-            $categoryName = $product['category'] ?? '';
+            $categoryName = $product['category'] ?? null;
             $priceCents = $product['price_cents'] ?? 0;
             $currency = $product['currency'] ?? 'CAD';
             $taxName = $product['tax_name'] ?? '';
             $taxRate = $product['tax_rate'] ?? 0.0;
 
-            $categoryId = $categoryName !== '' ? $this->resolveCategory($categoryName) : null;
-
-            $variation = new CatalogItemVariation();
-            $variation->setName($name);
-            $variation->setSku($sku);
-            $variation->setPricingType('FIXED_PRICING');
-            $variation->setPriceMoney(new Money());
-            $variation->getPriceMoney()->setAmount($priceCents);
-            $variation->getPriceMoney()->setCurrency($currency);
-            $variation->setTrackInventory(true);
-
-            $item = new CatalogItem();
-            $item->setName($name);
-            $item->setDescription($description);
-            if ($categoryId !== null) {
-                $item->setCategoryId($categoryId);
-            }
-            $item->setVariations([$variation]);
-
-            if ($taxName !== '') {
-                $taxId = $this->resolveTax($taxName, $taxRate);
-                $item->setTaxIds([$taxId]);
-            }
-
-            $body = new CatalogObject('ITEM', '#' . $sku);
-            $body->setItemData($item);
-
+            $body = $this->buildCatalogObject($sku, $name, $description, $categoryName, $priceCents, $currency, $taxName, $taxRate);
             $objects[] = $body;
         }
 
@@ -373,6 +324,49 @@ class CatalogExporter implements CatalogExporterInterface
             }
             return false;
         }
+    }
+
+    private function buildCatalogObject(
+        string $sku,
+        string $name,
+        string $description,
+        ?string $categoryName,
+        int $priceCents,
+        string $currency,
+        string $taxName,
+        float $taxRate
+    ): CatalogObject {
+        $categoryId = null;
+        if ($categoryName !== null && $categoryName !== '') {
+            $categoryId = $this->resolveCategory($categoryName);
+        }
+
+        $variation = new CatalogItemVariation();
+        $variation->setName($name);
+        $variation->setSku($sku);
+        $variation->setPricingType('FIXED_PRICING');
+        $variation->setPriceMoney(new Money());
+        $variation->getPriceMoney()->setAmount($priceCents);
+        $variation->getPriceMoney()->setCurrency($currency);
+        $variation->setTrackInventory(true);
+
+        $item = new CatalogItem();
+        $item->setName($name);
+        $item->setDescription($description);
+        if ($categoryId !== null) {
+            $item->setCategoryId($categoryId);
+        }
+        $item->setVariations([$variation]);
+
+        if ($taxName !== '') {
+            $taxId = $this->resolveTax($taxName, $taxRate);
+            $item->setTaxIds([$taxId]);
+        }
+
+        $body = new CatalogObject('ITEM', '#' . $sku);
+        $body->setItemData($item);
+
+        return $body;
     }
 
     private function resolveCategory(string $categoryName): ?string
