@@ -133,7 +133,8 @@ echo '</div>';
 
 start_table(TABLESTYLE);
 
-label_row(_("Last Import Date:"), $settings->getLastImportDate()?->format('Y-m-d H:i:s') ?? _('Never'));
+$lastDate = $settings->getLastImportDate();
+label_row(_("Last Import Date:"), $lastDate !== null ? $lastDate->format('Y-m-d H:i:s') : _('Never'));
 
 $destCust = $settings->getDestinationCustomer();
 if ($destCust !== null) {
