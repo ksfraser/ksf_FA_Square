@@ -75,6 +75,19 @@ try {
 $msg = '';
 $error = '';
 
+// Check if ksf_generate_catalogue module is installed and load its prefs
+$ksfGenCatalogueInstalled = defined('KSF_GENERATE_CATALOGUE_PREFS') && @file_exists('/tmp/ksf_generate/class.ksf_generate_catalogue.inc.php');
+$ksfGenPrefs = [];
+if ($ksfGenCatalogueInstalled) {
+    $prefsTable = KSF_GENERATE_CATALOGUE_PREFS;
+    $pResult = db_query("SELECT `pref_name`, `value` FROM {$tablePrefix}{$prefsTable}");
+    if ($pResult !== false) {
+        while ($pRow = db_fetch_assoc($pResult)) {
+            $ksfGenPrefs[$pRow['pref_name']] = $pRow['value'];
+        }
+    }
+}
+
 if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
     $locationId = $_POST['location_id'] ?? '0';
     $category = (int)($_POST['category'] ?? -1);
@@ -82,6 +95,8 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
     $uploadImages = (int)($_POST['upload'] ?? 0);
     $availableOnline = (int)($_POST['online'] ?? 0);
     $maxItems = (int)($_POST['max_items'] ?? 10);
+    $sendInactive = (int)($_POST['send_inactive'] ?? 0);
+    $fullSync = (int)($_POST['full_sync'] ?? 0);
     if ($maxItems < 1) $maxItems = 10;
 
     try {
@@ -133,8 +148,50 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
             . "FROM {$tablePrefix}stock_master item "
             . "LEFT JOIN {$tablePrefix}stock_category cat ON item.category_id = cat.category_id "
             . "LEFT JOIN {$tablePrefix}item_tax_types tt ON item.tax_type_id = tt.id "
-            . "WHERE item.inactive = 0{$categoryFilter}{$stockFilter} "
-            . "ORDER BY item.category_id, item.stock_id";
+            . "WHERE 1=1";
+        
+        if (!$sendInactive) {
+            $sql .= " AND item.inactive = 0";
+        }
+        
+        if ($category > 0) {
+            $sql .= " AND item.category_id = " . (int)$category;
+        }
+        
+        if ($stockLike !== '') {
+            $sql .= " AND item.stock_id LIKE " . db_escape('%' . $stockLike . '%');
+        }
+        
+        // Special prefix handling from ksf_generate_catalogue
+        $prefixConditions = [];
+        if ($ksfGenCatalogueInstalled) {
+            if (!empty($ksfGenPrefs['DISCONTINUED_PREFIX'])) {
+                $prefixConditions[] = "item.description LIKE " . db_escape($ksfGenPrefs['DISCONTINUED_PREFIX'] . '%');
+            }
+            if (!empty($ksfGenPrefs['SPECIAL_ORDER_PREFIX'])) {
+                $prefixConditions[] = "item.description LIKE " . db_escape($ksfGenPrefs['SPECIAL_ORDER_PREFIX'] . '%');
+            }
+            if (!empty($ksfGenPrefs['CLEARANCE_PREFIX'])) {
+                $prefixConditions[] = "item.description LIKE " . db_escape($ksfGenPrefs['CLEARANCE_PREFIX'] . '%');
+            }
+            if (!empty($ksfGenPrefs['CUSTOM_PREFIX'])) {
+                $prefixConditions[] = "item.description LIKE " . db_escape($ksfGenPrefs['CUSTOM_PREFIX'] . '%');
+            }
+            
+            if (!empty($prefixConditions)) {
+                $sql .= " AND (" . implode(' OR ', $prefixConditions) . ")";
+            }
+            
+            $orderBy = " ORDER BY item.category_id, item.stock_id";
+            if (!empty($_POST['sort_recent'])) {
+                // Check if the last modified column exists in stock_master
+                $checkResult = db_query("SHOW COLUMNS FROM {$tablePrefix}stock_master LIKE 'last_updated'");
+                if ($checkResult !== false && db_num_rows($checkResult) > 0) {
+                    $orderBy = " ORDER BY item.last_updated DESC, item.category_id, item.stock_id";
+                }
+            }
+            
+            $sql .= $orderBy;
 
         $itemsResult = db_query($sql);
         $exported = 0;
@@ -238,10 +295,25 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
                     $existingItem
                 );
 
-                $exported++;
-                display_notification(_("  SUCCESS: ") . $item['stock_id'] . _(" -> Square ID: ") . $catalogObject->getId());
+            $exported++;
+            display_notification(_("  SUCCESS: ") . $item['stock_id'] . _(" -> Square ID: ") . $catalogObject->getId());
 
-                if ($uploadImages) {
+            // Record successful mapping in square_tokens with timestamp of last modification
+            $faLastUpdated = null;
+            $lastUpdatedResult = db_query("SELECT modified_date FROM {$tablePrefix}stock_moves WHERE stock_id = " . db_escape($stockId) . " ORDER BY tran_date DESC LIMIT 1");
+            if ($lastUpdatedResult !== false && db_num_rows($lastUpdatedResult) > 0) {
+                $lastUpdatedRow = db_fetch_assoc($lastUpdatedResult);
+                if ($lastUpdatedRow !== false && $lastUpdatedRow !== false) {
+                    $faLastUpdated = $lastUpdatedRow['modified_date'];
+                }
+            }
+            $sql = "INSERT INTO {$tablePrefix}0_square_tokens (stock_id, sku, square_catalog_object_id, square_variation_id, fa_last_updated, created_at) VALUES (" .
+                db_escape($stockId) . ", " . db_escape($sku) . ", " . db_escape($catalogObject->getId()) . ", " . db_escape($catalogObject->getItemVariationData()->getId()) . ", " .
+                ($faLastUpdated !== null ? "'" . db_escape($faLastUpdated) . "'" : "NULL") . ", NOW()) " .
+                "ON DUPLICATE KEY UPDATE square_catalog_object_id = VALUES(square_catalog_object_id), square_variation_id = VALUES(square_variation_id), fa_last_updated = VALUES(fa_last_updated), updated_at = NOW()";
+            db_query($sql);
+
+            if ($uploadImages) {
                     $imageDir = company_path() . '/images/';
                     $imageDir = rtrim($imageDir, '/');
                     $sqId = $catalogObject->getId();
@@ -307,7 +379,7 @@ start_form(true);
 start_table(TABLESTYLE2, "width=40%");
 table_section_title(_("Export Inventory Options"));
 
-currencies_list_row(_("Customer Currency:"), 'currency', get_company_pref("curr_default"));
+currencies_list_row(_("Customer Currency:"), 'currency', get_company_pref('curr_default'));
 sales_types_list_row(_("Sales Type:"), 'sales_type', null);
 locations_list_row(_("FA Location:"), 'default_location', null);
 
@@ -328,6 +400,9 @@ text_row(_("Stock ID Pattern:"), 'stocklike', null, 10, 20);
 text_row(_("Max Items (0=unlimited):"), 'max_items', '10', 5, 10);
 yesno_list_row(_("Upload Images:"), 'upload', null);
 yesno_list_row(_("Available Online:"), 'online', null);
+yesno_list_row(_("Send Inactive Items:", true), 'send_inactive', null);
+yesno_list_row(_("Full Sync (ignore existing mappings):"), 'full_sync', null);
+yesno_list_row(_("Full Sync (ignore existing mappings):"), 'full_sync', null);
 
 end_table(1);
 

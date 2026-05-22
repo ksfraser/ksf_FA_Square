@@ -83,3 +83,19 @@ CREATE TABLE IF NOT EXISTS 0_square_import_log (
     PRIMARY KEY (id),
     KEY idx_run_date (run_date)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Token mapping table (FA stock_id <-> Square catalog_object_id)
+CREATE TABLE IF NOT EXISTS 0_square_tokens (
+    id INT(11) NOT NULL AUTO_INCREMENT,
+    stock_id VARCHAR(20) NOT NULL,
+    sku VARCHAR(64) DEFAULT NULL,
+    square_catalog_object_id VARCHAR(32) NOT NULL,
+    square_variation_id VARCHAR(32) DEFAULT NULL,
+    fa_last_updated TIMESTAMP NULL DEFAULT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY idx_stock_id (stock_id),
+    UNIQUE KEY idx_square_object (square_catalog_object_id),
+    KEY idx_sku (sku)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
