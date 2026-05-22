@@ -53,9 +53,18 @@ class CatalogExporter implements CatalogExporterInterface
             $response = $this->client->getCatalogApi()->upsertCatalogObject($request);
 
             if (!$response->isSuccess()) {
+                $errors = $response->getErrors();
+                $detail = '';
+                if ($errors !== null) {
+                    $parts = [];
+                    foreach ($errors as $err) {
+                        $parts[] = '[' . $err->getCode() . '] ' . $err->getDetail() . ($err->getField() ? ' (field: ' . $err->getField() . ')' : '');
+                    }
+                    $detail = ' | ' . implode('; ', $parts);
+                }
                 throw SquareException::apiError(
                     'upsertCatalogObject',
-                    'Failed to upsert product',
+                    'Failed to upsert product' . $detail,
                     $response->getErrors()
                 );
             }
