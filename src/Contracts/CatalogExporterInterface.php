@@ -16,7 +16,8 @@ interface CatalogExporterInterface
         int $priceCents,
         string $currency = 'CAD',
         string $taxName = '',
-        float $taxRate = 0.0
+        float $taxRate = 0.0,
+        ?CatalogObject $existingItem = null
     ): CatalogObject;
 
     public function batchUpsertProducts(array $products): array;

@@ -234,7 +234,8 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
                     $priceCents,
                     $_POST['currency'] ?? 'CAD',
                     $taxName,
-                    $taxRate
+                    $taxRate,
+                    $existingItem
                 );
 
                 $exported++;

@@ -43,10 +43,24 @@ class CatalogExporter implements CatalogExporterInterface
         int $priceCents,
         string $currency = 'CAD',
         string $taxName = '',
-        float $taxRate = 0.0
+        float $taxRate = 0.0,
+        ?CatalogObject $existingItem = null
     ): CatalogObject {
         try {
-            $body = $this->buildCatalogObject($sku, $name, $description, $categoryName, $priceCents, $currency, $taxName, $taxRate);
+            $existingItemId = null;
+            $existingVariationId = null;
+            if ($existingItem !== null) {
+                $existingItemId = $existingItem->getId();
+                $itemData = $existingItem->getItemData();
+                if ($itemData !== null) {
+                    $variations = $itemData->getVariations();
+                    if ($variations !== null && count($variations) > 0) {
+                        $existingVariationId = $variations[0]->getId();
+                    }
+                }
+            }
+
+            $body = $this->buildCatalogObject($sku, $name, $description, $categoryName, $priceCents, $currency, $taxName, $taxRate, $existingItemId, $existingVariationId);
 
             $request = new UpsertCatalogObjectRequest(uniqid('', true), $body);
 
@@ -89,8 +103,10 @@ class CatalogExporter implements CatalogExporterInterface
             $currency = $product['currency'] ?? 'CAD';
             $taxName = $product['tax_name'] ?? '';
             $taxRate = $product['tax_rate'] ?? 0.0;
+            $existingItemId = $product['existing_item_id'] ?? null;
+            $existingVariationId = $product['existing_variation_id'] ?? null;
 
-            $body = $this->buildCatalogObject($sku, $name, $description, $categoryName, $priceCents, $currency, $taxName, $taxRate);
+            $body = $this->buildCatalogObject($sku, $name, $description, $categoryName, $priceCents, $currency, $taxName, $taxRate, $existingItemId, $existingVariationId);
             $objects[] = $body;
         }
 
@@ -351,7 +367,9 @@ class CatalogExporter implements CatalogExporterInterface
         int $priceCents,
         string $currency,
         string $taxName,
-        float $taxRate
+        float $taxRate,
+        ?string $existingItemId = null,
+        ?string $existingVariationId = null
     ): CatalogObject {
         $sku = $this->sanitizeUtf8($sku);
         $name = $this->sanitizeUtf8($name);
@@ -371,8 +389,7 @@ class CatalogExporter implements CatalogExporterInterface
         $variationData->getPriceMoney()->setCurrency($currency);
         $variationData->setTrackInventory(true);
 
-        $variationObject = new CatalogObject('ITEM_VARIATION', '#' . $sku . '_var');
-        $variationObject->setItemVariationData($variationData);
+        $variationObject = new CatalogObject('ITEM_VARIATION', $existingVariationId ?? ('#' . $sku . '_var'));
 
         $item = new CatalogItem();
         $item->setName($name);
@@ -387,7 +404,7 @@ class CatalogExporter implements CatalogExporterInterface
             $item->setTaxIds([$taxId]);
         }
 
-        $body = new CatalogObject('ITEM', '#' . $sku);
+        $body = new CatalogObject('ITEM', $existingItemId ?? ('#' . $sku));
         $body->setItemData($item);
 
         return $body;
