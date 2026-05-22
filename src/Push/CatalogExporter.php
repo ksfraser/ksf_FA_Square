@@ -353,14 +353,17 @@ class CatalogExporter implements CatalogExporterInterface
         }
         $taxName = $this->sanitizeUtf8($taxName);
 
-        $variation = new CatalogItemVariation();
-        $variation->setName($name);
-        $variation->setSku($sku);
-        $variation->setPricingType('FIXED_PRICING');
-        $variation->setPriceMoney(new Money());
-        $variation->getPriceMoney()->setAmount($priceCents);
-        $variation->getPriceMoney()->setCurrency($currency);
-        $variation->setTrackInventory(true);
+        $variationData = new CatalogItemVariation();
+        $variationData->setName($name);
+        $variationData->setSku($sku);
+        $variationData->setPricingType('FIXED_PRICING');
+        $variationData->setPriceMoney(new Money());
+        $variationData->getPriceMoney()->setAmount($priceCents);
+        $variationData->getPriceMoney()->setCurrency($currency);
+        $variationData->setTrackInventory(true);
+
+        $variationObject = new CatalogObject('ITEM_VARIATION', '#' . $sku);
+        $variationObject->setItemVariationData($variationData);
 
         $item = new CatalogItem();
         $item->setName($name);
@@ -368,7 +371,7 @@ class CatalogExporter implements CatalogExporterInterface
         if ($categoryId !== null) {
             $item->setCategoryId($categoryId);
         }
-        $item->setVariations([$variation]);
+        $item->setVariations([$variationObject]);
 
         if ($taxName !== '') {
             $taxId = $this->resolveTax($taxName, $taxRate);
