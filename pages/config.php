@@ -16,6 +16,7 @@ use Ksfraser\Frontaccounting\SquareUp\Config\Settings;
 use Ksfraser\Frontaccounting\SquareUp\Staging\StagingTableManager;
 
 $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
+$table = $tablePrefix . 'square';
 $msg = '';
 $error = '';
 
@@ -31,57 +32,71 @@ $env = $settings->getEnvironment();
 
 if (isset($_POST['action'])) {
     try {
-        if ($_POST['action'] == 'update') {
-            $table = $tablePrefix . 'square';
-
-            $tokenFields = [
-                'access_token',
-                'sandbox_access_token',
-                'production_access_token',
-            ];
-
-            foreach ($tokenFields as $field) {
-                $value = $_POST[$field] ?? '';
-                if ($value !== '') {
-                    $sql = "SELECT COUNT(*) AS cnt FROM {$table} WHERE name = " . db_escape($field);
-                    $result = db_query($sql);
-                    if ($result !== false) {
-                        $row = db_fetch_assoc($result);
-                        if ((int)$row['cnt'] > 0) {
-                            $sql = "UPDATE {$table} SET value = " . db_escape($value) . " WHERE name = " . db_escape($field);
-                        } else {
-                            $sql = "INSERT INTO {$table} (name, value) VALUES (" . db_escape($field) . ", " . db_escape($value) . ")";
-                        }
-                        db_query($sql);
+        switch ($_POST['action']) {
+            case 'switch_env':
+                $newEnv = $_POST['environment'] ?? 'sandbox';
+                $sql = "SELECT COUNT(*) AS cnt FROM {$table} WHERE name = 'environment'";
+                $result = db_query($sql);
+                if ($result !== false) {
+                    $row = db_fetch_assoc($result);
+                    $e = db_escape($newEnv);
+                    if ((int)$row['cnt'] > 0) {
+                        db_query("UPDATE {$table} SET value = {$e} WHERE name = 'environment'");
+                    } else {
+                        db_query("INSERT INTO {$table} (name, value) VALUES ('environment', {$e})");
                     }
                 }
-            }
+                $settings = Settings::fromFADatabase($tablePrefix);
+                $env = $settings->getEnvironment();
+                $msg = _("Switched to ") . ($env === 'production' ? _('Production') : _('Sandbox'));
+                break;
 
-            $env = $_POST['environment'] ?? 'sandbox';
-            $sql = "SELECT COUNT(*) AS cnt FROM {$table} WHERE name = 'environment'";
-            $result = db_query($sql);
-            if ($result !== false) {
-                $row = db_fetch_assoc($result);
-                if ((int)$row['cnt'] > 0) {
-                    $sql = "UPDATE {$table} SET value = " . db_escape($env) . " WHERE name = 'environment'";
-                } else {
-                    $sql = "INSERT INTO {$table} (name, value) VALUES ('environment', " . db_escape($env) . ")";
+            case 'update':
+                $tokenFields = ['access_token', 'sandbox_access_token', 'production_access_token'];
+                foreach ($tokenFields as $field) {
+                    $value = $_POST[$field] ?? '';
+                    if ($value !== '') {
+                        $sql = "SELECT COUNT(*) AS cnt FROM {$table} WHERE name = " . db_escape($field);
+                        $result = db_query($sql);
+                        if ($result !== false) {
+                            $row = db_fetch_assoc($result);
+                            if ((int)$row['cnt'] > 0) {
+                                $sql = "UPDATE {$table} SET value = " . db_escape($value) . " WHERE name = " . db_escape($field);
+                            } else {
+                                $sql = "INSERT INTO {$table} (name, value) VALUES (" . db_escape($field) . ", " . db_escape($value) . ")";
+                            }
+                            db_query($sql);
+                        }
+                    }
                 }
-                db_query($sql);
-            }
 
-            $msg = _("Configuration updated");
-            $settings = Settings::fromFADatabase($tablePrefix);
-        }
+                $newEnv = $_POST['environment'] ?? 'sandbox';
+                $sql = "SELECT COUNT(*) AS cnt FROM {$table} WHERE name = 'environment'";
+                $result = db_query($sql);
+                if ($result !== false) {
+                    $row = db_fetch_assoc($result);
+                    $e = db_escape($newEnv);
+                    if ((int)$row['cnt'] > 0) {
+                        db_query("UPDATE {$table} SET value = {$e} WHERE name = 'environment'");
+                    } else {
+                        db_query("INSERT INTO {$table} (name, value) VALUES ('environment', {$e})");
+                    }
+                }
 
-        if ($_POST['action'] == 'create_tables') {
-            $stagingManager->createStagingTables();
-            $msg = _("Staging tables created");
-        }
+                $msg = _("Configuration updated");
+                $settings = Settings::fromFADatabase($tablePrefix);
+                $env = $settings->getEnvironment();
+                break;
 
-        if ($_POST['action'] == 'drop_tables') {
-            $stagingManager->dropStagingTables();
-            $msg = _("Staging tables dropped");
+            case 'create_tables':
+                $stagingManager->createStagingTables();
+                $msg = _("Staging tables created");
+                break;
+
+            case 'drop_tables':
+                $stagingManager->dropStagingTables();
+                $msg = _("Staging tables dropped");
+                break;
         }
     } catch (\Exception $e) {
         $error = _("Error processing request: ") . $e->getMessage();
@@ -94,37 +109,38 @@ $badgeText = $env === 'production' ? _('LIVE') : _('SANDBOX');
 
 $help_context = "Square Configuration";
 page(_($help_context), false, false, "", "");
-echo '<style>
-.square-env-badge {
-    display: inline-block; padding: 4px 12px; border-radius: 4px;
-    font-weight: bold; font-size: 0.85em; color: #fff;
-    background-color: ' . $badgeColor . ';
-}
-.square-env-section { border: 2px solid ' . $badgeColor . '; border-radius: 6px; padding: 10px; margin-bottom: 10px; }
-</style>';
 
-start_form();
+start_form(null, '', '', '', '', 'id="env_form"');
 
 start_table(TABLESTYLE);
 
 table_section_title(_("Square API Configuration") . ' <span class="square-env-badge">' . $badgeText . '</span>');
 
-$envOptions = [
-    'sandbox' => _('Sandbox'),
-    'production' => _('Production'),
-];
+$envOptions = ['sandbox' => _('Sandbox'), 'production' => _('Production')];
 echo '<tr><td class="label">' . _("Environment:") . '</td><td>';
-echo array_selector('environment', $env, $envOptions);
+echo array_selector('environment', $env, $envOptions, ['onchange' => 'document.getElementById("env_form").submit()']);
+echo '&nbsp;';
+submit('go_env', _("Go"));
 echo '</td></tr>';
 
-echo '</table>';
+end_table(1);
+
+hidden('action', 'switch_env');
+end_form();
+
 echo '<div class="square-env-section">';
+
+start_form();
 start_table(TABLESTYLE2);
 
-text_row(_("Sandbox Access Token:"), 'sandbox_access_token', $settings->getSandboxAccessToken() ?? '', 50, 100);
-label_row('', _('(Used when Environment is set to Sandbox)'));
-text_row(_("Production Access Token:"), 'production_access_token', $settings->getProductionAccessToken() ?? '', 50, 100);
-label_row('', _('(Used when Environment is set to Production)'));
+if ($env === 'sandbox') {
+    text_row(_("Sandbox Access Token:"), 'sandbox_access_token', $settings->getSandboxAccessToken() ?? '', 50, 100);
+    label_row('', _('(Used when Environment is set to Sandbox)'));
+}
+if ($env === 'production') {
+    text_row(_("Production Access Token:"), 'production_access_token', $settings->getProductionAccessToken() ?? '', 50, 100);
+    label_row('', _('(Used when Environment is set to Production)'));
+}
 text_row(_("Legacy Access Token:"), 'access_token', $settings->getAccessToken() ?? '', 50, 100);
 label_row('', _('(Fallback if env-specific token is empty)'));
 
