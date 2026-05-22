@@ -170,10 +170,17 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
             }
 
             $myPrice = get_kit_price($stockId, $_POST['currency'] ?? get_company_pref('curr_default'), $_POST['sales_type'] ?? 0);
-            if ($myPrice < 0) {
-                $myPrice = 0;
+            if ($myPrice <= 0) {
+                $myPrice = 999999.99;
+                $priceCents = 99999999;
+                display_notification(_("  WARNING: No price for ") . $stockId . _(" — set to \$999,999.99 (sentinel)"));
+            } else {
+                $priceCents = (int)round(100 * $myPrice);
+                if ($priceCents > 99999999) {
+                    display_notification(_("  WARNING: Price capped for ") . $stockId . _(" at \$999,999.99"));
+                    $priceCents = 99999999;
+                }
             }
-            $priceCents = (int)round(100 * $myPrice);
 
             $catName = $item['cat_description'] ?? 'General';
             $taxName = $item['tax_name'] ?? '';
