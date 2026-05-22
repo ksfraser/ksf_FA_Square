@@ -265,6 +265,8 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
                 $errors[] = $stockId . ': API - ' . $e->getMessage();
             }
 
+            usleep(500000);
+
             if ($processed >= $maxItems) break;
         }
 

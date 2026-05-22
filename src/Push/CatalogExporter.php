@@ -46,48 +46,68 @@ class CatalogExporter implements CatalogExporterInterface
         float $taxRate = 0.0,
         ?CatalogObject $existingItem = null
     ): CatalogObject {
-        try {
-            $existingItemId = null;
-            $existingVariationId = null;
-            if ($existingItem !== null) {
-                $existingItemId = $existingItem->getId();
-                $itemData = $existingItem->getItemData();
-                if ($itemData !== null) {
-                    $variations = $itemData->getVariations();
-                    if ($variations !== null && count($variations) > 0) {
-                        $existingVariationId = $variations[0]->getId();
+        $maxRetries = 5;
+        $retryDelay = 1000000;
+
+        for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
+            try {
+                $existingItemId = null;
+                $existingVariationId = null;
+                if ($existingItem !== null) {
+                    $existingItemId = $existingItem->getId();
+                    $itemData = $existingItem->getItemData();
+                    if ($itemData !== null) {
+                        $variations = $itemData->getVariations();
+                        if ($variations !== null && count($variations) > 0) {
+                            $existingVariationId = $variations[0]->getId();
+                        }
                     }
                 }
-            }
 
-            $body = $this->buildCatalogObject($sku, $name, $description, $categoryName, $priceCents, $currency, $taxName, $taxRate, $existingItemId, $existingVariationId);
+                $body = $this->buildCatalogObject($sku, $name, $description, $categoryName, $priceCents, $currency, $taxName, $taxRate, $existingItemId, $existingVariationId);
 
-            $request = new UpsertCatalogObjectRequest(uniqid('', true), $body);
+                $request = new UpsertCatalogObjectRequest(uniqid('', true), $body);
 
-            $response = $this->client->getCatalogApi()->upsertCatalogObject($request);
+                $response = $this->client->getCatalogApi()->upsertCatalogObject($request);
 
-            if (!$response->isSuccess()) {
+                if ($response->isSuccess()) {
+                    return $response->getResult()->getCatalogObject();
+                }
+
                 $errors = $response->getErrors();
                 $detail = '';
+                $isRateLimited = false;
                 if ($errors !== null) {
                     $parts = [];
                     foreach ($errors as $err) {
                         $parts[] = '[' . $err->getCode() . '] ' . $err->getDetail() . ($err->getField() ? ' (field: ' . $err->getField() . ')' : '');
+                        if ($err->getCode() === 'RATE_LIMITED') {
+                            $isRateLimited = true;
+                        }
                     }
                     $detail = ' | ' . implode('; ', $parts);
                 }
+
+                if ($isRateLimited && $attempt < $maxRetries) {
+                    usleep($retryDelay * $attempt);
+                    continue;
+                }
+
                 throw SquareException::apiError(
                     'upsertCatalogObject',
                     'Failed to upsert product' . $detail,
                     $response->getErrors()
                 );
+            } catch (ApiException $e) {
+                if ($attempt < $maxRetries) {
+                    usleep($retryDelay * $attempt);
+                    continue;
+                }
+                throw SquareException::apiError('upsertCatalogObject', $e->getMessage());
             }
-
-            return $response->getResult()->getCatalogObject();
-        } catch (ApiException $e) {
-            throw SquareException::apiError('upsertCatalogObject', $e->getMessage());
         }
-    }
+
+        throw SquareException::apiError('upsertCatalogObject', 'Max retries exceeded');
 
     public function batchUpsertProducts(array $products): array
     {
