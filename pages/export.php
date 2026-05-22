@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 $page_security = 'SA_ksf_FA_SquareMANAGE';
-$path_to_root = "../../..";
+$path_to_root = __DIR__ . "/../../..";
 
 include_once $path_to_root . "/includes/session.inc";
 add_access_extensions();
@@ -72,10 +72,13 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
     $stockLike = $_POST['stocklike'] ?? '';
     $uploadImages = (int)($_POST['upload'] ?? 0);
     $availableOnline = (int)($_POST['online'] ?? 0);
+    $maxItems = (int)($_POST['max_items'] ?? 10);
+    if ($maxItems < 1) $maxItems = 10;
 
     try {
         $exporter = new CatalogExporter($client, $settings);
 
+        display_notification(_("Fetching existing Square catalog items..."));
         $existingSquareItems = [];
         foreach ($exporter->listAllItems() as $obj) {
             $itemData = $obj->getItemData();
@@ -90,6 +93,7 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
                 }
             }
         }
+        display_notification(_("Found ") . count($existingSquareItems) . _(" existing items in Square"));
 
         $categoryFilter = '';
         if ($category > 0) {
@@ -113,13 +117,22 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
         $exported = 0;
         $skipped = 0;
         $deleted = 0;
+        $errors = [];
 
         if ($itemsResult === false) {
             throw new \RuntimeException(_("Failed to query stock items"));
         }
 
+        $totalFound = db_num_rows($itemsResult);
+        display_notification(_("Total FA items to process: ") . $totalFound . _(" (limited to ") . $maxItems . _(")"));
+
+        $processed = 0;
         while ($item = db_fetch_assoc($itemsResult)) {
             if ($item === false) break;
+            $processed++;
+
+            display_notification(_("[") . $processed . _("/") . $maxItems . _("] Processing ") . $item['stock_id'] . _(": ") . $item['description']);
+
             $stockId = $item['stock_id'];
             $sku = $stockId;
 
@@ -130,6 +143,7 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
             }
             if ($barcodeRow && !empty($barcodeRow['item_code'])) {
                 $sku = $barcodeRow['item_code'];
+                display_notification(_("  Using barcode SKU: ") . $sku);
             }
 
             $myPrice = get_kit_price($stockId, $_POST['currency'] ?? get_company_pref('curr_default'), $_POST['sales_type'] ?? 0);
@@ -146,12 +160,15 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
 
             if ($existingItem !== null) {
                 if ($existingItem->getPresentAtAllLocations() && $locationId !== '0') {
+                    display_notification(_("  Skipping (already at all locations)"));
                     $skipped++;
+                    if ($processed >= $maxItems) break;
                     continue;
                 }
             }
 
             try {
+                display_notification(_("  Calling Square API: upsertProduct..."));
                 $catalogObject = $exporter->upsertProduct(
                     $sku,
                     str_replace("Whitewater Hill ", "", $item['description']),
@@ -164,28 +181,36 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
                 );
 
                 $exported++;
-                display_notification(_("Exported: ") . $item['description']);
+                display_notification(_("  SUCCESS: ") . $item['stock_id'] . _(" -> Square ID: ") . $catalogObject->getId());
 
                 if ($uploadImages) {
                     $imageDir = company_path() . '/images/';
                     $imageDir = rtrim($imageDir, '/');
                     $sqId = $catalogObject->getId();
 
+                    display_notification(_("  Uploading images..."));
                     $exporter->uploadImage($sqId, $stockId, $item['description'], $imageDir, 0, true);
+                    display_notification(_("  Primary image uploaded"));
 
                     for ($idx = 1; $idx <= 10; $idx++) {
                         if (!$exporter->uploadImage($sqId, $stockId, $item['description'], $imageDir, $idx)) {
                             break;
                         }
+                        display_notification(_("  Additional image ") . $idx . _(" uploaded"));
                     }
                 }
             } catch (SquareException $e) {
-                display_error(_("Failed to export ") . $stockId . ": " . $e->getMessage());
+                display_error(_("  FAILED: ") . $stockId . _(" -> ") . $e->getMessage());
+                $errors[] = $stockId . ': ' . $e->getMessage();
             } catch (ApiException $e) {
-                display_error(_("API Error for ") . $stockId . ": " . $e->getMessage());
+                display_error(_("  API ERROR: ") . $stockId . _(" -> ") . $e->getMessage());
+                $errors[] = $stockId . ': API - ' . $e->getMessage();
             }
+
+            if ($processed >= $maxItems) break;
         }
 
+        display_notification(_("Checking for items to delete from Square..."));
         foreach ($existingSquareItems as $sqSku => $sqItem) {
             $chkSql = "SELECT COUNT(*) AS cnt FROM {$tablePrefix}stock_master WHERE stock_id = " . db_escape($sqSku) . " AND inactive = 0";
             $chkResult = db_query($chkSql);
@@ -196,16 +221,20 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
 
             if ($chkRow && (int)$chkRow['cnt'] == 0) {
                 try {
+                    display_notification(_("Deleting from Square: ") . $sqSku);
                     $exporter->deleteProduct($sqItem->getId());
-                    display_notification(_("Deleted from Square: ") . $sqSku);
                     $deleted++;
                 } catch (Exception $e) {
-                    display_error(_("Failed to delete ") . $sqSku . ": " . $e->getMessage());
+                    display_error(_("Failed to delete ") . $sqSku . _(": ") . $e->getMessage());
+                    $errors[] = 'Delete ' . $sqSku . ': ' . $e->getMessage();
                 }
             }
         }
 
         $msg = _("Export complete. Exported: ") . $exported . _(", Skipped: ") . $skipped . _(", Deleted: ") . $deleted;
+        if (count($errors) > 0) {
+            $msg .= _(", Errors: ") . count($errors);
+        }
 
     } catch (ApiException $e) {
         $error = _("API Error: ") . $e->getMessage();
@@ -236,6 +265,7 @@ if (count($squareLocations) > 0) {
 
 stock_categories_list_row(_("Category:"), 'category', null, _("All Categories"));
 text_row(_("Stock ID Pattern:"), 'stocklike', null, 10, 20);
+text_row(_("Max Items (0=unlimited):"), 'max_items', '10', 5, 10);
 yesno_list_row(_("Upload Images:"), 'upload', null);
 yesno_list_row(_("Available Online:"), 'online', null);
 
