@@ -116,4 +116,59 @@ class SettingsTest extends TestCase
         $this->assertArrayHasKey('access_token', $config);
         $this->assertSame('tok', $config['access_token']);
     }
+
+    public function testFromFADatabaseLoadsFullNames(): void
+    {
+        $GLOBALS['__fa_table'] = [
+            ['name' => 'access_token', 'value' => 'legacy-tok'],
+            ['name' => 'sandbox_access_token', 'value' => 'sb-tok'],
+            ['name' => 'production_access_token', 'value' => 'prod-tok'],
+        ];
+
+        $settings = Settings::fromFADatabase('0_');
+
+        $this->assertSame('sb-tok', $settings->getSandboxAccessToken());
+        $this->assertSame('prod-tok', $settings->getProductionAccessToken());
+        $this->assertSame('sb-tok', $settings->getAccessToken());
+    }
+
+    public function testFromFADatabaseHandlesTruncatedNames(): void
+    {
+        $GLOBALS['__fa_table'] = [
+            ['name' => 'sandbox_access_', 'value' => 'truncated-sb-tok'],
+            ['name' => 'production_acce', 'value' => 'truncated-prod-tok'],
+        ];
+
+        $settings = Settings::fromFADatabase('0_');
+
+        $this->assertSame('truncated-sb-tok', $settings->getSandboxAccessToken());
+        $this->assertSame('truncated-prod-tok', $settings->getProductionAccessToken());
+    }
+
+    public function testFromFADatabaseHandlesMissingTable(): void
+    {
+        $GLOBALS['__fa_table'] = [];
+
+        $settings = Settings::fromFADatabase('0_');
+
+        $this->assertNull($settings->getAccessToken());
+        $this->assertNull($settings->getSandboxAccessToken());
+        $this->assertNull($settings->getProductionAccessToken());
+        $this->assertSame('sandbox', $settings->getEnvironment());
+    }
+
+    public function testFromFADatabaseLoadsAdditionalConfigKeys(): void
+    {
+        $GLOBALS['__fa_table'] = [
+            ['name' => 'lastdate', 'value' => '2026-01-15 10:00:00'],
+            ['name' => 'destCust', 'value' => '42'],
+            ['name' => 'environment', 'value' => 'production'],
+        ];
+
+        $settings = Settings::fromFADatabase('0_');
+
+        $this->assertSame('production', $settings->getEnvironment());
+        $this->assertSame(42, $settings->getDestinationCustomer());
+        $this->assertSame('2026-01-15', $settings->getLastImportDate()->format('Y-m-d'));
+    }
 }
