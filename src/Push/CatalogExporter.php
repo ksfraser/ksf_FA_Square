@@ -326,6 +326,14 @@ class CatalogExporter implements CatalogExporterInterface
         }
     }
 
+    private function sanitizeUtf8(string $value): string
+    {
+        if (preg_match('//u', $value)) {
+            return $value;
+        }
+        return mb_convert_encoding($value, 'UTF-8', 'ISO-8859-1');
+    }
+
     private function buildCatalogObject(
         string $sku,
         string $name,
@@ -336,10 +344,14 @@ class CatalogExporter implements CatalogExporterInterface
         string $taxName,
         float $taxRate
     ): CatalogObject {
+        $sku = $this->sanitizeUtf8($sku);
+        $name = $this->sanitizeUtf8($name);
+        $description = $this->sanitizeUtf8($description);
         $categoryId = null;
         if ($categoryName !== null && $categoryName !== '') {
-            $categoryId = $this->resolveCategory($categoryName);
+            $categoryId = $this->resolveCategory($this->sanitizeUtf8($categoryName));
         }
+        $taxName = $this->sanitizeUtf8($taxName);
 
         $variation = new CatalogItemVariation();
         $variation->setName($name);
