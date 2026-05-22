@@ -25,6 +25,19 @@ use Ksfraser\Frontaccounting\SquareUp\Staging\StagingTableManager;
 
 use Square\Exceptions\ApiException;
 
+if (!function_exists('sales_service_items_list_row')) {
+    function sales_service_items_list_row($label, $name, $selected_id = null, $all_option = false, $submit_on_change = false) {
+        echo '<tr>';
+        if ($label !== null) {
+            echo '<td class="label">' . $label . '</td>';
+        }
+        echo '<td>';
+        echo sales_items_list($name, $selected_id, $all_option, $submit_on_change,
+            'local', ['where' => ["mb_flag='D'"], 'cells' => false, 'editable' => false]);
+        echo '</td></tr>';
+    }
+}
+
 $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
 try {
     $settings = Settings::fromFADatabase($tablePrefix);
