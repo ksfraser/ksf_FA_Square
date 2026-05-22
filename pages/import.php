@@ -25,7 +25,7 @@ use Ksfraser\Frontaccounting\SquareUp\Staging\StagingTableManager;
 
 use Square\Exceptions\ApiException;
 
-$tablePrefix = '0_';
+$tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
 $settings = Settings::fromFADatabase($tablePrefix);
 $accessToken = $settings->getAccessToken();
 

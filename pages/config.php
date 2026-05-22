@@ -15,7 +15,7 @@ include_once __DIR__ . "/../vendor/autoload.php";
 use Ksfraser\Frontaccounting\SquareUp\Config\Settings;
 use Ksfraser\Frontaccounting\SquareUp\Staging\StagingTableManager;
 
-$tablePrefix = '0_';
+$tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
 $msg = '';
 
 $settings = Settings::fromFADatabase($tablePrefix);
