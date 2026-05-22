@@ -109,8 +109,12 @@ $badgeText = $env === 'production' ? _('LIVE') : _('SANDBOX');
 
 $help_context = "Square Configuration";
 page(_($help_context), false, false, "", "");
+echo '<style>
+.square-env-badge { display: inline-block; padding: 4px 12px; border-radius: 4px; font-weight: bold; font-size: 0.85em; color: #fff !important; background-color: ' . $badgeColor . '; margin-left: 8px; }
+.square-env-section { border: 2px solid ' . $badgeColor . '; border-radius: 6px; padding: 10px; margin-bottom: 10px; }
+</style>';
 
-start_form(null, '', '', '', '', 'id="env_form"');
+start_form('', '', 'env_form');
 
 start_table(TABLESTYLE);
 
@@ -118,7 +122,7 @@ table_section_title(_("Square API Configuration") . ' <span class="square-env-ba
 
 $envOptions = ['sandbox' => _('Sandbox'), 'production' => _('Production')];
 echo '<tr><td class="label">' . _("Environment:") . '</td><td>';
-echo array_selector('environment', $env, $envOptions, ['onchange' => 'document.getElementById("env_form").submit()']);
+echo array_selector('environment', $env, $envOptions, ['onchange' => 'this.form.submit()']);
 echo '&nbsp;';
 submit('go_env', _("Go"));
 echo '</td></tr>';
