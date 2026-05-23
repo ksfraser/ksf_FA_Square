@@ -262,8 +262,8 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
 
         $exporter = new CatalogExporter($client, $settings);
 
-        // Ensure square_tokens table exists
-        $squareTokenDao = new SquareTokenDAO($tablePrefix);
+        // Ensure square_tokens table exists (handles auto-upgrade for environment column)
+        $squareTokenDao = new SquareTokenDAO($tablePrefix, $env);
         $squareTokenDao->ensureTableExists();
 
         display_notification(_("Fetching existing Square catalog items..."));
@@ -467,6 +467,17 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
     }
 }
 start_form(true);
+
+if ($msg !== '') {
+    echo '<div style="background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 4px; padding: 12px 20px; margin: 10px 0;">';
+    echo '<strong style="color: #155724;">' . _("Export Complete") . '</strong><br>';
+    echo '<span style="color: #155724;">' . $msg . '</span>';
+    echo '</div>';
+}
+if ($error !== '') {
+    display_error($error);
+}
+
 start_table(TABLESTYLE2, "width=40%");
 table_section_title(_("Export Inventory Options"));
 
@@ -495,13 +506,6 @@ yesno_list_row(_("Send Inactive Items:"), 'send_inactive', null);
 yesno_list_row(_("Full Sync (ignore existing mappings):"), 'full_sync', null);
 
 end_table(1);
-
-if ($msg !== '') {
-    display_notification($msg);
-}
-if ($error !== '') {
-    display_error($error);
-}
 
 hidden('action', 'i_export');
 submit_center('pexport', _("Export FA Items To Square"));
