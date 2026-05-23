@@ -48,6 +48,7 @@ class CatalogExporter implements CatalogExporterInterface
     ): CatalogObject {
         $maxRetries = 5;
         $retryDelay = 1000000;
+        $currentExistingItem = $existingItem;
 
         for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
             try {
@@ -55,10 +56,10 @@ class CatalogExporter implements CatalogExporterInterface
                 $existingVariationId = null;
                 $existingItemVersion = null;
                 $existingVariationVersion = null;
-                if ($existingItem !== null) {
-                    $existingItemId = $existingItem->getId();
-                    $existingItemVersion = $existingItem->getVersion();
-                    $itemData = $existingItem->getItemData();
+                if ($currentExistingItem !== null) {
+                    $existingItemId = $currentExistingItem->getId();
+                    $existingItemVersion = $currentExistingItem->getVersion();
+                    $itemData = $currentExistingItem->getItemData();
                     if ($itemData !== null) {
                         $variations = $itemData->getVariations();
                         if ($variations !== null && count($variations) > 0) {
@@ -81,6 +82,7 @@ class CatalogExporter implements CatalogExporterInterface
                 $errors = $response->getErrors();
                 $detail = '';
                 $isRateLimited = false;
+                $isVersionMismatch = false;
                 if ($errors !== null) {
                     $parts = [];
                     foreach ($errors as $err) {
@@ -88,8 +90,20 @@ class CatalogExporter implements CatalogExporterInterface
                         if ($err->getCode() === 'RATE_LIMITED') {
                             $isRateLimited = true;
                         }
+                        if ($err->getCode() === 'VERSION_MISMATCH') {
+                            $isVersionMismatch = true;
+                        }
                     }
                     $detail = ' | ' . implode('; ', $parts);
+                }
+
+                if ($isVersionMismatch && $attempt < $maxRetries) {
+                    $refreshedItem = $this->searchProductBySku($sku);
+                    if ($refreshedItem !== null) {
+                        $currentExistingItem = $refreshedItem;
+                        usleep($retryDelay * $attempt);
+                        continue;
+                    }
                 }
 
                 if ($isRateLimited && $attempt < $maxRetries) {

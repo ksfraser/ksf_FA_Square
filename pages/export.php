@@ -251,6 +251,10 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
     $sendInactive = $exportRequest->shouldSendInactive();
     $fullSync = $exportRequest->isFullSync();
 
+    set_time_limit(0);
+    ob_implicit_flush(true);
+    ob_end_flush();
+
     try {
         $env = $settings->getEnvironment();
         $tokenSource = $settings->getTokenSourceDescription();
@@ -464,6 +468,9 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
         $error = _("API Error: ") . $e->getMessage();
     } catch (Exception $e) {
         $error = _("Error: ") . $e->getMessage();
+    } catch (Throwable $e) {
+        $error = _("Error: ") . $e->getMessage() . " (" . get_class($e) . ")";
+        error_log("Square export error: " . $e->getMessage() . "\n" . $e->getTraceAsString());
     }
 }
 start_form(true);
