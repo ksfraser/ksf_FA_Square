@@ -53,18 +53,22 @@ class CatalogExporter implements CatalogExporterInterface
             try {
                 $existingItemId = null;
                 $existingVariationId = null;
+                $existingItemVersion = null;
+                $existingVariationVersion = null;
                 if ($existingItem !== null) {
                     $existingItemId = $existingItem->getId();
+                    $existingItemVersion = $existingItem->getVersion();
                     $itemData = $existingItem->getItemData();
                     if ($itemData !== null) {
                         $variations = $itemData->getVariations();
                         if ($variations !== null && count($variations) > 0) {
                             $existingVariationId = $variations[0]->getId();
+                            $existingVariationVersion = $variations[0]->getVersion();
                         }
                     }
                 }
 
-                $body = $this->buildCatalogObject($sku, $name, $description, $categoryName, $priceCents, $currency, $taxName, $taxRate, $existingItemId, $existingVariationId);
+                $body = $this->buildCatalogObject($sku, $name, $description, $categoryName, $priceCents, $currency, $taxName, $taxRate, $existingItemId, $existingVariationId, $existingItemVersion, $existingVariationVersion);
 
                 $request = new UpsertCatalogObjectRequest(uniqid('', true), $body);
 
@@ -390,7 +394,9 @@ class CatalogExporter implements CatalogExporterInterface
         string $taxName,
         float $taxRate,
         ?string $existingItemId = null,
-        ?string $existingVariationId = null
+        ?string $existingVariationId = null,
+        $existingItemVersion = null,
+        $existingVariationVersion = null
     ): CatalogObject {
         $sku = $this->sanitizeUtf8($sku);
         $name = $this->sanitizeUtf8($name);
@@ -412,6 +418,9 @@ class CatalogExporter implements CatalogExporterInterface
 
         $variationObject = new CatalogObject('ITEM_VARIATION', $existingVariationId ?? ('#' . $sku . '_var'));
         $variationObject->setItemVariationData($variationData);
+        if ($existingVariationVersion !== null) {
+            $variationObject->setVersion($existingVariationVersion);
+        }
 
         $item = new CatalogItem();
         $item->setName($name);
@@ -428,6 +437,9 @@ class CatalogExporter implements CatalogExporterInterface
 
         $body = new CatalogObject('ITEM', $existingItemId ?? ('#' . $sku));
         $body->setItemData($item);
+        if ($existingItemVersion !== null) {
+            $body->setVersion($existingItemVersion);
+        }
 
         return $body;
     }
