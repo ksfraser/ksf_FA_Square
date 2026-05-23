@@ -111,3 +111,17 @@ CREATE TABLE IF NOT EXISTS 0_square_tokens (
 -- ALTER TABLE 0_square_tokens ADD UNIQUE KEY idx_square_object_env (square_catalog_object_id, environment);
 -- ALTER TABLE 0_square_tokens ADD KEY idx_environment (environment);
 -- ALTER TABLE 0_square_tokens MODIFY COLUMN square_variation_id VARCHAR(32) NULL;
+
+-- Location mapping table (FA loc_code <-> Square location_id)
+-- Supports many-to-one: multiple FA locations can map to one Square location
+-- Special fa_loc_code = '*ALL*' means "sum all FA locations to this Square location"
+CREATE TABLE IF NOT EXISTS 0_square_location_mappings (
+    id INT(11) NOT NULL AUTO_INCREMENT,
+    fa_loc_code VARCHAR(5) NOT NULL,
+    square_location_id VARCHAR(32) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY idx_fa_loc_code (fa_loc_code),
+    KEY idx_square_location (square_location_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

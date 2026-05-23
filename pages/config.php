@@ -14,7 +14,10 @@ include_once __DIR__ . "/../vendor/autoload.php";
 
 use Ksfraser\Frontaccounting\SquareUp\Config\Settings;
 use Ksfraser\Frontaccounting\SquareUp\DAO\DebtorsMasterDAO;
+use Ksfraser\Frontaccounting\SquareUp\DAO\LocationMappingDAO;
 use Ksfraser\Frontaccounting\SquareUp\Staging\StagingTableManager;
+use Ksfraser\Frontaccounting\SquareUp\Infrastructure\SquareClientFactory;
+use Square\Exceptions\ApiException;
 
 $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
 $table = $tablePrefix . 'square';
@@ -28,6 +31,39 @@ try {
     $settings = new Settings();
     $stagingManager = new StagingTableManager($tablePrefix);
     $error = _("Failed to load configuration: ") . $e->getMessage();
+}
+
+$accessToken = $settings->getAccessToken();
+$squareLocations = [];
+$faLocations = [];
+$existingMappings = [];
+
+try {
+    $locMappingDao = new LocationMappingDAO($tablePrefix);
+    $locMappingDao->ensureTableExists();
+    $faLocations = $locMappingDao->getAllFaLocations();
+    $existingMappings = $locMappingDao->getAllMappings();
+    
+    if ($accessToken !== null && $accessToken !== '') {
+        $client = SquareClientFactory::create($settings);
+        $locationsApi = $client->getLocationsApi();
+        $locResponse = $locationsApi->listLocations();
+        if ($locResponse->isSuccess()) {
+            $resultLocs = $locResponse->getResult()->getLocations();
+            if ($resultLocs !== null) {
+                foreach ($resultLocs as $loc) {
+                    $squareLocations[$loc->getId()] = $loc->getName();
+                }
+            }
+        }
+    }
+} catch (\Exception $e) {
+    $squareLocations = [];
+}
+
+$mappingByFaLoc = [];
+foreach ($existingMappings as $mapping) {
+    $mappingByFaLoc[$mapping['fa_loc_code']] = $mapping['square_location_id'];
 }
 
 if (isset($_POST['action'])) {
@@ -47,6 +83,31 @@ if (isset($_POST['action'])) {
 
                 $msg = _("Configuration updated");
                 $settings = Settings::fromFADatabase($tablePrefix);
+                break;
+
+            case 'save_mappings':
+                $locMappingDao = new LocationMappingDAO($tablePrefix);
+                
+                $allMappingOption = $_POST['map_all_locations'] ?? '';
+                if ($allMappingOption !== '' && $allMappingOption !== 'none') {
+                    $locMappingDao->setMapping(LocationMappingDAO::ALL_LOCATIONS, $allMappingOption);
+                } else {
+                    $locMappingDao->removeMapping(LocationMappingDAO::ALL_LOCATIONS);
+                }
+                
+                foreach ($faLocations as $faLoc) {
+                    $faLocCode = $faLoc['loc_code'];
+                    $mappingKey = 'map_loc_' . $faLocCode;
+                    $selectedSquareLoc = $_POST[$mappingKey] ?? '';
+                    
+                    if ($selectedSquareLoc !== '') {
+                        $locMappingDao->setMapping($faLocCode, $selectedSquareLoc);
+                    } else {
+                        $locMappingDao->removeMapping($faLocCode);
+                    }
+                }
+                
+                $msg = _("Location mappings saved");
                 break;
 
             case 'create_tables':
@@ -142,6 +203,71 @@ submit_center('update', _("Update Configuration"));
 end_form();
 
 br();
+
+if ($accessToken !== null && $accessToken !== '') {
+    start_form();
+    
+    start_table(TABLESTYLE);
+    table_section_title(_("Location Mapping (FA <-> Square)"));
+    end_table(1);
+    
+    $squareLocOptions = ['none' => _('-- Not Mapped --')] + $squareLocations;
+    
+    start_table(TABLESTYLE2);
+    
+    $allMappingValue = $mappingByFaLoc[LocationMappingDAO::ALL_LOCATIONS] ?? 'none';
+    echo '<tr><td class="label" style="font-weight: bold;">' . _("All Locations (sum QOH):") . '</td><td>';
+    echo array_selector('map_all_locations', $allMappingValue, $squareLocOptions);
+    echo '</td></tr>';
+    
+    label_row('', _('(If "All Locations" is mapped, individual location mappings are ignored. FA QOH summed across ALL locations.)'));
+    
+    end_table(1);
+    
+    br();
+    
+    start_table(TABLESTYLE);
+    $th = [_("FA Location Code"), _("FA Location Name"), _("Map to Square Location")];
+    table_header($th);
+    
+    $k = 0;
+    foreach ($faLocations as $faLoc) {
+        alt_table_row_color($k);
+        $faLocCode = $faLoc['loc_code'];
+        $mappedSquareLoc = $mappingByFaLoc[$faLocCode] ?? 'none';
+        
+        label_cell($faLocCode);
+        label_cell($faLoc['location_name']);
+        echo '<td>';
+        echo array_selector('map_loc_' . $faLocCode, $mappedSquareLoc, $squareLocOptions);
+        echo '</td>';
+        end_row();
+    }
+    
+    end_table(1);
+    
+    br();
+    label_row(_("Mapping Behavior:"), "");
+    label_row(_("N FA -> 1 Square:"), _("Multiple FA locations can map to the same Square location. QOH is summed across all mapped FA locations."));
+    label_row(_("1 FA -> 1 Square:"), _("A single FA location maps to one Square location. QOH is passed through directly."));
+    label_row(_("Not Mapped:"), _("FA locations not mapped will be included in 'All Locations' if that mapping is set; otherwise ignored for inventory push."));
+    
+    br();
+    
+    if ($msg !== '') {
+        display_notification($msg);
+    }
+    if ($error !== '') {
+        display_error($error);
+    }
+    
+    hidden('action', 'save_mappings');
+    submit_center('save_mappings', _("Save Location Mappings"));
+    
+    end_form();
+    
+    br();
+}
 
 start_form();
 

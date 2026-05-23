@@ -21,6 +21,7 @@ use Ksfraser\Frontaccounting\SquareUp\Infrastructure\SquareClientFactory;
 use Ksfraser\Frontaccounting\SquareUp\Push\CatalogExporter;
 use Ksfraser\Frontaccounting\SquareUp\DAO\SquareTokenDAO;
 use Ksfraser\Frontaccounting\SquareUp\DAO\StockMasterDAO;
+use Ksfraser\Frontaccounting\SquareUp\DAO\LocationMappingDAO;
 use Ksfraser\Frontaccounting\SquareUp\ValueObjects\SquarePrice;
 use Ksfraser\Frontaccounting\SquareUp\Exceptions\SquareException;
 use Square\Exceptions\ApiException;
@@ -289,6 +290,24 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
         }
         display_notification(_("Found ") . count($existingSquareItems) . _(" existing items in Square"));
 
+        $locMappingDao = new LocationMappingDAO($tablePrefix);
+        $locMappingDao->ensureTableExists();
+        $allFaLocations = $locMappingDao->getAllFaLocations();
+        $mappingsBySquareLoc = $locMappingDao->getMappingsBySquareLocation();
+        $allLocationsMapping = $locMappingDao->getAllLocationsMapping();
+        
+        $hasMappings = (!empty($mappingsBySquareLoc) || $allLocationsMapping !== null);
+        if ($hasMappings) {
+            if ($allLocationsMapping !== null) {
+                $locName = $squareLocations[$allLocationsMapping] ?? $allLocationsMapping;
+                display_notification(_("Inventory mapping: All FA locations -> Square '") . $locName . _("'"));
+            } else {
+                display_notification(_("Found ") . count($mappingsBySquareLoc) . _(" Square location mappings"));
+            }
+        } else {
+            display_notification(_("No location mappings configured. Inventory push will be skipped."));
+        }
+
         $stockMasterDao = new StockMasterDAO($tablePrefix);
         $itemsResult = $stockMasterDao->getItemsForExport(
             $exportRequest->getCategoryId(),
@@ -415,6 +434,53 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
                     $variationId,
                     $faLastUpdated
                 );
+
+                if ($hasMappings) {
+                    display_notification(_("  Pushing inventory to Square..."));
+                    
+                    if ($allLocationsMapping !== null) {
+                        $totalQoh = $locMappingDao->getQohForLocations($stockId, null);
+                        $locName = $squareLocations[$allLocationsMapping] ?? $allLocationsMapping;
+                        display_notification(_("    QOH (all locations): ") . $totalQoh . _(" -> Square '") . $locName . _("'"));
+                        
+                        try {
+                            $exporter->pushInventory($catalogObject->getId(), $allLocationsMapping, (float)$totalQoh);
+                            display_notification(_("    Inventory pushed successfully"));
+                        } catch (SquareException $e) {
+                            display_error(_("    Failed to push inventory: ") . $e->getMessage());
+                            $errors[] = $stockId . ': Inventory push failed - ' . $e->getMessage();
+                        }
+                    } else {
+                        $qohBySquareLoc = [];
+                        
+                        foreach ($mappingsBySquareLoc as $sqLocId => $faLocCodes) {
+                            $qoh = $locMappingDao->getQohForLocations($stockId, $faLocCodes);
+                            $qohBySquareLoc[$sqLocId] = $qoh;
+                            
+                            $locName = $squareLocations[$sqLocId] ?? $sqLocId;
+                            display_notification(_("    QOH (") . implode(',', $faLocCodes) . _("): ") . $qoh . _(" -> Square '") . $locName . _("'"));
+                        }
+                        
+                        $inventoryChanges = [];
+                        foreach ($qohBySquareLoc as $sqLocId => $qoh) {
+                            $inventoryChanges[] = [
+                                'catalog_object_id' => $catalogObject->getId(),
+                                'location_id' => $sqLocId,
+                                'quantity' => (float)$qoh,
+                            ];
+                        }
+                        
+                        if (!empty($inventoryChanges)) {
+                            try {
+                                $exporter->batchPushInventory($inventoryChanges);
+                                display_notification(_("    Inventory pushed successfully"));
+                            } catch (SquareException $e) {
+                                display_error(_("    Failed to push inventory: ") . $e->getMessage());
+                                $errors[] = $stockId . ': Inventory push failed - ' . $e->getMessage();
+                            }
+                        }
+                    }
+                }
 
                 if ($uploadImages) {
                     $imageDir = company_path() . '/images/';
