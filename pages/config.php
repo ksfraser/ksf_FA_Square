@@ -29,19 +29,10 @@ try {
     $stagingManager = new StagingTableManager($tablePrefix);
     $error = _("Failed to load configuration: ") . $e->getMessage();
 }
-$env = $settings->getEnvironment();
 
 if (isset($_POST['action'])) {
     try {
         switch ($_POST['action']) {
-            case 'switch_env':
-                $newEnv = $_POST['environment'] ?? 'sandbox';
-                Settings::saveToDatabase($tablePrefix, 'environment', $newEnv);
-                $settings = Settings::fromFADatabase($tablePrefix);
-                $env = $settings->getEnvironment();
-                $msg = _("Switched to ") . ($env === 'production' ? _('Production') : _('Sandbox'));
-                break;
-
             case 'update':
                 $tokenFields = ['access_token', 'sandbox_access_token', 'production_access_token'];
                 foreach ($tokenFields as $field) {
@@ -56,7 +47,6 @@ if (isset($_POST['action'])) {
 
                 $msg = _("Configuration updated");
                 $settings = Settings::fromFADatabase($tablePrefix);
-                $env = $settings->getEnvironment();
                 break;
 
             case 'create_tables':
@@ -85,7 +75,7 @@ echo '<style>
 .square-env-section { border: 2px solid ' . $badgeColor . '; border-radius: 6px; padding: 10px; margin-bottom: 10px; }
 </style>';
 
-start_form('', '', 'env_form');
+start_form();
 
 start_table(TABLESTYLE);
 
@@ -93,19 +83,16 @@ table_section_title(_("Square API Configuration") . ' <span class="square-env-ba
 
 $envOptions = ['sandbox' => _('Sandbox'), 'production' => _('Production')];
 echo '<tr><td class="label">' . _("Environment:") . '</td><td>';
-echo array_selector('environment', $env, $envOptions, ['onchange' => 'this.form.submit()']);
-echo '&nbsp;';
-submit('go_env', _("Go"));
+echo array_selector('environment', $env, $envOptions, [
+    'select_submit' => false,
+    'async' => false,
+]);
 echo '</td></tr>';
 
 end_table(1);
 
-hidden('action', 'switch_env');
-end_form();
-
 echo '<div class="square-env-section">';
 
-start_form();
 start_table(TABLESTYLE2);
 
 if ($env === 'sandbox') {
