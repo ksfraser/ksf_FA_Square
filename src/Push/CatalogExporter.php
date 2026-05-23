@@ -108,6 +108,7 @@ class CatalogExporter implements CatalogExporterInterface
         }
 
         throw SquareException::apiError('upsertCatalogObject', 'Max retries exceeded');
+    }
 
     public function batchUpsertProducts(array $products): array
     {

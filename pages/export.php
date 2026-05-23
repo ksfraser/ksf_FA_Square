@@ -18,6 +18,9 @@ include_once __DIR__ . "/../vendor/autoload.php";
 use Ksfraser\Frontaccounting\SquareUp\Config\Settings;
 use Ksfraser\Frontaccounting\SquareUp\Infrastructure\SquareClientFactory;
 use Ksfraser\Frontaccounting\SquareUp\Push\CatalogExporter;
+use Ksfraser\Frontaccounting\SquareUp\DAO\SquareTokenDAO;
+use Ksfraser\Frontaccounting\SquareUp\DAO\StockMasterDAO;
+use Ksfraser\Frontaccounting\SquareUp\DAO\StockMovesDAO;
 use Ksfraser\Frontaccounting\SquareUp\Exceptions\SquareException;
 use Square\Exceptions\ApiException;
 
@@ -109,12 +112,33 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
         } else {
             $tokenSource = 'access_token (legacy fallback)';
         }
+
+        // Ensure square_tokens table exists
+        $checkTable = db_query("SHOW TABLES LIKE '{$tablePrefix}0_square_tokens'");
+        if (db_num_rows($checkTable) == 0) {
+            $sql = "CREATE TABLE {$tablePrefix}0_square_tokens (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                stock_id VARCHAR(20) NOT NULL,
+                sku VARCHAR(255) NOT NULL,
+                square_catalog_object_id VARCHAR(255) NOT NULL,
+                square_variation_id VARCHAR(255) NOT NULL,
+                fa_last_updated DATETIME NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL,
+                UNIQUE KEY stock_id (stock_id)
+            ) ENGINE=InnoDB;";
+            db_query($sql) or display_error(_("Cannot create square_tokens table: ") . db_error());
+        }
         $token = $settings->getAccessToken();
         $tokenPrefix = substr($token ?? '', 0, 8);
         display_notification(_("Environment: ") . strtoupper($env) . _(" | Token source: ") . $tokenSource . _(" | Prefix: ") . $tokenPrefix . _("..."));
         display_notification(_("Square API connection: ") . (count($squareLocations) > 0 ? _("OK (") . count($squareLocations) . _(" locations found)") : _("FAILED")));
 
         $exporter = new CatalogExporter($client, $settings);
+
+        // Ensure square_tokens table exists
+        $squareTokenDao = new SquareTokenDAO($tablePrefix);
+        $squareTokenDao->ensureTableExists();
 
         display_notification(_("Fetching existing Square catalog items..."));
         $existingSquareItems = [];
@@ -133,75 +157,20 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
         }
         display_notification(_("Found ") . count($existingSquareItems) . _(" existing items in Square"));
 
-        $categoryFilter = '';
-        if ($category > 0) {
-            $categoryFilter = " AND item.category_id = " . (int)$category;
-        }
+        $stockMasterDao = new StockMasterDAO($tablePrefix);
+        $itemsResult = $stockMasterDao->getItemsForExport(
+            $category > 0 ? $category : null,
+            $stockLike,
+            !$sendInactive,
+            !empty($_POST['sort_recent']),
+            $ksfGenPrefs,
+            $ksfGenCatalogueInstalled
+        );
 
-        $stockFilter = '';
-        if ($stockLike !== '') {
-            $stockFilter = " AND item.stock_id LIKE " . db_escape('%' . $stockLike . '%');
-        }
-
-        $sql = "SELECT item.stock_id, item.description, item.units, item.inactive, "
-            . "cat.description AS cat_description, tt.name AS tax_name, tt.exempt "
-            . "FROM {$tablePrefix}stock_master item "
-            . "LEFT JOIN {$tablePrefix}stock_category cat ON item.category_id = cat.category_id "
-            . "LEFT JOIN {$tablePrefix}item_tax_types tt ON item.tax_type_id = tt.id "
-            . "WHERE 1=1";
-        
-        if (!$sendInactive) {
-            $sql .= " AND item.inactive = 0";
-        }
-        
-        if ($category > 0) {
-            $sql .= " AND item.category_id = " . (int)$category;
-        }
-        
-        if ($stockLike !== '') {
-            $sql .= " AND item.stock_id LIKE " . db_escape('%' . $stockLike . '%');
-        }
-        
-        // Special prefix handling from ksf_generate_catalogue
-        $prefixConditions = [];
-        if ($ksfGenCatalogueInstalled) {
-            if (!empty($ksfGenPrefs['DISCONTINUED_PREFIX'])) {
-                $prefixConditions[] = "item.description LIKE " . db_escape($ksfGenPrefs['DISCONTINUED_PREFIX'] . '%');
-            }
-            if (!empty($ksfGenPrefs['SPECIAL_ORDER_PREFIX'])) {
-                $prefixConditions[] = "item.description LIKE " . db_escape($ksfGenPrefs['SPECIAL_ORDER_PREFIX'] . '%');
-            }
-            if (!empty($ksfGenPrefs['CLEARANCE_PREFIX'])) {
-                $prefixConditions[] = "item.description LIKE " . db_escape($ksfGenPrefs['CLEARANCE_PREFIX'] . '%');
-            }
-            if (!empty($ksfGenPrefs['CUSTOM_PREFIX'])) {
-                $prefixConditions[] = "item.description LIKE " . db_escape($ksfGenPrefs['CUSTOM_PREFIX'] . '%');
-            }
-            
-            if (!empty($prefixConditions)) {
-                $sql .= " AND (" . implode(' OR ', $prefixConditions) . ")";
-            }
-            
-            $orderBy = " ORDER BY item.category_id, item.stock_id";
-            if (!empty($_POST['sort_recent'])) {
-                // Check if the last modified column exists in stock_master
-                $checkResult = db_query("SHOW COLUMNS FROM {$tablePrefix}stock_master LIKE 'last_updated'");
-                if ($checkResult !== false && db_num_rows($checkResult) > 0) {
-                    $orderBy = " ORDER BY item.last_updated DESC, item.category_id, item.stock_id";
-                }
-            }
-            
-            $sql .= $orderBy;
-
-        $itemsResult = db_query($sql);
         $exported = 0;
         $skipped = 0;
         $deleted = 0;
         $errors = [];
-
-        if ($itemsResult === false) {
-            throw new \RuntimeException(_("Failed to query stock items"));
-        }
 
         $totalFound = db_num_rows($itemsResult);
         display_notification(_("Total FA items to process: ") . $totalFound . _(" (limited to ") . $maxItems . _(")"));
@@ -216,17 +185,17 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
             $stockId = $item['stock_id'];
             $sku = $stockId;
 
-            $barcodeResult = get_all_item_codes($stockId);
-            $barcodeRow = false;
-            if ($barcodeResult !== false) {
-                $barcodeRow = db_fetch($barcodeResult);
-            }
-            if ($barcodeRow && !empty($barcodeRow['item_code'])) {
-                $sku = $barcodeRow['item_code'];
+            $itemSku = $stockMasterDao->getItemSku($stockId);
+            if ($itemSku !== null) {
+                $sku = $itemSku;
                 display_notification(_("  Using barcode SKU: ") . $sku);
             }
 
-            $myPrice = get_kit_price($stockId, $_POST['currency'] ?? get_company_pref('curr_default'), $_POST['sales_type'] ?? 0);
+            $myPrice = $stockMasterDao->getItemPrice(
+                $stockId,
+                $_POST['currency'] ?? get_company_pref('curr_default'),
+                $_POST['sales_type'] ?? 0
+            );
             if ($myPrice <= 0) {
                 $myPrice = 999999.99;
                 $priceCents = 99999999;
@@ -295,25 +264,20 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
                     $existingItem
                 );
 
-            $exported++;
-            display_notification(_("  SUCCESS: ") . $item['stock_id'] . _(" -> Square ID: ") . $catalogObject->getId());
+                $exported++;
+                display_notification(_("  SUCCESS: ") . $item['stock_id'] . _(" -> Square ID: ") . $catalogObject->getId());
 
-            // Record successful mapping in square_tokens with timestamp of last modification
-            $faLastUpdated = null;
-            $lastUpdatedResult = db_query("SELECT modified_date FROM {$tablePrefix}stock_moves WHERE stock_id = " . db_escape($stockId) . " ORDER BY tran_date DESC LIMIT 1");
-            if ($lastUpdatedResult !== false && db_num_rows($lastUpdatedResult) > 0) {
-                $lastUpdatedRow = db_fetch_assoc($lastUpdatedResult);
-                if ($lastUpdatedRow !== false && $lastUpdatedRow !== false) {
-                    $faLastUpdated = $lastUpdatedRow['modified_date'];
-                }
-            }
-            $sql = "INSERT INTO {$tablePrefix}0_square_tokens (stock_id, sku, square_catalog_object_id, square_variation_id, fa_last_updated, created_at) VALUES (" .
-                db_escape($stockId) . ", " . db_escape($sku) . ", " . db_escape($catalogObject->getId()) . ", " . db_escape($catalogObject->getItemVariationData()->getId()) . ", " .
-                ($faLastUpdated !== null ? "'" . db_escape($faLastUpdated) . "'" : "NULL") . ", NOW()) " .
-                "ON DUPLICATE KEY UPDATE square_catalog_object_id = VALUES(square_catalog_object_id), square_variation_id = VALUES(square_variation_id), fa_last_updated = VALUES(fa_last_updated), updated_at = NOW()";
-            db_query($sql);
+                // Record successful mapping in square_tokens with timestamp of last modification
+                $faLastUpdated = $squareTokenDao->getFaLastUpdated($stockId);
+                $squareTokenDao->upsertToken(
+                    $stockId,
+                    $sku,
+                    $catalogObject->getId(),
+                    $catalogObject->getItemVariationData()->getId(),
+                    $faLastUpdated
+                );
 
-            if ($uploadImages) {
+                if ($uploadImages) {
                     $imageDir = company_path() . '/images/';
                     $imageDir = rtrim($imageDir, '/');
                     $sqId = $catalogObject->getId();
@@ -343,15 +307,11 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
         }
 
         display_notification(_("Checking for items to delete from Square..."));
+        $stockMasterDao = new StockMasterDAO($tablePrefix);
         foreach ($existingSquareItems as $sqSku => $sqItem) {
-            $chkSql = "SELECT COUNT(*) AS cnt FROM {$tablePrefix}stock_master WHERE stock_id = " . db_escape($sqSku) . " AND inactive = 0";
-            $chkResult = db_query($chkSql);
-            $chkRow = false;
-            if ($chkResult !== false) {
-                $chkRow = db_fetch_assoc($chkResult);
-            }
+            $activeCount = $stockMasterDao->countActiveStockItems($sqSku);
 
-            if ($chkRow && (int)$chkRow['cnt'] == 0) {
+            if ($activeCount == 0) {
                 try {
                     display_notification(_("Deleting from Square: ") . $sqSku);
                     $exporter->deleteProduct($sqItem->getId());
@@ -367,14 +327,12 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
         if (count($errors) > 0) {
             $msg .= _(", Errors: ") . count($errors);
         }
-
     } catch (ApiException $e) {
         $error = _("API Error: ") . $e->getMessage();
     } catch (Exception $e) {
         $error = _("Error: ") . $e->getMessage();
     }
 }
-
 start_form(true);
 start_table(TABLESTYLE2, "width=40%");
 table_section_title(_("Export Inventory Options"));
