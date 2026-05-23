@@ -431,7 +431,7 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
         display_notification(_("Checking for items to delete from Square..."));
         $stockMasterDao = new StockMasterDAO($tablePrefix);
         foreach ($existingSquareItems as $sqSku => $sqItem) {
-            $activeCount = $stockMasterDao->countActiveStockItems($sqSku);
+            $activeCount = $stockMasterDao->countActiveStockItems((string)$sqSku);
 
             if ($activeCount == 0) {
                 try {

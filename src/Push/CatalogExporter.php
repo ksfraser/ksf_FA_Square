@@ -411,6 +411,7 @@ class CatalogExporter implements CatalogExporterInterface
         $variationData->setTrackInventory(true);
 
         $variationObject = new CatalogObject('ITEM_VARIATION', $existingVariationId ?? ('#' . $sku . '_var'));
+        $variationObject->setItemVariationData($variationData);
 
         $item = new CatalogItem();
         $item->setName($name);
