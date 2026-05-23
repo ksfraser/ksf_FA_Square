@@ -78,17 +78,86 @@ try {
 $msg = '';
 $error = '';
 
-// Check if ksf_generate_catalogue module is installed and load its prefs
-$ksfGenCatalogueInstalled = defined('KSF_GENERATE_CATALOGUE_PREFS') && @file_exists('/tmp/ksf_generate/class.ksf_generate_catalogue.inc.php');
-$ksfGenPrefs = [];
-if ($ksfGenCatalogueInstalled) {
-    $prefsTable = KSF_GENERATE_CATALOGUE_PREFS;
-    $pResult = db_query("SELECT `pref_name`, `value` FROM {$tablePrefix}{$prefsTable}");
-    if ($pResult !== false) {
-        while ($pRow = db_fetch_assoc($pResult)) {
-            $ksfGenPrefs[$pRow['pref_name']] = $pRow['value'];
+/**
+ * Detects if ksf_generate_catalogue module is installed.
+ * Checks in multiple ways to handle both dev and prod environments.
+ * 
+ * @param string $tablePrefix Database table prefix
+ * @return bool True if module is detected, false otherwise
+ */
+function isKsfGenCatalogueInstalled(string $tablePrefix): bool {
+    // 1. Check if constant is defined (might be set in hooks)
+    if (defined('KSF_GENERATE_CATALOGUE_PREFS')) {
+        return true;
+    }
+
+    // 2. Check if the preferences table exists in the database
+    // This is the most reliable indicator since we need this table anyway
+    $checkTable = db_query("SHOW TABLES LIKE '{$tablePrefix}ksf_gen_catalogue_prefs'");
+    if ($checkTable !== false && db_num_rows($checkTable) > 0) {
+        return true;
+    }
+
+    // 3. Check for module in common locations
+    $modulePaths = [
+        // Dev environment (temporary location)
+        '/tmp/ksf_generate/',
+        // Production environment (modules directory)
+        dirname(__DIR__, 4) . '/modules/ksf_generate/',
+        dirname(__DIR__, 3) . '/modules/ksf_generate/',
+    ];
+
+    foreach ($modulePaths as $path) {
+        if (@file_exists($path . 'class.ksf_generate_catalogue.inc.php') || 
+            @file_exists($path . 'hooks.php') ||
+            @is_dir($path)) {
+            return true;
         }
     }
+
+    return false;
+}
+
+/**
+ * Gets the ksf_generate_catalogue preferences.
+ * Handles cases where constant might not be defined but table exists.
+ * 
+ * @param string $tablePrefix Database table prefix
+ * @return array Array of preferences, empty if module not installed
+ */
+function getKsfGenCataloguePrefs(string $tablePrefix): array {
+    $prefs = [];
+    
+    // Determine the table name
+    $prefsTable = '';
+    if (defined('KSF_GENERATE_CATALOGUE_PREFS')) {
+        $prefsTable = KSF_GENERATE_CATALOGUE_PREFS;
+    } else {
+        // Check if the standard table name exists
+        $checkTable = db_query("SHOW TABLES LIKE '{$tablePrefix}ksf_gen_catalogue_prefs'");
+        if ($checkTable !== false && db_num_rows($checkTable) > 0) {
+            $prefsTable = 'ksf_gen_catalogue_prefs';
+        }
+    }
+
+    // If we found a table, load the preferences
+    if ($prefsTable !== '') {
+        $pResult = db_query("SELECT `pref_name`, `value` FROM {$tablePrefix}{$prefsTable}");
+        if ($pResult !== false) {
+            while ($pRow = db_fetch_assoc($pResult)) {
+                $prefs[$pRow['pref_name']] = $pRow['value'];
+            }
+        }
+    }
+
+    return $prefs;
+}
+
+// Check if ksf_generate_catalogue module is installed and load its prefs
+$ksfGenCatalogueInstalled = isKsfGenCatalogueInstalled($tablePrefix);
+$ksfGenPrefs = [];
+if ($ksfGenCatalogueInstalled) {
+    $ksfGenPrefs = getKsfGenCataloguePrefs($tablePrefix);
 }
 
 if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
