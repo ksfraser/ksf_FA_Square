@@ -79,26 +79,88 @@ $msg = '';
 $error = '';
 
 /**
+ * Tries to discover ksf_generate_catalogue module using hook_invoke.
+ * This is the preferred method for inter-module communication.
+ * 
+ * @param string $tablePrefix Database table prefix
+ * @return array|null Array with 'installed' and 'prefs_table' if found, null otherwise
+ */
+function discoverKsfGenCatalogueViaHooks(string $tablePrefix): ?array {
+    global $Hooks;
+
+    // Common ksf_generate module names to try
+    $moduleNames = [
+        'ksf_generate',
+        'ksf_generate_catalogue',
+        'ksf_gen_catalogue',
+    ];
+
+    foreach ($moduleNames as $moduleName) {
+        // Check if the module's hooks are registered
+        if (isset($Hooks[$moduleName])) {
+            // Try to get constants from the module
+            $data = [];
+            $constants = hook_invoke($moduleName, 'getModuleConstants', $data);
+
+            if ($constants !== null) {
+                // Check if it has the prefs table constant
+                if (isset($constants['KSF_GENERATE_CATALOGUE_PREFS'])) {
+                    return [
+                        'installed' => true,
+                        'prefs_table' => $constants['KSF_GENERATE_CATALOGUE_PREFS'],
+                        'via_hooks' => true,
+                        'module_name' => $moduleName,
+                    ];
+                }
+            }
+
+            // Also try the generic capability request method
+            $data2 = [];
+            $response = hook_invoke($moduleName, 'respondToCapabilityRequest', $data2, ['request' => 'constants']);
+
+            if ($response !== null && is_array($response)) {
+                if (isset($response['KSF_GENERATE_CATALOGUE_PREFS'])) {
+                    return [
+                        'installed' => true,
+                        'prefs_table' => $response['KSF_GENERATE_CATALOGUE_PREFS'],
+                        'via_hooks' => true,
+                        'module_name' => $moduleName,
+                    ];
+                }
+            }
+        }
+    }
+
+    return null;
+}
+
+/**
  * Detects if ksf_generate_catalogue module is installed.
- * Checks in multiple ways to handle both dev and prod environments.
+ * First tries hook_invoke (preferred), then falls back to other methods.
  * 
  * @param string $tablePrefix Database table prefix
  * @return bool True if module is detected, false otherwise
  */
 function isKsfGenCatalogueInstalled(string $tablePrefix): bool {
-    // 1. Check if constant is defined (might be set in hooks)
+    // 1. Try hook_invoke first (preferred method for inter-module communication)
+    $discovered = discoverKsfGenCatalogueViaHooks($tablePrefix);
+    if ($discovered !== null && $discovered['installed']) {
+        return true;
+    }
+
+    // 2. Check if constant is defined (might be set in hooks or loaded elsewhere)
     if (defined('KSF_GENERATE_CATALOGUE_PREFS')) {
         return true;
     }
 
-    // 2. Check if the preferences table exists in the database
+    // 3. Check if the preferences table exists in the database
     // This is the most reliable indicator since we need this table anyway
     $checkTable = db_query("SHOW TABLES LIKE '{$tablePrefix}ksf_gen_catalogue_prefs'");
     if ($checkTable !== false && db_num_rows($checkTable) > 0) {
         return true;
     }
 
-    // 3. Check for module in common locations
+    // 4. Check for module in common locations
     $modulePaths = [
         // Dev environment (temporary location)
         '/tmp/ksf_generate/',
@@ -120,15 +182,28 @@ function isKsfGenCatalogueInstalled(string $tablePrefix): bool {
 
 /**
  * Gets the ksf_generate_catalogue preferences.
- * Handles cases where constant might not be defined but table exists.
+ * First tries hook_invoke, then falls back to other methods.
  * 
  * @param string $tablePrefix Database table prefix
  * @return array Array of preferences, empty if module not installed
  */
 function getKsfGenCataloguePrefs(string $tablePrefix): array {
     $prefs = [];
-    
-    // Determine the table name
+
+    // 1. Try hook_invoke first (preferred method)
+    $discovered = discoverKsfGenCatalogueViaHooks($tablePrefix);
+    if ($discovered !== null && isset($discovered['prefs_table'])) {
+        $prefsTable = $discovered['prefs_table'];
+        $pResult = db_query("SELECT `pref_name`, `value` FROM {$tablePrefix}{$prefsTable}");
+        if ($pResult !== false) {
+            while ($pRow = db_fetch_assoc($pResult)) {
+                $prefs[$pRow['pref_name']] = $pRow['value'];
+            }
+        }
+        return $prefs;
+    }
+
+    // 2. Determine the table name from constant or fallback
     $prefsTable = '';
     if (defined('KSF_GENERATE_CATALOGUE_PREFS')) {
         $prefsTable = KSF_GENERATE_CATALOGUE_PREFS;
@@ -140,7 +215,7 @@ function getKsfGenCataloguePrefs(string $tablePrefix): array {
         }
     }
 
-    // If we found a table, load the preferences
+    // 3. If we found a table, load the preferences
     if ($prefsTable !== '') {
         $pResult = db_query("SELECT `pref_name`, `value` FROM {$tablePrefix}{$prefsTable}");
         if ($pResult !== false) {
