@@ -84,6 +84,7 @@ table_section_title(_("Square API Configuration") . ' <span class="square-env-ba
 $envOptions = ['sandbox' => _('Sandbox'), 'production' => _('Production')];
 echo '<tr><td class="label">' . _("Environment:") . '</td><td>';
 echo array_selector('environment', $env, $envOptions, [
+    'onchange' => 'this.form.submit()',
     'select_submit' => false,
     'async' => false,
 ]);
