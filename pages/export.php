@@ -391,11 +391,22 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
 
                 // Record successful mapping in square_tokens with timestamp of last modification
                 $faLastUpdated = $squareTokenDao->getFaLastUpdated($stockId);
+                
+                // Extract variation ID from the ITEM object
+                $variationId = null;
+                $itemData = $catalogObject->getItemData();
+                if ($itemData !== null) {
+                    $variations = $itemData->getVariations();
+                    if ($variations !== null && count($variations) > 0) {
+                        $variationId = $variations[0]->getId();
+                    }
+                }
+                
                 $squareTokenDao->upsertToken(
                     $stockId,
                     $sku,
                     $catalogObject->getId(),
-                    $catalogObject->getItemVariationData()->getId(),
+                    $variationId,
                     $faLastUpdated
                 );
 
