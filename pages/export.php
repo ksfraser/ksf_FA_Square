@@ -480,8 +480,7 @@ text_row(_("Stock ID Pattern:"), 'stocklike', null, 10, 20);
 text_row(_("Max Items (0=unlimited):"), 'max_items', '10', 5, 10);
 yesno_list_row(_("Upload Images:"), 'upload', null);
 yesno_list_row(_("Available Online:"), 'online', null);
-yesno_list_row(_("Send Inactive Items:", true), 'send_inactive', null);
-yesno_list_row(_("Full Sync (ignore existing mappings):"), 'full_sync', null);
+yesno_list_row(_("Send Inactive Items:"), 'send_inactive', null);
 yesno_list_row(_("Full Sync (ignore existing mappings):"), 'full_sync', null);
 
 end_table(1);
