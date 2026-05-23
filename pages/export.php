@@ -252,8 +252,10 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
     $fullSync = $exportRequest->isFullSync();
 
     set_time_limit(0);
-    ob_implicit_flush(true);
-    ob_end_flush();
+    ob_implicit_flush(1);
+    while (ob_get_level() > 0) {
+        ob_end_flush();
+    }
 
     try {
         $env = $settings->getEnvironment();
