@@ -23,10 +23,25 @@ class SquarePrice
     public const SENTINEL_PRICE_CENTS = self::MAX_PRICE_CENTS;
     public const SENTINEL_PRICE_DOLLARS = self::MAX_PRICE_DOLLARS;
 
-    private int $priceCents;
-    private float $originalPrice;
-    private bool $wasNegative;
-    private bool $wasCapped;
+    /**
+     * @var int
+     */
+    private $priceCents;
+
+    /**
+     * @var float
+     */
+    private $originalPrice;
+
+    /**
+     * @var bool
+     */
+    private $wasNegative;
+
+    /**
+     * @var bool
+     */
+    private $wasCapped;
 
     private function __construct(
         int $priceCents,

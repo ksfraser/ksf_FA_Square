@@ -14,7 +14,10 @@ use Ksfraser\Frontaccounting\SquareUp\DAO\StockMovesDAO;
  */
 class SquareTokenDAO
 {
-    private string $tablePrefix;
+    /**
+     * @var string
+     */
+    private $tablePrefix;
 
     public function __construct(string $tablePrefix)
     {

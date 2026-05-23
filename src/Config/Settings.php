@@ -7,7 +7,10 @@ use Ksfraser\Frontaccounting\SquareUp\Contracts\SettingsInterface;
 
 class Settings implements SettingsInterface
 {
-    private array $config;
+    /**
+     * @var array
+     */
+    private $config;
 
     public function __construct(array $config = [])
     {

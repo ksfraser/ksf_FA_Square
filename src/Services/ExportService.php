@@ -21,13 +21,40 @@ use Ksfraser\Frontaccounting\SquareUp\Exceptions\SquareException;
  */
 class ExportService
 {
-    private string $tablePrefix;
-    private Settings $settings;
-    private CatalogExporter $exporter;
-    private SquareTokenDAO $squareTokenDao;
-    private StockMasterDAO $stockMasterDao;
-    private StockMovesDAO $stockMovesDao;
-    private array $existingSquareItems = [];
+    /**
+     * @var string
+     */
+    private $tablePrefix;
+
+    /**
+     * @var Settings
+     */
+    private $settings;
+
+    /**
+     * @var CatalogExporter
+     */
+    private $exporter;
+
+    /**
+     * @var SquareTokenDAO
+     */
+    private $squareTokenDao;
+
+    /**
+     * @var StockMasterDAO
+     */
+    private $stockMasterDao;
+
+    /**
+     * @var StockMovesDAO
+     */
+    private $stockMovesDao;
+
+    /**
+     * @var array
+     */
+    private $existingSquareItems = [];
 
     public function __construct(
         string $tablePrefix,

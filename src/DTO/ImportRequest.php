@@ -14,14 +14,45 @@ namespace Ksfraser\Frontaccounting\SquareUp\DTO;
  */
 class ImportRequest
 {
-    private string $action;
-    private int $destCust;
-    private string $fromDate;
-    private string $toDate;
-    private bool $trialRun;
-    private string $adjustmentItem;
-    private string $tipsItem;
-    private string $locationFilter;
+    /**
+     * @var string
+     */
+    private $action;
+
+    /**
+     * @var int
+     */
+    private $destCust;
+
+    /**
+     * @var string
+     */
+    private $fromDate;
+
+    /**
+     * @var string
+     */
+    private $toDate;
+
+    /**
+     * @var bool
+     */
+    private $trialRun;
+
+    /**
+     * @var string
+     */
+    private $adjustmentItem;
+
+    /**
+     * @var string
+     */
+    private $tipsItem;
+
+    /**
+     * @var string
+     */
+    private $locationFilter;
 
     public function __construct(
         string $action = '',

@@ -14,18 +14,65 @@ namespace Ksfraser\Frontaccounting\SquareUp\DTO;
  */
 class ExportRequest
 {
-    private string $action;
-    private string $locationId;
-    private int $category;
-    private string $stockLike;
-    private bool $uploadImages;
-    private bool $availableOnline;
-    private int $maxItems;
-    private bool $sendInactive;
-    private bool $fullSync;
-    private bool $sortRecent;
-    private string $currency;
-    private int $salesType;
+    /**
+     * @var string
+     */
+    private $action;
+
+    /**
+     * @var string
+     */
+    private $locationId;
+
+    /**
+     * @var int
+     */
+    private $category;
+
+    /**
+     * @var string
+     */
+    private $stockLike;
+
+    /**
+     * @var bool
+     */
+    private $uploadImages;
+
+    /**
+     * @var bool
+     */
+    private $availableOnline;
+
+    /**
+     * @var int
+     */
+    private $maxItems;
+
+    /**
+     * @var bool
+     */
+    private $sendInactive;
+
+    /**
+     * @var bool
+     */
+    private $fullSync;
+
+    /**
+     * @var bool
+     */
+    private $sortRecent;
+
+    /**
+     * @var string
+     */
+    private $currency;
+
+    /**
+     * @var int
+     */
+    private $salesType;
 
     public function __construct(
         string $action = '',

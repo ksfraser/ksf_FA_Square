@@ -5,7 +5,10 @@ namespace Ksfraser\Frontaccounting\SquareUp\Staging;
 
 class StagingTableManager
 {
-    private string $tablePrefix;
+    /**
+     * @var string
+     */
+    private $tablePrefix;
 
     public function __construct(string $tablePrefix = '0_')
     {

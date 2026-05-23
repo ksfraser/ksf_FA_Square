@@ -13,7 +13,10 @@ use Exception;
  */
 class DebtorsMasterDAO
 {
-    private string $tablePrefix;
+    /**
+     * @var string
+     */
+    private $tablePrefix;
 
     public function __construct(string $tablePrefix)
     {

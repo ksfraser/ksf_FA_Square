@@ -7,8 +7,15 @@ use Ksfraser\Frontaccounting\SquareUp\Contracts\CustomerMatcherInterface;
 
 class CustomerMatcher implements CustomerMatcherInterface
 {
-    private string $tablePrefix;
-    private array $mappings;
+    /**
+     * @var string
+     */
+    private $tablePrefix;
+
+    /**
+     * @var array
+     */
+    private $mappings;
 
     public function __construct(string $tablePrefix = '0_')
     {

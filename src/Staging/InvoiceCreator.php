@@ -8,7 +8,10 @@ use Ksfraser\Frontaccounting\SquareUp\Exceptions\SquareException;
 
 class InvoiceCreator implements InvoiceCreatorInterface
 {
-    private string $tablePrefix;
+    /**
+     * @var string
+     */
+    private $tablePrefix;
 
     public function __construct(string $tablePrefix = '0_')
     {

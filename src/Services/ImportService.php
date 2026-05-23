@@ -23,14 +23,45 @@ use Square\SquareClient;
  */
 class ImportService
 {
-    private string $tablePrefix;
-    private Settings $settings;
-    private SquareClient $client;
-    private OrderImporter $orderImporter;
-    private DebtorsMasterDAO $debtorsMasterDao;
-    private CustBranchDAO $custBranchDao;
-    private SalesOrdersDAO $salesOrdersDao;
-    private SquareImportLogDAO $squareImportLogDao;
+    /**
+     * @var string
+     */
+    private $tablePrefix;
+
+    /**
+     * @var Settings
+     */
+    private $settings;
+
+    /**
+     * @var SquareClient
+     */
+    private $client;
+
+    /**
+     * @var OrderImporter
+     */
+    private $orderImporter;
+
+    /**
+     * @var DebtorsMasterDAO
+     */
+    private $debtorsMasterDao;
+
+    /**
+     * @var CustBranchDAO
+     */
+    private $custBranchDao;
+
+    /**
+     * @var SalesOrdersDAO
+     */
+    private $salesOrdersDao;
+
+    /**
+     * @var SquareImportLogDAO
+     */
+    private $squareImportLogDao;
 
     public function __construct(
         string $tablePrefix,
