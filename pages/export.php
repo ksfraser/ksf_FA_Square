@@ -21,7 +21,7 @@ use Ksfraser\Frontaccounting\SquareUp\Infrastructure\SquareClientFactory;
 use Ksfraser\Frontaccounting\SquareUp\Push\CatalogExporter;
 use Ksfraser\Frontaccounting\SquareUp\DAO\SquareTokenDAO;
 use Ksfraser\Frontaccounting\SquareUp\DAO\StockMasterDAO;
-use Ksfraser\Frontaccounting\SquareUp\DAO\StockMovesDAO;
+use Ksfraser\Frontaccounting\SquareUp\ValueObjects\SquarePrice;
 use Ksfraser\Frontaccounting\SquareUp\Exceptions\SquareException;
 use Square\Exceptions\ApiException;
 
@@ -253,33 +253,10 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
 
     try {
         $env = $settings->getEnvironment();
-        $tokenSource = '';
-        if ($env === 'sandbox' && $settings->getSandboxAccessToken() !== null) {
-            $tokenSource = 'sandbox_access_token';
-        } elseif ($env === 'production' && $settings->getProductionAccessToken() !== null) {
-            $tokenSource = 'production_access_token';
-        } else {
-            $tokenSource = 'access_token (legacy fallback)';
-        }
-
-        // Ensure square_tokens table exists
-        $checkTable = db_query("SHOW TABLES LIKE '{$tablePrefix}0_square_tokens'");
-        if (db_num_rows($checkTable) == 0) {
-            $sql = "CREATE TABLE {$tablePrefix}0_square_tokens (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                stock_id VARCHAR(20) NOT NULL,
-                sku VARCHAR(255) NOT NULL,
-                square_catalog_object_id VARCHAR(255) NOT NULL,
-                square_variation_id VARCHAR(255) NOT NULL,
-                fa_last_updated DATETIME NULL,
-                created_at DATETIME NOT NULL,
-                updated_at DATETIME NOT NULL,
-                UNIQUE KEY stock_id (stock_id)
-            ) ENGINE=InnoDB;";
-            db_query($sql) or display_error(_("Cannot create square_tokens table: ") . db_error());
-        }
+        $tokenSource = $settings->getTokenSourceDescription();
         $token = $settings->getAccessToken();
         $tokenPrefix = substr($token ?? '', 0, 8);
+        
         display_notification(_("Environment: ") . strtoupper($env) . _(" | Token source: ") . $tokenSource . _(" | Prefix: ") . $tokenPrefix . _("..."));
         display_notification(_("Square API connection: ") . (count($squareLocations) > 0 ? _("OK (") . count($squareLocations) . _(" locations found)") : _("FAILED")));
 
@@ -345,16 +322,12 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
                 $exportRequest->getCurrency(),
                 $exportRequest->getSalesType()
             );
-            if ($myPrice <= 0) {
-                $myPrice = 999999.99;
-                $priceCents = 99999999;
-                display_notification(_("  WARNING: No price for ") . $stockId . _(" — set to \$999,999.99 (sentinel)"));
-            } else {
-                $priceCents = (int)round(100 * $myPrice);
-                if ($priceCents > 99999999) {
-                    display_notification(_("  WARNING: Price capped for ") . $stockId . _(" at \$999,999.99"));
-                    $priceCents = 99999999;
-                }
+            $squarePrice = SquarePrice::fromDollars($myPrice);
+            $priceCents = $squarePrice->getCents();
+            
+            $warning = $squarePrice->getWarningMessage($stockId);
+            if ($warning !== null) {
+                display_notification(_("  ") . $warning);
             }
 
             $catName = $item['cat_description'] ?? 'General';
@@ -373,7 +346,7 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
             }
 
             $changes = [];
-            $newDisplayName = str_replace("Whitewater Hill ", "", $item['description']);
+            $displayName = $item['description'];
             if ($existingItem !== null) {
                 $existingData = $existingItem->getItemData();
                 if ($existingData !== null) {
@@ -389,7 +362,7 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
                             $oldSku = $oldVarData->getSku();
                         }
                     }
-                    if ($oldName !== $newDisplayName) $changes[] = 'desc: "' . ($oldName ?? '') . '" -> "' . $newDisplayName . '"';
+                    if ($oldName !== $displayName) $changes[] = 'desc: "' . ($oldName ?? '') . '" -> "' . $displayName . '"';
                     if ($oldDesc !== $item['description']) $changes[] = 'full_desc changed';
                     if ((int)($oldPrice ?? 0) !== $priceCents) $changes[] = 'price: ' . ($oldPrice ?? 0) . ' -> ' . $priceCents;
                     if ($oldSku !== $sku) $changes[] = 'sku: ' . ($oldSku ?? '') . ' -> ' . $sku;
@@ -403,7 +376,7 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
                 display_notification(_("  Calling Square API: upsertProduct..."));
                 $catalogObject = $exporter->upsertProduct(
                     $sku,
-                    str_replace("Whitewater Hill ", "", $item['description']),
+                    $displayName,
                     $item['description'],
                     $catName,
                     $priceCents,

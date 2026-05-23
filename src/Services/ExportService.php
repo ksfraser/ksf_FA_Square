@@ -9,6 +9,7 @@ use Ksfraser\Frontaccounting\SquareUp\DAO\SquareTokenDAO;
 use Ksfraser\Frontaccounting\SquareUp\DAO\StockMasterDAO;
 use Ksfraser\Frontaccounting\SquareUp\DAO\StockMovesDAO;
 use Ksfraser\Frontaccounting\SquareUp\Push\CatalogExporter;
+use Ksfraser\Frontaccounting\SquareUp\ValueObjects\SquarePrice;
 use Square\Exceptions\ApiException;
 use Ksfraser\Frontaccounting\SquareUp\Exceptions\SquareException;
 
@@ -152,16 +153,11 @@ class ExportService
 
         // Get price
         $myPrice = $this->stockMasterDao->getItemPrice($stockId, $currency, $salesType);
-        if ($myPrice <= 0) {
-            $myPrice = 999999.99;
-            $priceCents = 99999999;
-            $result['message'] .= "\nWARNING: No price for " . $stockId . " — set to $999,999.99 (sentinel)";
-        } else {
-            $priceCents = (int)round(100 * $myPrice);
-            if ($priceCents > 99999999) {
-                $priceCents = 99999999;
-                $result['message'] .= "\nWARNING: Price capped for " . $stockId . " at $999,999.99";
-            }
+        $squarePrice = SquarePrice::fromDollars($myPrice);
+        $priceCents = $squarePrice->getCents();
+        
+        if ($squarePrice->wasTransformed()) {
+            $result['message'] .= "\n" . $squarePrice->getWarningMessage($stockId);
         }
 
         $catName = $item['cat_description'] ?? 'General';
@@ -181,7 +177,7 @@ class ExportService
 
         // Determine if insert or update
         $changes = [];
-        $newDisplayName = str_replace("Whitewater Hill ", "", $item['description']);
+        $displayName = $item['description'];
         if ($existingItem !== null) {
             $existingData = $existingItem->getItemData();
             if ($existingData !== null) {
@@ -197,7 +193,7 @@ class ExportService
                         $oldSku = $oldVarData->getSku();
                     }
                 }
-                if ($oldName !== $newDisplayName) $changes[] = 'desc: "' . ($oldName ?? '') . '" -> "' . $newDisplayName . '"';
+                if ($oldName !== $displayName) $changes[] = 'desc: "' . ($oldName ?? '') . '" -> "' . $displayName . '"';
                 if ($oldDesc !== $item['description']) $changes[] = 'full_desc changed';
                 if ((int)($oldPrice ?? 0) !== $priceCents) $changes[] = 'price: ' . ($oldPrice ?? 0) . ' -> ' . $priceCents;
                 if ($oldSku !== $sku) $changes[] = 'sku: ' . ($oldSku ?? '') . ' -> ' . $sku;
@@ -209,7 +205,7 @@ class ExportService
         try {
             $catalogObject = $this->exporter->upsertProduct(
                 $sku,
-                $newDisplayName,
+                $displayName,
                 $item['description'],
                 $catName,
                 $priceCents,

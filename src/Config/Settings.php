@@ -58,6 +58,43 @@ class Settings implements SettingsInterface
         return $this->getSandboxAccessToken() ?? $this->config['access_token'] ?? null;
     }
 
+    /**
+     * Gets a description of which token source is being used.
+     * Useful for display/notification purposes.
+     * 
+     * @return string Description like 'sandbox_access_token', 'production_access_token', or 'access_token (legacy fallback)'
+     */
+    public function getTokenSourceDescription(): string
+    {
+        $env = $this->getEnvironment();
+
+        if ($env === 'sandbox' && $this->getSandboxAccessToken() !== null) {
+            return 'sandbox_access_token';
+        } elseif ($env === 'production' && $this->getProductionAccessToken() !== null) {
+            return 'production_access_token';
+        } else {
+            return 'access_token (legacy fallback)';
+        }
+    }
+
+    /**
+     * Gets the effective token type being used.
+     * 
+     * @return string 'sandbox', 'production', or 'legacy'
+     */
+    public function getTokenType(): string
+    {
+        $env = $this->getEnvironment();
+
+        if ($env === 'sandbox' && $this->getSandboxAccessToken() !== null) {
+            return 'sandbox';
+        } elseif ($env === 'production' && $this->getProductionAccessToken() !== null) {
+            return 'production';
+        } else {
+            return 'legacy';
+        }
+    }
+
     public function setAccessToken(string $token): void
     {
         $this->config['access_token'] = $token;
