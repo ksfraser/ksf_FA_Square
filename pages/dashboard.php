@@ -14,6 +14,7 @@ include_once __DIR__ . "/../vendor/autoload.php";
 
 use Ksfraser\Frontaccounting\SquareUp\Config\Settings;
 use Ksfraser\Frontaccounting\SquareUp\Infrastructure\SquareClientFactory;
+use Ksfraser\Frontaccounting\SquareUp\DAO\SquareImportLogDAO;
 use Square\Exceptions\ApiException;
 
 $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
@@ -110,15 +111,15 @@ start_table(TABLESTYLE);
 
 table_section_title(_("Import Log (Last 10 Runs)"));
 
-$sql = "SELECT * FROM {$tablePrefix}square_import_log ORDER BY run_date DESC LIMIT 10";
-$result = db_query($sql);
-$hasRows = $result !== false && db_num_rows($result) > 0;
+$squareImportLogDao = new SquareImportLogDAO($tablePrefix);
+$logs = $squareImportLogDao->getRecentLogs(10);
+$hasRows = count($logs) > 0;
+
 if ($hasRows) {
     $th = array(_("Run Date"), _("Source"), _("Imported"), _("Skipped"), _("Failed"), _("Status"));
     table_header($th);
     $k = 0;
-    while ($row = db_fetch_assoc($result)) {
-        if ($row === false) break;
+    foreach ($logs as $row) {
         alt_table_row_color($k);
         label_cell($row['run_date'] ?? '');
         label_cell($row['source'] ?? '');

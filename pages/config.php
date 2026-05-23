@@ -13,6 +13,7 @@ include_once $path_to_root . "/includes/data_checks.inc";
 include_once __DIR__ . "/../vendor/autoload.php";
 
 use Ksfraser\Frontaccounting\SquareUp\Config\Settings;
+use Ksfraser\Frontaccounting\SquareUp\DAO\DebtorsMasterDAO;
 use Ksfraser\Frontaccounting\SquareUp\Staging\StagingTableManager;
 
 $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
@@ -35,17 +36,7 @@ if (isset($_POST['action'])) {
         switch ($_POST['action']) {
             case 'switch_env':
                 $newEnv = $_POST['environment'] ?? 'sandbox';
-                $sql = "SELECT COUNT(*) AS cnt FROM {$table} WHERE name = 'environment'";
-                $result = db_query($sql);
-                if ($result !== false) {
-                    $row = db_fetch_assoc($result);
-                    $e = db_escape($newEnv);
-                    if ((int)$row['cnt'] > 0) {
-                        db_query("UPDATE {$table} SET value = {$e} WHERE name = 'environment'");
-                    } else {
-                        db_query("INSERT INTO {$table} (name, value) VALUES ('environment', {$e})");
-                    }
-                }
+                Settings::saveToDatabase($tablePrefix, 'environment', $newEnv);
                 $settings = Settings::fromFADatabase($tablePrefix);
                 $env = $settings->getEnvironment();
                 $msg = _("Switched to ") . ($env === 'production' ? _('Production') : _('Sandbox'));
@@ -56,32 +47,12 @@ if (isset($_POST['action'])) {
                 foreach ($tokenFields as $field) {
                     $value = $_POST[$field] ?? '';
                     if ($value !== '') {
-                        $sql = "SELECT COUNT(*) AS cnt FROM {$table} WHERE name = " . db_escape($field);
-                        $result = db_query($sql);
-                        if ($result !== false) {
-                            $row = db_fetch_assoc($result);
-                            if ((int)$row['cnt'] > 0) {
-                                $sql = "UPDATE {$table} SET value = " . db_escape($value) . " WHERE name = " . db_escape($field);
-                            } else {
-                                $sql = "INSERT INTO {$table} (name, value) VALUES (" . db_escape($field) . ", " . db_escape($value) . ")";
-                            }
-                            db_query($sql);
-                        }
+                        Settings::saveToDatabase($tablePrefix, $field, $value);
                     }
                 }
 
                 $newEnv = $_POST['environment'] ?? 'sandbox';
-                $sql = "SELECT COUNT(*) AS cnt FROM {$table} WHERE name = 'environment'";
-                $result = db_query($sql);
-                if ($result !== false) {
-                    $row = db_fetch_assoc($result);
-                    $e = db_escape($newEnv);
-                    if ((int)$row['cnt'] > 0) {
-                        db_query("UPDATE {$table} SET value = {$e} WHERE name = 'environment'");
-                    } else {
-                        db_query("INSERT INTO {$table} (name, value) VALUES ('environment', {$e})");
-                    }
-                }
+                Settings::saveToDatabase($tablePrefix, 'environment', $newEnv);
 
                 $msg = _("Configuration updated");
                 $settings = Settings::fromFADatabase($tablePrefix);
@@ -158,15 +129,8 @@ label_row(_("Last Import Date:"), $lastDate !== null ? $lastDate->format('Y-m-d 
 
 $destCust = $settings->getDestinationCustomer();
 if ($destCust !== null) {
-    $sql = "SELECT name FROM {$tablePrefix}debtors_master WHERE debtor_no = " . (int)$destCust;
-    $result = db_query($sql);
-    $customerName = (string)$destCust;
-    if ($result !== false) {
-        $row = db_fetch_assoc($result);
-        if ($row) {
-            $customerName = $row['name'];
-        }
-    }
+    $debtorsMasterDao = new DebtorsMasterDAO($tablePrefix);
+    $customerName = $debtorsMasterDao->getCustomerName($destCust);
     label_row(_("Destination Customer:"), $customerName);
 }
 

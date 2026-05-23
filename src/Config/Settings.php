@@ -135,4 +135,48 @@ class Settings implements SettingsInterface
     {
         return $this->config;
     }
+
+    /**
+     * Saves a configuration key-value pair to the database.
+     * 
+     * @param string $tablePrefix Database table prefix
+     * @param string $name Configuration name
+     * @param mixed $value Configuration value
+     * @return void
+     * @throws Exception if query fails
+     */
+    public static function saveToDatabase(string $tablePrefix, string $name, $value): void
+    {
+        $table = $tablePrefix . 'square';
+        $escapedName = db_escape($name);
+        $escapedValue = db_escape((string)$value);
+
+        $sql = "SELECT COUNT(*) AS cnt FROM {$table} WHERE name = {$escapedName}";
+        $result = db_query($sql);
+        if ($result !== false) {
+            $row = db_fetch_assoc($result);
+            if ((int)$row['cnt'] > 0) {
+                $sql = "UPDATE {$table} SET value = {$escapedValue} WHERE name = {$escapedName}";
+            } else {
+                $sql = "INSERT INTO {$table} (name, value) VALUES ({$escapedName}, {$escapedValue})";
+            }
+            db_query($sql);
+        }
+    }
+
+    /**
+     * Saves the current settings to the database.
+     * 
+     * @param string $tablePrefix Database table prefix
+     * @return void
+     * @throws Exception if query fails
+     */
+    public function saveAllToDatabase(string $tablePrefix): void
+    {
+        foreach ($this->config as $name => $value) {
+            if ($value !== null) {
+                self::saveToDatabase($tablePrefix, $name, $value);
+            }
+        }
+    }
 }

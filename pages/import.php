@@ -20,8 +20,7 @@ include_once __DIR__ . "/../vendor/autoload.php";
 
 use Ksfraser\Frontaccounting\SquareUp\Config\Settings;
 use Ksfraser\Frontaccounting\SquareUp\Infrastructure\SquareClientFactory;
-use Ksfraser\Frontaccounting\SquareUp\Pull\OrderImporter;
-use Ksfraser\Frontaccounting\SquareUp\Staging\StagingTableManager;
+use Ksfraser\Frontaccounting\SquareUp\Services\ImportService;
 
 use Square\Exceptions\ApiException;
 
@@ -87,240 +86,49 @@ if (isset($_POST['action']) && $_POST['action'] == 'o_import') {
     $destCust = (int)($_POST['destCust'] ?? 0);
     $fromDate = $_POST['from_date'] ?? '';
     $toDate = $_POST['to_date'] ?? '';
-    $trialRun = (int)($_POST['trial_run'] ?? 0);
+    $trialRun = (bool)($_POST['trial_run'] ?? 0);
     $adjustmentItem = $_POST['adjustment'] ?? '';
     $tipsItem = $_POST['tips'] ?? '';
     $locationFilter = $_POST['location_id'] ?? '';
 
-    if ($destCust <= 0) {
-        $error = _("Please select a destination customer.");
-    } elseif ($fromDate === '' || $toDate === '') {
-        $error = _("Please select a date range.");
-    } else {
-        $sql = "SELECT * FROM {$tablePrefix}debtors_master WHERE debtor_no = " . $destCust;
-        $result = db_query($sql);
-        $customer = false;
-        if ($result !== false) {
-            $customer = db_fetch_assoc($result);
-        }
-        if (!$customer) {
-            $error = _("Customer not found.");
+    try {
+        $importService = new ImportService($tablePrefix, $settings, $client);
+        $validation = $importService->validateImportParams($destCust, $fromDate, $toDate);
+
+        if (!$validation['valid']) {
+            $error = $validation['error'];
         } else {
-            $stagingManager = new StagingTableManager($tablePrefix);
-            $stagingManager->createStagingTables();
+            $results = $importService->performImport(
+                $validation['customer'],
+                $fromDate,
+                $toDate,
+                $trialRun,
+                $adjustmentItem,
+                $tipsItem,
+                $locationFilter,
+                $locations
+            );
 
-            $importResults = [
-                'imported' => 0,
-                'skipped' => 0,
-                'failed' => 0,
-                'errors' => [],
-            ];
-
-            try {
-                $orderImporter = new OrderImporter($client, $settings);
-
-                $fromDateTime = new \DateTimeImmutable($fromDate);
-                $toDateTime = new \DateTimeImmutable($toDate);
-
-                foreach ($locations as $locId => $locName) {
-                    if ($locationFilter !== '' && $locationFilter !== $locId) {
-                        continue;
-                    }
-
-                    $sql = "SELECT * FROM {$tablePrefix}cust_branch "
-                        . "WHERE debtor_no = " . $destCust . " AND br_name = " . db_escape($locName);
-                    $branchResult = db_query($sql);
-                    $branch = false;
-                    if ($branchResult !== false) {
-                        $branch = db_fetch_assoc($branchResult);
-                    }
-                    if (!$branch) {
-                        display_notification(_("Skipping location: ") . $locName . _(" - no matching FA branch"));
-                        continue;
-                    }
-
-                    $payments = $orderImporter->listPayments($fromDateTime, $toDateTime, $locId);
-
-                    foreach ($payments as $payment) {
-                        $paymentMethod = str_replace("CREDIT_CARD", "CARD", $payment->getSourceType());
-                        if ($paymentMethod === "NO_SALE") {
-                            continue;
-                        }
-
-                        $sql = "SELECT COUNT(*) AS cnt FROM {$tablePrefix}sales_orders "
-                            . "WHERE customer_ref = " . db_escape($payment->getId());
-                        $chkResult = db_query($sql);
-                        $chkRow = false;
-                        if ($chkResult !== false) {
-                            $chkRow = db_fetch_assoc($chkResult);
-                        }
-                        if ($chkRow && (int)$chkRow['cnt'] > 0) {
-                            display_notification(_("Skipping (already imported): ") . $payment->getId());
-                            $importResults['skipped']++;
-                            continue;
-                        }
-
-                        $refunded = $payment->getRefundedMoney();
-                        if ($refunded !== null && $refunded->getAmount() != 0) {
-                            display_notification(_("Skipping refund: ") . $payment->getId());
-                            $importResults['skipped']++;
-                            continue;
-                        }
-
-                        $orderId = $payment->getOrderId();
-                        if ($orderId === null) {
-                            continue;
-                        }
-
-                        $result = $orderImporter->getPaymentWithOrder($payment->getId());
-                        $order = $result['order'];
-                        if ($order === null) {
-                            display_notification(_("Cannot retrieve order: ") . $orderId);
-                            $importResults['skipped']++;
-                            continue;
-                        }
-
-                        $lineItems = $order->getLineItems();
-                        if ($lineItems === null) {
-                            continue;
-                        }
-
-                        if ($trialRun) {
-                            display_notification(_("TRIAL: Would import ") . $payment->getId()
-                                . " (" . $payment->getTotalMoney()->getAmount() / 100 . " "
-                                . $payment->getTotalMoney()->getCurrency() . ")");
-                        } else {
-                            $cart = new Cart(ST_SALESINVOICE);
-                            $cart->customer_id = $customer['debtor_no'];
-                            $cart->customer_currency = $customer['curr_code'];
-                            $cart->Comments = 'Imported from Square: ' . $payment->getId();
-
-                            $dt = \DateTime::createFromFormat(
-                                'Y-m-d\TH:i:s\Z',
-                                $payment->getCreatedAt(),
-                                new \DateTimeZone('UTC')
-                            );
-                            if ($dt) {
-                                $dt->setTimezone(new \DateTimeZone(date_default_timezone_get()));
-                                $cart->document_date = $dt->format('Y-m-d');
-                                $cart->due_date = $dt->format('Y-m-d');
-                            }
-
-                            $cart->set_branch(
-                                $branch['branch_code'],
-                                $branch['tax_group_id'],
-                                $branch['br_address']
-                            );
-                            $cart->cust_ref = $payment->getId();
-
-                            $taxType = '';
-                            $orderTaxes = $order->getTaxes();
-                            if ($orderTaxes !== null && count($orderTaxes) > 0) {
-                                $taxType = $orderTaxes[0]->getType();
-                            }
-
-                            $catApi = $client->getCatalogApi();
-                            foreach ($lineItems as $item) {
-                                $catObjId = $item->getCatalogObjectId();
-                                $sku = $item->getName();
-                                if ($catObjId !== null) {
-                                    try {
-                                        $catResponse = $catApi->retrieveCatalogObject($catObjId, false);
-                                        if ($catResponse->isSuccess()) {
-                                            $catObj = $catResponse->getResult()->getObject();
-                                            if ($catObj !== null) {
-                                                $varData = $catObj->getItemVariationData();
-                                                if ($varData !== null && $varData->getSku() !== null) {
-                                                    $sku = $varData->getSku();
-                                                }
-                                            }
-                                        }
-                                    } catch (Exception $e) {
-                                    }
-                                }
-
-                                $basePrice = $item->getBasePriceMoney();
-                                $unitPrice = $basePrice !== null ? $basePrice->getAmount() / 100 : 0;
-
-                                $discount = 0;
-                                if ($taxType === "INCLUSIVE") {
-                                    $totalPrice = $item->getVariationTotalPriceMoney();
-                                    $totalAmt = $totalPrice !== null ? $totalPrice->getAmount() : 1;
-                                    $discMoney = $item->getTotalDiscountMoney();
-                                    if ($discMoney !== null && $totalAmt > 0) {
-                                        $discount = $discMoney->getAmount() / $totalAmt;
-                                    }
-                                } else {
-                                    $grossSales = $item->getGrossSalesMoney();
-                                    $grossAmt = $grossSales !== null ? $grossSales->getAmount() : 1;
-                                    $discMoney = $item->getTotalDiscountMoney();
-                                    if ($discMoney !== null && $grossAmt > 0) {
-                                        $discount = $discMoney->getAmount() / $grossAmt;
-                                    }
-                                }
-
-                                add_to_order($cart, $sku, $item->getQuantity(), $unitPrice, $discount);
-                            }
-
-                            $tipMoney = $payment->getTipMoney();
-                            if ($tipMoney !== null && $tipMoney->getAmount() != 0 && $tipsItem !== '') {
-                                add_to_order($cart, $tipsItem, 1, $tipMoney->getAmount() / 100, 0);
-                            }
-
-                            $total = $cart->get_trans_total();
-                            $totalOrder = $payment->getTotalMoney()->getAmount() / 100;
-                            $adj = round($totalOrder - $total, 2);
-                            if ($adj != 0 && $adjustmentItem !== '') {
-                                display_warning(_("Adjustment needed: ") . $adj);
-                                add_to_order($cart, $adjustmentItem, 1, $adj, 0);
-                            }
-
-                            $orderNo = $cart->write(1);
-                            display_notification(_("Created invoice #") . $orderNo
-                                . _(" for ") . $payment->getId());
-                            $importResults['imported']++;
-                        }
-                    }
+            // Display all messages from the import
+            foreach ($results['errors'] as $message) {
+                if (strpos($message, _("TRIAL:")) !== false || strpos($message, _("Skipping")) !== false) {
+                    display_notification($message);
+                } elseif (strpos($message, _("Adjustment needed")) !== false) {
+                    display_warning($message);
+                } elseif (strpos($message, _("Created invoice")) !== false) {
+                    display_notification($message);
                 }
+            }
 
-                if (!$trialRun) {
-                    $sql = "INSERT INTO {$tablePrefix}square_import_log "
-                        . "(run_date, source, orders_imported, orders_skipped, orders_failed, status) VALUES ("
-                        . "'" . date('Y-m-d H:i:s') . "', 'api', "
-                        . $importResults['imported'] . ", "
-                        . $importResults['skipped'] . ", "
-                        . $importResults['failed'] . ", 'completed')";
-                    db_query($sql);
-
-                    $newLastDate = date('Y-m-d', strtotime($toDate));
-                    $lastSetting = $settings->getLastImportDate();
-                    if ($lastSetting === null || $newLastDate > $lastSetting->format('Y-m-d')) {
-                        $table = $tablePrefix . 'square';
-                        $sql = "SELECT COUNT(*) AS cnt FROM {$table} WHERE name = 'lastdate'";
-                        $result = db_query($sql);
-                        $row = false;
-                        if ($result !== false) {
-                            $row = db_fetch_assoc($result);
-                        }
-                        if ($row && (int)$row['cnt'] > 0) {
-                            $sql = "UPDATE {$table} SET value = '{$newLastDate}' WHERE name = 'lastdate'";
-                        } else {
-                            $sql = "INSERT INTO {$table} (name, value) VALUES ('lastdate', '{$newLastDate}')";
-                        }
-                        db_query($sql);
-                    }
-                }
-
-                $msg = _("Import complete. Imported: ") . $importResults['imported']
-                    . _(", Skipped: ") . $importResults['skipped']
-                    . _(", Failed: ") . $importResults['failed'];
-
-            } catch (ApiException $e) {
-                $error = _("API Error: ") . $e->getMessage();
-            } catch (Exception $e) {
-                $error = _("Error: ") . $e->getMessage();
+            $msg = $results['msg'];
+            if (isset($results['error']) && $results['error'] !== '') {
+                $error = $results['error'];
             }
         }
+    } catch (ApiException $e) {
+        $error = _("API Error: ") . $e->getMessage();
+    } catch (Exception $e) {
+        $error = _("Error: ") . $e->getMessage();
     }
 }
 
