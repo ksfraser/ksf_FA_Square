@@ -228,3 +228,220 @@ Performance gaps will be identified through:
 | 0.1 | 2026-05-20 | KSFraser | Initial BABOK alignment for Square SDK v40 |
 | 0.2 | 2026-05-21 | KSFraser | Updated to reflect current state, refactoring progress, and unified staging plan |
 | 0.3 | 2026-05-21 | KSFraser | Updated current/future state, prioritization, and change strategy with Phase 1 completion and Phase 2 (Location Mapping FR-08) |
+| 0.4 | 2026-05-22 | KSFraser | Added DAO layer, Service layer, and inter-module communication via hook_invoke pattern |
+
+---
+
+## Recent Updates (2026-05-22)
+
+### Architecture Refactoring Complete
+
+The following architecture improvements have been implemented:
+
+#### 1. **DAO (Data Access Object) Layer** - NEW
+A comprehensive DAO layer has been added to encapsulate all database operations:
+
+| DAO Class | Table | Purpose |
+|-----------|-------|---------|
+| `SquareTokenDAO` | `square_tokens` | Manages FA stock_id → Square catalog_object_id mappings with `fa_last_updated` for change detection |
+| `StockMasterDAO` | `stock_master` | Querying stock items for export, getting prices, SKUs, counts |
+| `StockMovesDAO` | `stock_moves` | Inventory quantity calculations |
+| `DebtorsMasterDAO` | `debtors_master` | Customer lookups |
+| `CustBranchDAO` | `cust_branch` | Customer branch lookups by name |
+| `SalesOrdersDAO` | `sales_orders` | Order existence checks (for import deduplication) |
+| `SquareImportLogDAO` | `square_import_log` | Import run logging |
+
+**Benefits**:
+- Enforces SRP (Single Responsibility Principle)
+- Makes database operations testable in isolation
+- Centralizes table name and prefix management
+- Simplifies pages by removing raw SQL
+
+#### 2. **Service Layer** - NEW
+Service classes coordinate business logic using DAOs and other components:
+
+| Service Class | Purpose |
+|---------------|---------|
+| `ExportService` | Coordinates catalog export workflow: token management, API calls, logging |
+| `ImportService` | Coordinates order import workflow: validation, order processing, logging, preferences management |
+
+**Benefits**:
+- Business logic is centralized and reusable
+- Pages become thin controllers that delegate to services
+- Easier to test business logic independently
+
+#### 3. **Inter-Module Communication via `hook_invoke`** - NEW
+Implemented a standardized pattern for ksf modules to discover and communicate with each other using FrontAccounting's built-in `hook_invoke` function.
+
+**Problem Solved**:
+- Previously, modules assumed constants would be defined or checked hardcoded paths
+- `hook_invoke` is the native FA mechanism for inter-module communication (like `db_prevoid`, `db_presave`, `db_postsave`)
+
+**Implemented Methods in `hooks_ksf_FA_Square`**:
+
+```php
+// Get all constants defined by this module
+public function getModuleConstants(&$data, $opts = null);
+
+// Get all capabilities provided by this module  
+public function getModuleCapabilities(&$data, $opts = null);
+
+// Check if module has a specific capability
+public function hasCapability(&$data, $opts = null);
+
+// Generic responder for capability requests
+public function respondToCapabilityRequest(&$data, $opts = null);
+```
+
+**How Other Modules Can Call Us**:
+```php
+// Get our constants
+$data = [];
+$constants = hook_invoke('ksf_FA_Square', 'getModuleConstants', $data);
+
+// Check if we have a capability
+$data = [];
+$hasExport = hook_invoke('ksf_FA_Square', 'hasCapability', $data, ['capability' => 'export']);
+
+// Generic request
+$data = [];
+$response = hook_invoke('ksf_FA_Square', 'respondToCapabilityRequest', $data, ['request' => 'constants']);
+```
+
+**Multi-layered Discovery Implemented in `export.php`**:
+1. **Layer 1 (Preferred)**: `hook_invoke` - tries common module names (`ksf_generate`, `ksf_generate_catalogue`, `ksf_gen_catalogue`)
+2. **Layer 2**: Constant check - `defined('KSF_GENERATE_CATALOGUE_PREFS')`
+3. **Layer 3**: Database table check - most reliable indicator
+4. **Layer 4**: File system check - for dev environments
+
+#### 4. **Pages Refactored as Thin Controllers**
+All 4 main pages have been refactored to delegate to DAOs and Services:
+
+| Page | Before (LOC) | After (LOC) | Improvement |
+|------|-------------|-------------|-------------|
+| `export.php` | ~600 | ~450 | Uses `ExportService`, DAOs, multi-layer discovery |
+| `import.php` | ~370 | ~150 | Uses `ImportService`, DAOs |
+| `config.php` | ~190 | ~130 | Uses `Settings::saveToDatabase()`, `DebtorsMasterDAO` |
+| `dashboard.php` | ~225 | ~140 | Uses `SquareImportLogDAO` |
+
+**Key Bug Fixes in This Refactor**:
+1. **Removed dev-environment assumption**: No more hardcoded `/tmp/ksf_generate/` path
+2. **Removed constant assumption**: No more assuming `KSF_GENERATE_CATALOGUE_PREFS` is always defined
+3. **Fixed parse errors**: Mismatched try/catch blocks and missing braces
+
+---
+
+## Capabilities Provided by This Module
+
+For inter-module communication, this module provides the following capabilities:
+
+| Capability | Description | Methods |
+|------------|-------------|---------|
+| `export` | Export products from FrontAccounting to Square | `exportProducts`, `syncInventory` |
+| `import` | Import orders from Square to FrontAccounting | `importOrders` |
+| `payments` | Collect payments via Square Terminal | `createTerminalCheckout` |
+| `config` | Configure Square API settings | `getSettings`, `saveSettings` |
+
+**Constants Defined**:
+- `KSF_SQUARE_MODULE_NAME` = `'ksf_FA_Square'`
+- `KSF_SQUARE_CAPABILITIES` = `'export,import,payments,config'`
+
+---
+
+## For Other KSF Modules: Adopting This Pattern
+
+To enable inter-module communication with other ksf modules, add these methods to your hooks class:
+
+```php
+<?php
+class hooks_ksf_yourmodule extends hooks {
+
+    // ... your existing methods ...
+
+    // =========================================================================
+    // INTER-MODULE COMMUNICATION METHODS
+    // These allow other ksf modules to discover your module's capabilities
+    // using FrontAccounting's built-in hook_invoke function.
+    // =========================================================================
+
+    /**
+     * Gets all constants defined by this module.
+     * 
+     * Call from other modules:
+     * hook_invoke('ksf_yourmodule', 'getModuleConstants', $data)
+     */
+    public function getModuleConstants(&$data, $opts = null) {
+        $constants = [
+            // 'KSF_YOURMODULE_PREFS' => KSF_YOURMODULE_PREFS,
+            // Add your module's constants here
+        ];
+        $data['constants'] = $constants;
+        return $constants;
+    }
+
+    /**
+     * Gets all capabilities provided by this module.
+     * 
+     * Call from other modules:
+     * hook_invoke('ksf_yourmodule', 'getModuleCapabilities', $data)
+     */
+    public function getModuleCapabilities(&$data, $opts = null) {
+        $capabilities = [
+            // 'your_capability' => [
+            //     'description' => 'What this capability does',
+            //     'methods' => ['method1', 'method2'],
+            // ],
+        ];
+        $data['capabilities'] = $capabilities;
+        return $capabilities;
+    }
+
+    /**
+     * Checks if this module provides a specific capability.
+     * 
+     * Call from other modules:
+     * hook_invoke('ksf_yourmodule', 'hasCapability', $data, ['capability' => 'export'])
+     */
+    public function hasCapability(&$data, $opts = null) {
+        $capability = $opts['capability'] ?? $data['capability'] ?? null;
+        if ($capability === null) {
+            $data['has_capability'] = false;
+            $data['error'] = 'No capability specified';
+            return false;
+        }
+
+        $capabilities = []; // List your capability names here
+        $hasCapability = in_array($capability, $capabilities);
+        $data['has_capability'] = $hasCapability;
+        $data['capability_checked'] = $capability;
+        return $hasCapability;
+    }
+
+    /**
+     * Generic responder for capability requests.
+     * 
+     * Call from other modules:
+     * hook_invoke('ksf_yourmodule', 'respondToCapabilityRequest', $data, ['request' => 'constants|capabilities|has:export'])
+     */
+    public function respondToCapabilityRequest(&$data, $opts = null) {
+        $request = $opts['request'] ?? $data['request'] ?? 'capabilities';
+        $data['request'] = $request;
+        $data['module'] = $this->module_name;
+
+        switch ($request) {
+            case 'capabilities':
+                return $this->getModuleCapabilities($data, $opts);
+            case 'constants':
+                return $this->getModuleConstants($data, $opts);
+            case (strpos($request, 'has:') === 0):
+                $capability = substr($request, 4);
+                return $this->hasCapability($data, ['capability' => $capability]);
+            default:
+                $data['error'] = 'Unknown request type: ' . $request;
+                return null;
+        }
+    }
+}
+```
+
+See `AGENTS_MODULE_COMMUNICATION_ADDENDUM.md` for the complete pattern that can be shared with other modules.

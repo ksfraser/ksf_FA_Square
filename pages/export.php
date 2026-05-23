@@ -16,6 +16,7 @@ include_once $path_to_root . "/sales/includes/db/sales_types_db.inc";
 include_once __DIR__ . "/../vendor/autoload.php";
 
 use Ksfraser\Frontaccounting\SquareUp\Config\Settings;
+use Ksfraser\Frontaccounting\SquareUp\DTO\ExportRequest;
 use Ksfraser\Frontaccounting\SquareUp\Infrastructure\SquareClientFactory;
 use Ksfraser\Frontaccounting\SquareUp\Push\CatalogExporter;
 use Ksfraser\Frontaccounting\SquareUp\DAO\SquareTokenDAO;
@@ -236,15 +237,19 @@ if ($ksfGenCatalogueInstalled) {
 }
 
 if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
-    $locationId = $_POST['location_id'] ?? '0';
-    $category = (int)($_POST['category'] ?? -1);
-    $stockLike = $_POST['stocklike'] ?? '';
-    $uploadImages = (int)($_POST['upload'] ?? 0);
-    $availableOnline = (int)($_POST['online'] ?? 0);
-    $maxItems = (int)($_POST['max_items'] ?? 10);
-    $sendInactive = (int)($_POST['send_inactive'] ?? 0);
-    $fullSync = (int)($_POST['full_sync'] ?? 0);
-    if ($maxItems < 1) $maxItems = 10;
+    $exportRequest = ExportRequest::fromPost(
+        get_company_pref('curr_default'),
+        0
+    );
+
+    $locationId = $exportRequest->getLocationId();
+    $category = $exportRequest->getCategory();
+    $stockLike = $exportRequest->getStockLike();
+    $uploadImages = $exportRequest->shouldUploadImages();
+    $availableOnline = $exportRequest->isAvailableOnline();
+    $maxItems = $exportRequest->getMaxItems();
+    $sendInactive = $exportRequest->shouldSendInactive();
+    $fullSync = $exportRequest->isFullSync();
 
     try {
         $env = $settings->getEnvironment();
@@ -303,10 +308,10 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
 
         $stockMasterDao = new StockMasterDAO($tablePrefix);
         $itemsResult = $stockMasterDao->getItemsForExport(
-            $category > 0 ? $category : null,
-            $stockLike,
-            !$sendInactive,
-            !empty($_POST['sort_recent']),
+            $exportRequest->getCategoryId(),
+            $exportRequest->getStockLike(),
+            $exportRequest->shouldExcludeInactive(),
+            $exportRequest->shouldSortRecent(),
             $ksfGenPrefs,
             $ksfGenCatalogueInstalled
         );
@@ -337,8 +342,8 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
 
             $myPrice = $stockMasterDao->getItemPrice(
                 $stockId,
-                $_POST['currency'] ?? get_company_pref('curr_default'),
-                $_POST['sales_type'] ?? 0
+                $exportRequest->getCurrency(),
+                $exportRequest->getSalesType()
             );
             if ($myPrice <= 0) {
                 $myPrice = 999999.99;
@@ -402,7 +407,7 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
                     $item['description'],
                     $catName,
                     $priceCents,
-                    $_POST['currency'] ?? 'CAD',
+                    $exportRequest->getCurrency(),
                     $taxName,
                     $taxRate,
                     $existingItem
