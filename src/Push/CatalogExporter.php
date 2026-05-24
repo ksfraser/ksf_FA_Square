@@ -26,8 +26,15 @@ use Square\Utils\FileWrapper;
 
 class CatalogExporter implements CatalogExporterInterface
 {
-    private SquareClient $client;
-    private SettingsInterface $settings;
+    /**
+     * @var SquareClient
+     */
+    private $client;
+
+    /**
+     * @var SettingsInterface
+     */
+    private $settings;
 
     public function __construct(SquareClient $client, SettingsInterface $settings)
     {

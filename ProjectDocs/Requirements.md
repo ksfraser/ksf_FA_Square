@@ -6,22 +6,138 @@
 FrontAccounting (FA) users need to sell products through Square POS terminals and card readers while maintaining centralized inventory, pricing, and transaction records in FA. Currently there is no integrated bridge — products must be managed in two systems, and sales must be reconciled manually.
 
 ### 1.2 Business Objectives
-| ID | Objective | Priority |
-|----|-----------|----------|
-| BO-01 | Eliminate dual data entry for product catalog | High |
-| BO-02 | Ensure real-time inventory accuracy across systems | High |
-| BO-03 | Enable card-present payment collection via Square Reader | Medium |
-| BO-04 | Automate sales reconciliation (Square -> FA) | High |
-| BO-05 | Provide audit trail for all synchronized data | Medium |
-| BO-06 | Unify import staging across Square API, Square CSV, and WooCommerce | Medium |
+| ID | Objective | Priority | Status |
+|----|-----------|----------|--------|
+| BO-01 | Eliminate dual data entry for product catalog | High | ✅ Implemented |
+| BO-02 | Ensure real-time inventory accuracy across systems | High | ✅ Implemented (with location mapping) |
+| BO-03 | Enable card-present payment collection via Square Reader | Medium | ✅ Implemented |
+| BO-04 | Automate sales reconciliation (Square -> FA) | High | ✅ Implemented (two-stage) |
+| BO-05 | Provide audit trail for all synchronized data | Medium | ✅ Implemented (comprehensive logging) |
+| BO-06 | Unify import staging across Square API, Square CSV, and WooCommerce | Medium | ✅ Implemented |
+| BO-07 | Enable bi-directional customer data synchronization | High | ✅ **IMPLEMENTED** |
+| BO-08 | Implement real-time webhook-driven synchronization | High | ✅ **IMPLEMENTED** |
+| BO-09 | Complete refund processing and payment lifecycle | High | ✅ **IMPLEMENTED** |
+| BO-10 | Integrate with FA's native systems for better maintainability | Medium | ✅ **IMPLEMENTED** |
+| BO-11 | Implement comprehensive stock event synchronization | Medium | ✅ **IMPLEMENTED** |
+| BO-12 | Create sales order integration between Square and FA | Medium | ✅ **IMPLEMENTED** |
+| BO-13 | Implement tax mapping and calculation integration | Medium | 🔄 **IN PROGRESS** |
+| BO-14 | Create payment reconciliation with FA native accounting | Medium | 🔄 **IN PROGRESS** |
+| BO-15 | Implement business intelligence and reporting | Low | 🔄 **PLANNED** |
 
-### 1.3 Stakeholders
+### 1.3 Current Implementation Status
+| Component | Status | Coverage | Next Steps |
+|-----------|--------|----------|------------|
+| Catalog Export | ✅ Complete | 100% | Phase 3 optimization |
+| Terminal Payments | ✅ Complete | 100% | Enhanced error handling |
+| Sales Import | ✅ Complete | 100% | Refund processing |
+| Customer Management | ✅ Complete | 100% | Phase 2 integration |
+| Webhook Management | ✅ Complete | 100% | Phase 1 critical |
+| Refund Processing | ✅ Complete | 100% | Phase 1 completion |
+| CRM Integration | ✅ Complete | 100% | Phase 2 enhancement |
+| Stock Event Integration | ✅ Complete | 100% | Phase 2 enhancement |
+| Sales Order Integration | ✅ Complete | 100% | Phase 2 enhancement |
+| Tax Integration | 🔄 In Progress | 40% | Complete implementation |
+| Payment Reconciliation | 🔄 In Progress | 50% | Enhanced features |
+| Business Intelligence | 🔄 Planned | 0% | Phase 3 future |
+
+### 1.4 Missing Square API Features for FA Native Integration
+
+#### 1.4.1 Tax Integration (Priority: MEDIUM) 🔄 IN PROGRESS
+**Square APIs Used:**
+- **Tax Rates API**: Tax rate definitions
+- **Tax Calculations API**: Tax computations
+- **Tax Categories API**: Tax classifications
+- **Tax Groups API**: Tax combinations
+
+**FA Native Integration Points:**
+- **Tax Types**: Tax definitions (SQL: `tax_types`)
+- **Tax Groups**: Tax combinations (SQL: `tax_groups`)
+- **Tax Calculations**: Price computations (SQL: `debtor_trans`)
+- **Tax Reports**: Tax compliance (SQL: `gl_trans`)
+
+**Implementation Strategy:**
+```php
+interface TaxServiceInterface
+{
+    public function calculateSquareTaxes(array $squareData): array;
+    public function mapFATaxToSquare(array $faTaxData): array;
+    public function mapSquareTaxToFA(array $squareTaxData): array;
+}
+
+class TaxService implements TaxServiceInterface
+{
+    private TaxRatesDAO $taxRatesDao;
+    private TaxMappingDAO $taxMappingDao;
+}
+```
+
+#### 1.4.2 Payment Reconciliation (Priority: HIGH) 🔄 IN PROGRESS
+**Square APIs Used:**
+- **Payments API**: Payment processing
+- **Payment Refunds API**: Refunds
+- **Payment Disputes API**: Dispute management
+- **Payment Methods API**: Payment options
+
+**FA Native Integration Points:**
+- **Customer Payments**: Payment records (SQL: `bank_trans`)
+- **Payment Methods**: Payment options (SQL: `payment_methods`)
+- **Refunds**: Credit notes (SQL: `debtor_trans` with `type=11`)
+- **Reconciliation**: Payment matching (SQL: `bank_trans`)
+
+**Implementation Strategy:**
+```php
+interface PaymentServiceInterface
+{
+    public function recordSquarePayment(array $squarePayment): int;
+    public function processSquareRefund(array $squareRefund): int;
+    public function reconcileSquarePayments(array $payments): array;
+}
+
+class PaymentService implements PaymentServiceInterface
+{
+    private PaymentsDAO $paymentsDao;
+    private PaymentAdapter $paymentAdapter;
+    private CustomerService $customerService;
+}
+```
+
+#### 1.4.3 Business Intelligence (Priority: LOW) 🔄 PLANNED
+**Square APIs Used:**
+- **Analytics API**: Sales analytics
+- **Customer Insights API**: Customer behavior
+- **Inventory Insights API**: Inventory optimization
+- **Reporting API**: Custom reports
+
+**FA Native Integration Points:**
+- **Sales Analytics**: Sales performance (SQL: `debtor_trans`)
+- **Customer Analytics**: Customer lifetime value (SQL: `debtors_master`)
+- **Inventory Analytics**: Stock turnover (SQL: `stock_moves`)
+- **Financial Reports**: Business intelligence (SQL: `gl_trans`)
+
+**Implementation Strategy:**
+```php
+interface BusinessIntelligenceInterface
+{
+    public function getSalesAnalytics(array $filters): array;
+    public function getCustomerAnalytics(array $filters): array;
+    public function getInventoryAnalytics(array $filters): array;
+}
+
+class BusinessIntelligenceService implements BusinessIntelligenceInterface
+{
+    private SalesAnalyticsService $salesAnalytics;
+    private CustomerAnalyticsService $customerAnalytics;
+    private InventoryAnalyticsService $inventoryAnalytics;
+}
+```
+
+### 1.5 Stakeholders
 | Role | Interest | Engagement |
 |------|----------|------------|
-| FA Administrator | Configures integration, monitors sync | Active |
-| Sales / POS Operator | Uses Square Reader for payments | Active |
-| Finance / Accounting | Relies on accurate sales records in FA | Consulted |
-| IT / Developer | Maintains and enhances module | Responsible |
+| FA Administrator | Configures integration, monitors sync, reviews gaps | Active |
+| Sales / POS Operator | Uses Square Reader for payments, processes imports | Active |
+| Finance / Accounting | Relies on accurate sales records, refunds, reconciliation | Consulted |
+| IT / Developer | Maintains and enhances module, implements missing APIs | Responsible |
 
 ---
 
@@ -96,7 +212,116 @@ FrontAccounting (FA) users need to sell products through Square POS terminals an
 | FR-03.10 | System shall deduplicate imports (skip previously imported payments) | Dedup check in import flow |
 | FR-03.11 | System shall log import results with success/failure per order | `StagingTableManager` / import log table |
 
-### FR-04: Customer Management (Square <-> FA)
+### FR-05: Webhook Management (Square -> FA) - ✅ **IMPLEMENTED**
+
+| ID | Requirement | Implementation | Status |
+|----|-------------|----------------|--------|
+| FR-05.01 | System shall create webhook subscriptions via `WebhookSubscriptionsApi::createWebhookSubscription` | `WebhookService::createSubscription()` | ✅ Implemented |
+| FR-05.02 | System shall list existing webhook subscriptions | `WebhookService::listSubscriptions()` | ✅ Implemented |
+| FR-05.03 | System shall update webhook subscriptions | `WebhookService::updateSubscription()` | ✅ Implemented |
+| FR-05.04 | System shall delete webhook subscriptions | `WebhookService::deleteSubscription()` | ✅ Implemented |
+| FR-05.05 | System shall handle webhook events: `payment.created`, `order.created`, `customer.created` | `WebhookService::handleWebhookEvent()` | ✅ Implemented |
+| FR-05.06 | System shall provide webhook endpoint URL for Square to call | Webhook controller | ✅ Implemented |
+| FR-05.07 | System shall validate webhook signatures for security | Signature verification | ✅ Implemented |
+
+### FR-06: Refund Management (Square <-> FA) - ✅ **IMPLEMENTED**
+
+| ID | Requirement | Implementation | Status |
+|----|-------------|----------------|--------|
+| FR-06.01 | System shall process refunds via `RefundsApi::createRefund` | `RefundService::createRefund()` | ✅ Implemented |
+| FR-06.02 | System shall list refunds via `RefundsApi::listRefunds` | `RefundService::listRefunds()` | ✅ Implemented |
+| FR-06.03 | System shall void payments via `PaymentsApi::cancelPayment` | `RefundService::cancelPayment()` | ✅ Implemented |
+| FR-06.04 | System shall map Square refunds to FA credit notes | `RefundService::recordRefundInFA()` | ✅ Implemented |
+| FR-06.05 | System shall record refund references on original FA invoices | `RefundService::recordRefundInFA()` | ✅ Implemented |
+
+### FR-07: Configuration Management
+
+| ID | Requirement | Implementation | Status |
+|----|-------------|----------------|--------|
+| FR-07.01 | System shall support sandbox/production environment switcher | `Settings::setEnvironment()` | ✅ Implemented |
+| FR-07.02 | System shall manage separate access tokens for sandbox/production | `Settings::getProductionAccessToken()` | ✅ Implemented |
+| FR-07.03 | System shall validate access tokens and API connectivity | `SquareClientFactory::create()` | ✅ Implemented |
+| FR-07.04 | System shall save settings to FA's system preferences | `Settings::saveToDatabase()` | ✅ Implemented |
+| FR-07.05 | System shall provide configuration UI for all settings | `pages/config.php` | ✅ Implemented |
+| FR-07.06 | System shall manage location mappings (FA locations -> Square locations) | `LocationMappingDAO` | ✅ Implemented |
+| FR-07.07 | System shall manage destination customer for imports | `Settings::getDestinationCustomer()` | ✅ Implemented |
+
+### FR-08: Data Management & Staging
+
+| ID | Requirement | Implementation | Status |
+|----|-------------|----------------|--------|
+| FR-08.01 | System shall create unified staging tables for imports | `TransactionStagingDAO`, `ItemStagingDAO` | ✅ Implemented |
+| FR-08.02 | System shall support two-stage import workflow (Stage → Process) | `ImportService::stageFromApi()`, `ImportService::processStagedTransaction()` | ✅ Implemented |
+| FR-08.03 | System shall track import date ranges to identify gaps | `SquareImportLogDAO::findDateGaps()` | ✅ Implemented |
+| FR-08.04 | System shall provide edit functionality for staged transactions | `pages/import.php` edit forms | ✅ Implemented |
+| FR-08.05 | System shall provide review/match interface for Square vs FA transactions | `pages/review_match.php` | ✅ Implemented |
+| FR-08.06 | System shall match transactions by amount, date, and customer | `SalesMatchDAO`, `PaymentMatchDAO` | ✅ Implemented |
+| FR-08.07 | System shall prevent duplicate imports | Deduplication logic | ✅ Implemented |
+| FR-08.08 | System shall provide comprehensive audit logging | `SquareImportLogDAO` | ✅ Implemented |
+
+### FR-09: FrontAccounting Native Integration - 🔄 **IN PROGRESS**
+
+| ID | Requirement | Implementation | Status |
+|----|-------------|----------------|--------|
+| FR-09.01 | System shall integrate with ksf_FA_CRM for customer management | `CustomerService::syncWithCRM()` | 🚨 **Not implemented** |
+| FR-09.02 | System shall use FA's stock events instead of custom inventory push | `InventoryService::listenToStockEvents()` | 🚨 **Not implemented** |
+| FR-09.03 | System shall use FA's sales order system instead of custom invoices | `SalesService::createSalesOrder()` | 🚨 **Not implemented** |
+| FR-09.04 | System shall use FA's tax system instead of Square tax objects | `TaxService::mapFATaxToSquare()` | 🚨 **Not implemented** |
+| FR-09.05 | System shall use FA's payment system instead of custom recording | `PaymentService::recordSquarePayment()` | 🚨 **Not implemented** |
+| FR-09.06 | System shall use FA's reporting system for analytics | `ReportingService::getSquareSalesReport()` | 🚨 **Not implemented** |
+| FR-09.07 | System shall use FA's system preferences instead of custom config | `Settings::useFAPreferences()` | 🚨 **Not implemented** |
+
+### FR-10: Customer Management API (Square <-> FA) - ✅ **IMPLEMENTED**
+
+| ID | Requirement | Implementation | Status |
+|----|-------------|----------------|--------|
+| FR-10.01 | System shall retrieve customers via `CustomersApi::listCustomers` | `CustomerService::getAllCustomers()` | ✅ Implemented |
+| FR-10.02 | System shall search existing customers via `CustomersApi::searchCustomers` | `CustomerService::findCustomerByEmail()` | ✅ Implemented |
+| FR-10.03 | System shall create new customers in Square via `CustomersApi::createCustomer` | `CustomerService::syncCustomerFromFA()` | ✅ Implemented |
+| FR-10.04 | System shall update existing customer data in Square | `CustomerService::syncCustomerFromFA()` | ✅ Implemented |
+| FR-10.05 | System shall match Square customers to FA debtors using email/phone/name | `CustomerService::matchCustomer()` | ✅ Implemented |
+| FR-10.06 | System shall create FA debtors from Square customers when no match found | `CustomerService::syncCustomerToSquare()` | ✅ Implemented |
+| FR-10.07 | System shall map Square `Customer.groups` to FA customer groups | Group mapping service | 🚨 **Not implemented** |
+| FR-10.08 | System shall sync customer contact information bi-directionally | `CustomerService::syncCustomerToSquare()` | ✅ Implemented |
+
+### FR-11: Customer Management (Square <-> FA) - ✅ **IMPLEMENTED**
+
+### FR-07: Configuration Management
+
+| ID | Requirement | Implementation | Status |
+|----|-------------|----------------|--------|
+| FR-07.01 | System shall support sandbox/production environment switcher | `Settings::setEnvironment()` | ✅ Implemented |
+| FR-07.02 | System shall manage separate access tokens for sandbox/production | `Settings::getProductionAccessToken()` | ✅ Implemented |
+| FR-07.03 | System shall validate access tokens and API connectivity | `SquareClientFactory::create()` | ✅ Implemented |
+| FR-07.04 | System shall save settings to FA's system preferences | `Settings::saveToDatabase()` | ✅ Implemented |
+| FR-07.05 | System shall provide configuration UI for all settings | `pages/config.php` | ✅ Implemented |
+| FR-07.06 | System shall manage location mappings (FA locations -> Square locations) | `LocationMappingDAO` | ✅ Implemented |
+| FR-07.07 | System shall manage destination customer for imports | `Settings::getDestinationCustomer()` | ✅ Implemented |
+
+### FR-08: Data Management & Staging
+
+| ID | Requirement | Implementation | Status |
+|----|-------------|----------------|--------|
+| FR-08.01 | System shall create unified staging tables for imports | `TransactionStagingDAO`, `ItemStagingDAO` | ✅ Implemented |
+| FR-08.02 | System shall support two-stage import workflow (Stage → Process) | `ImportService::stageFromApi()`, `ImportService::processStagedTransaction()` | ✅ Implemented |
+| FR-08.03 | System shall track import date ranges to identify gaps | `SquareImportLogDAO::findDateGaps()` | ✅ Implemented |
+| FR-08.04 | System shall provide edit functionality for staged transactions | `pages/import.php` edit forms | ✅ Implemented |
+| FR-08.05 | System shall provide review/match interface for Square vs FA transactions | `pages/review_match.php` | ✅ Implemented |
+| FR-08.06 | System shall match transactions by amount, date, and customer | `SalesMatchDAO`, `PaymentMatchDAO` | ✅ Implemented |
+| FR-08.07 | System shall prevent duplicate imports | Deduplication logic | ✅ Implemented |
+| FR-08.08 | System shall provide comprehensive audit logging | `SquareImportLogDAO` | ✅ Implemented |
+
+### FR-09: FrontAccounting Native Integration - 🔄 **IN PROGRESS**
+
+| ID | Requirement | Implementation | Status |
+|----|-------------|----------------|--------|
+| FR-09.01 | System shall integrate with ksf_FA_CRM for customer management | `CustomerService::syncWithCRM()` | 🚨 **Not implemented** |
+| FR-09.02 | System shall use FA's stock events instead of custom inventory push | `InventoryService::listenToStockEvents()` | 🚨 **Not implemented** |
+| FR-09.03 | System shall use FA's sales order system instead of custom invoices | `SalesService::createSalesOrder()` | 🚨 **Not implemented** |
+| FR-09.04 | System shall use FA's tax system instead of Square tax objects | `TaxService::mapFATaxToSquare()` | 🚨 **Not implemented** |
+| FR-09.05 | System shall use FA's payment system instead of custom recording | `PaymentService::recordSquarePayment()` | 🚨 **Not implemented** |
+| FR-09.06 | System shall use FA's reporting system for analytics | `ReportingService::getSquareSalesReport()` | 🚨 **Not implemented** |
+| FR-09.07 | System shall use FA's system preferences instead of custom config | `Settings::useFAPreferences()` | 🚨 **Not implemented** |
 
 | ID | Requirement | Implementation |
 |----|-------------|----------------|

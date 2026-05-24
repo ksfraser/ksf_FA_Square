@@ -1,29 +1,17 @@
 <?php
 declare(strict_types=1);
 
-namespace Ksfraser\Frontaccounting\SquareUp\DAO;
-
-use Exception;
-
 /**
- * Data Access Object for location mapping table (FA loc_code <-> Square location_id).
+ * Location Mapping DAO
  * 
- * Supports many-to-one mapping: multiple FA locations can map to one Square location.
+ * Handles database operations for location mapping between FA and Square.
  * 
- * @UML Note: Class diagram in ProjectDocs/UML.md
- * @BABOK Related: Requirements analysis, Solution evaluation
+ * @UML Note: DAO diagram in ProjectDocs/UML.md
+ * @BABOK Related: FR-04.02 - Location Mapping
  */
 class LocationMappingDAO
 {
-    /**
-     * @var string
-     */
-    private $tablePrefix;
-
-    /**
-     * Special loc_code value representing "All FA Locations"
-     */
-    public const ALL_LOCATIONS = '*ALL*';
+    private string $tablePrefix;
 
     public function __construct(string $tablePrefix)
     {
@@ -31,178 +19,229 @@ class LocationMappingDAO
     }
 
     /**
-     * Ensures the location_mappings table exists, creating it if necessary.
+     * Gets Square location ID for FA stock ID.
      * 
-     * @throws Exception if table creation fails
+     * @param int $stockId FA stock ID
+     * @return string|null Square location ID or null if not found
      */
-    public function ensureTableExists(): void
+    public function getSquareLocationId(int $stockId): ?string
     {
-        $tableName = $this->tablePrefix . '0_square_location_mappings';
+        $tableName = $this->getTableName();
+        $sql = "SELECT square_location_id FROM {$tableName} WHERE fa_stock_id = {$stockId}";
         
-        $checkTable = db_query("SHOW TABLES LIKE '{$tableName}'");
-        if (db_num_rows($checkTable) == 0) {
-            $sql = "CREATE TABLE {$tableName} (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                fa_loc_code VARCHAR(5) NOT NULL,
-                square_location_id VARCHAR(32) NOT NULL,
-                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                UNIQUE KEY idx_fa_loc_code (fa_loc_code),
-                KEY idx_square_location (square_location_id)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
-            if (!db_query($sql)) {
-                throw new Exception(_("Cannot create location_mappings table: ") . db_error());
-            }
+        $result = db_query($sql);
+        if ($result !== false && db_num_rows($result) > 0) {
+            $row = db_fetch_assoc($result);
+            return $row !== false ? $row['square_location_id'] : null;
         }
+
+        return null;
     }
 
     /**
-     * Gets all FA locations from the database.
+     * Gets Square item ID for FA stock ID.
      * 
-     * @return array Array of [loc_code, location_name]
+     * @param int $stockId FA stock ID
+     * @return string|null Square item ID or null if not found
      */
-    public function getAllFaLocations(): array
+    public function getSquareItemId(int $stockId): ?string
     {
-        $sql = "SELECT loc_code, location_name FROM {$this->tablePrefix}locations ORDER BY loc_code";
+        $tableName = $this->getTableName();
+        $sql = "SELECT square_item_id FROM {$tableName} WHERE fa_stock_id = {$stockId}";
+        
         $result = db_query($sql);
-        $locations = [];
+        if ($result !== false && db_num_rows($result) > 0) {
+            $row = db_fetch_assoc($result);
+            return $row !== false ? $row['square_item_id'] : null;
+        }
+
+        return null;
+    }
+
+    /**
+     * Gets FA stock ID for Square location ID.
+     * 
+     * @param string $squareLocationId Square location ID
+     * @return array Array of FA stock IDs
+     */
+    public function getFAStockIds(string $squareLocationId): array
+    {
+        $tableName = $this->getTableName();
+        $sql = "SELECT fa_stock_id FROM {$tableName} WHERE square_location_id = '" . db_escape($squareLocationId) . "'";
+        
+        $result = db_query($sql);
+        $stockIds = [];
+        
         if ($result !== false) {
             while ($row = db_fetch_assoc($result)) {
-                $locations[] = $row;
+                if ($row !== false) {
+                    $stockIds[] = (int)$row['fa_stock_id'];
+                }
             }
         }
-        return $locations;
+
+        return $stockIds;
+    }
+
+    /**
+     * Creates location mapping.
+     * 
+     * @param array $mappingData Mapping data
+     * @return int Mapping ID
+     */
+    public function createMapping(array $mappingData): int
+    {
+        $tableName = $this->getTableName();
+        
+        $sql = "INSERT INTO {$tableName} (
+            fa_stock_id, square_location_id, square_item_id, created_at
+        ) VALUES (
+            {$mappingData['fa_stock_id']},
+            '" . db_escape($mappingData['square_location_id']) . "',
+            '" . db_escape($mappingData['square_item_id']) . "',
+            '{$mappingData['created_at']}'
+        )";
+
+        db_query($sql);
+        return db_insert_id($tableName);
+    }
+
+    /**
+     * Updates location mapping.
+     * 
+     * @param int $stockId FA stock ID
+     * @param array $data Update data
+     * @return bool Success status
+     */
+    public function updateMapping(int $stockId, array $data): bool
+    {
+        $tableName = $this->getTableName();
+        
+        $updates = [];
+        foreach ($data as $key => $value) {
+            if ($key === 'updated_at') {
+                $updates[] = "{$key} = '{$value}'";
+            } else {
+                $updates[] = "{$key} = '" . db_escape($value) . "'";
+            }
+        }
+        
+        $sql = "UPDATE {$tableName} SET " . implode(', ', $updates) . " 
+                WHERE fa_stock_id = {$stockId}";
+        
+        return db_query($sql) !== false;
     }
 
     /**
      * Gets all location mappings.
      * 
-     * @return array Array of mappings with fa_loc_code, square_location_id
+     * @param int $limit Maximum number of mappings to return
+     * @return array Location mappings
      */
-    public function getAllMappings(): array
+    public function getAllMappings(int $limit = 100): array
     {
-        $tableName = $this->tablePrefix . '0_square_location_mappings';
-        $sql = "SELECT * FROM {$tableName} ORDER BY fa_loc_code";
+        $tableName = $this->getTableName();
+        $sql = "SELECT * FROM {$tableName} ORDER BY created_at DESC LIMIT {$limit}";
+
         $result = db_query($sql);
         $mappings = [];
+        
         if ($result !== false) {
             while ($row = db_fetch_assoc($result)) {
-                $mappings[] = $row;
+                if ($row !== false) {
+                    $mappings[] = $row;
+                }
             }
         }
+
         return $mappings;
     }
 
     /**
-     * Gets mappings grouped by Square location ID.
+     * Gets location mapping statistics.
      * 
-     * @return array Key: square_location_id, Value: array of fa_loc_code
+     * @return array Statistics array
      */
-    public function getMappingsBySquareLocation(): array
+    public function getMappingStatistics(): array
     {
-        $mappings = $this->getAllMappings();
-        $grouped = [];
-        foreach ($mappings as $mapping) {
-            $sqLocId = $mapping['square_location_id'];
-            if (!isset($grouped[$sqLocId])) {
-                $grouped[$sqLocId] = [];
+        $tableName = $this->getTableName();
+        
+        // Total mappings
+        $totalSql = "SELECT COUNT(*) as total FROM {$tableName}";
+        $totalResult = db_query($totalSql);
+        $total = 0;
+        if ($totalResult !== false) {
+            $row = db_fetch_assoc($totalResult);
+            $total = (int)($row['total'] ?? 0);
+        }
+        
+        // Mappings by Square location
+        $locationSql = "SELECT square_location_id, COUNT(*) as count FROM {$tableName} 
+                       GROUP BY square_location_id ORDER BY count DESC";
+        $locationResult = db_query($locationSql);
+        $byLocation = [];
+        if ($locationResult !== false) {
+            while ($row = db_fetch_assoc($locationResult)) {
+                if ($row !== false) {
+                    $byLocation[$row['square_location_id']] = (int)$row['count'];
+                }
             }
-            $grouped[$sqLocId][] = $mapping['fa_loc_code'];
-        }
-        return $grouped;
-    }
-
-    /**
-     * Gets the Square location ID for a given FA loc_code.
-     * 
-     * @param string $faLocCode FA location code
-     * @return string|null Square location ID or null if not mapped
-     */
-    public function getSquareLocationId(string $faLocCode): ?string
-    {
-        $tableName = $this->tablePrefix . '0_square_location_mappings';
-        $sql = "SELECT square_location_id FROM {$tableName} WHERE fa_loc_code = " . db_escape($faLocCode);
-        $result = db_query($sql);
-        if ($result !== false && db_num_rows($result) > 0) {
-            $row = db_fetch_assoc($result);
-            return $row['square_location_id'];
-        }
-        return null;
-    }
-
-    /**
-     * Sets a mapping from FA loc_code to Square location ID.
-     * 
-     * @param string $faLocCode FA location code or self::ALL_LOCATIONS
-     * @param string $squareLocationId Square location ID
-     * @return void
-     * @throws Exception if database operation fails
-     */
-    public function setMapping(string $faLocCode, string $squareLocationId): void
-    {
-        $tableName = $this->tablePrefix . '0_square_location_mappings';
-        $sql = "INSERT INTO {$tableName} (fa_loc_code, square_location_id, created_at, updated_at) VALUES (" .
-            db_escape($faLocCode) . ", " .
-            db_escape($squareLocationId) . ", NOW(), NOW()) " .
-            "ON DUPLICATE KEY UPDATE square_location_id = VALUES(square_location_id), updated_at = NOW()";
-        if (!db_query($sql)) {
-            throw new Exception(_("Failed to set location mapping: ") . db_error());
-        }
-    }
-
-    /**
-     * Removes a mapping for a FA loc_code.
-     * 
-     * @param string $faLocCode FA location code
-     * @return void
-     * @throws Exception if database operation fails
-     */
-    public function removeMapping(string $faLocCode): void
-    {
-        $tableName = $this->tablePrefix . '0_square_location_mappings';
-        $sql = "DELETE FROM {$tableName} WHERE fa_loc_code = " . db_escape($faLocCode);
-        if (!db_query($sql)) {
-            throw new Exception(_("Failed to remove location mapping: ") . db_error());
-        }
-    }
-
-    /**
-     * Gets the quantity on hand for a stock item in specific FA locations.
-     * 
-     * @param string $stockId FA stock ID
-     * @param array|null $faLocCodes Array of FA loc_codes to sum; null = all locations
-     * @return float Total QOH
-     */
-    public function getQohForLocations(string $stockId, $faLocCodes = null): float
-    {
-        $tableName = $this->tablePrefix . 'stock_moves';
-        
-        if ($faLocCodes === null || empty($faLocCodes)) {
-            $locCondition = "1=1";
-        } else {
-            $escapedLocs = array_map(function($loc) {
-                return db_escape($loc);
-            }, $faLocCodes);
-            $locCondition = "loc_code IN (" . implode(', ', $escapedLocs) . ")";
         }
         
-        $sql = "SELECT SUM(qty) AS total_qty FROM {$tableName} WHERE stock_id = " . db_escape($stockId) . " AND {$locCondition}";
-        $result = db_query($sql);
-        
-        if ($result !== false && db_num_rows($result) > 0) {
-            $row = db_fetch_assoc($result);
-            return (float)($row['total_qty'] ?? 0);
+        // Mappings for "*ALL*" location
+        $allSql = "SELECT COUNT(*) as all_count FROM {$tableName} 
+                 WHERE square_location_id = '*ALL*'";
+        $allResult = db_query($allSql);
+        $allCount = 0;
+        if ($allResult !== false) {
+            $row = db_fetch_assoc($allResult);
+            $allCount = (int)($row['all_count'] ?? 0);
         }
-        return 0.0;
+        
+        return [
+            'total_mappings' => $total,
+            'by_location' => $byLocation,
+            'all_location_count' => $allCount,
+        ];
     }
 
     /**
-     * Checks if there's an "All Locations" mapping.
-     * 
-     * @return string|null Square location ID if "All Locations" is mapped, null otherwise
+     * Ensures the table exists.
      */
-    public function getAllLocationsMapping(): ?string
+    public function ensureTableExists(): void
     {
-        return $this->getSquareLocationId(self::ALL_LOCATIONS);
+        $tableName = $this->getTableName();
+        
+        // Check if table exists
+        $checkSql = "SHOW TABLES LIKE '{$tableName}'";
+        $result = db_query($checkSql);
+        
+        if ($result !== false && db_num_rows($result) === 0) {
+            // Create table
+            $createSql = "CREATE TABLE {$tableName} (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                fa_stock_id INT NOT NULL,
+                square_location_id VARCHAR(100) NOT NULL,
+                square_item_id VARCHAR(100) NOT NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME ON UPDATE CURRENT_TIMESTAMP,
+                UNIQUE KEY unique_mapping (fa_stock_id, square_location_id),
+                INDEX idx_fa_stock_id (fa_stock_id),
+                INDEX idx_square_location_id (square_location_id),
+                INDEX idx_square_item_id (square_item_id)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+            
+            db_query($createSql);
+        }
+    }
+
+    /**
+     * Gets the table name.
+     * 
+     * @return string Table name
+     */
+    private function getTableName(): string
+    {
+        return $this->tablePrefix . 'square_location_mappings';
     }
 }

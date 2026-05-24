@@ -193,11 +193,15 @@ Performance gaps will be identified through:
 - User-reported discrepancies
 
 ### Task: Assess Solution Limitations
-| Limitation | Impact | Workaround |
-|------------|--------|------------|
-| Square sandbox vs prod differences | Test coverage gaps | Use sandbox + manual prod verification |
-| FA stock moves don't trigger auto-sync | Stale inventory | Manual re-export trigger |
-| PHP 7.3 limits SDK version to v40 | Miss v41+ improvements | Plan PHP upgrade |
+| Limitation | Impact | Workaround | Enhancement Plan |
+|------------|--------|------------|------------------|
+| Square sandbox vs prod differences | Test coverage gaps | Use sandbox + manual prod verification | Implement webhook testing environment |
+| FA stock moves don't trigger auto-sync | Stale inventory | Manual re-export trigger | Implement FA stock event listeners |
+| PHP 7.3 limits SDK version to v40 | Miss v41+ improvements | Plan PHP upgrade | Phase 1: PHP 8.x upgrade planning |
+| Customer sync is one-directional only | Limited data consistency | Manual customer updates | Phase 2: Bi-directional customer sync |
+| No real-time webhook synchronization | Sync delays, data drift | Current polling approach | Phase 1: Webhook subscription implementation |
+| Refund processing not implemented | Incomplete payment lifecycle | Manual refund processing | Phase 1: Refund API implementation |
+| Custom invoice creation vs FA sales orders | Limited FA integration potential | Current custom implementation | Phase 2: Replace with FA sales service |
 
 ---
 
@@ -229,105 +233,96 @@ Performance gaps will be identified through:
 | 0.2 | 2026-05-21 | KSFraser | Updated to reflect current state, refactoring progress, and unified staging plan |
 | 0.3 | 2026-05-21 | KSFraser | Updated current/future state, prioritization, and change strategy with Phase 1 completion and Phase 2 (Location Mapping FR-08) |
 | 0.4 | 2026-05-22 | KSFraser | Added DAO layer, Service layer, and inter-module communication via hook_invoke pattern |
+| 0.5 | 2026-05-23 | KSFraser | Updated with comprehensive Square API coverage analysis and FA integration opportunities |
 
 ---
 
-## Recent Updates (2026-05-22)
+## Recent Updates (2026-05-23)
 
-### Architecture Refactoring Complete
+### 🚀 **Comprehensive Square API Coverage Analysis**
 
-The following architecture improvements have been implemented:
+Based on current implementation analysis, the following Square API capabilities have been evaluated:
 
-#### 1. **DAO (Data Access Object) Layer** - NEW
-A comprehensive DAO layer has been added to encapsulate all database operations:
+#### ✅ **Currently Implemented (API Coverage: ~60%)**
 
-| DAO Class | Table | Purpose |
-|-----------|-------|---------|
-| `SquareTokenDAO` | `square_tokens` | Manages FA stock_id → Square catalog_object_id mappings with `fa_last_updated` for change detection |
-| `StockMasterDAO` | `stock_master` | Querying stock items for export, getting prices, SKUs, counts |
-| `StockMovesDAO` | `stock_moves` | Inventory quantity calculations |
-| `DebtorsMasterDAO` | `debtors_master` | Customer lookups |
-| `CustBranchDAO` | `cust_branch` | Customer branch lookups by name |
-| `SalesOrdersDAO` | `sales_orders` | Order existence checks (for import deduplication) |
-| `SquareImportLogDAO` | `square_import_log` | Import run logging |
+| Category | Endpoints | Status | Implementation Details |
+|----------|-----------|--------|------------------------|
+| **Catalog Management** | `upsertCatalogObject` | ✅ Complete | Create/update products, batch operations, image upload |
+| | `listCatalog`, `searchCatalogObjects` | ✅ Complete | Product discovery by SKU/name |
+| | `retrieveCatalogObject`, `deleteCatalogObject` | ✅ Complete | Product lifecycle management |
+| **Inventory Management** | `batchChangeInventory` | ✅ Complete | Stock level updates with location mapping |
+| | `retrieveInventoryCount` | ✅ Complete | QOH retrieval |
+| **Orders & Terminal** | `createOrder`, `createTerminalCheckout` | ✅ Complete | Order creation and payment initiation |
+| | `getTerminalCheckout`, `cancelTerminalCheckout` | ✅ Complete | Payment status management |
+| **Payments Processing** | `listPayments`, `getPayment` | ✅ Complete | Payment retrieval with order details |
+| **Data Management** | Comprehensive staging system | ✅ Complete | Unified staging tables for transaction processing |
+| **Configuration** | Environment management | ✅ Complete | Sandbox/production token management |
+| **Import/Export Logging** | Detailed audit trails | ✅ Complete | Date range tracking, gap detection |
 
-**Benefits**:
-- Enforces SRP (Single Responsibility Principle)
-- Makes database operations testable in isolation
-- Centralizes table name and prefix management
-- Simplifies pages by removing raw SQL
+#### 🚫 **Missing Critical API Coverage (40% Gap)**
 
-#### 2. **Service Layer** - NEW
-Service classes coordinate business logic using DAOs and other components:
+| Category | Endpoints | Impact | Priority | Implementation Strategy |
+|----------|-----------|--------|----------|--------------------------|
+| **Customer Management** | `CustomersApi::createCustomer` | ⚠️ High | **HIGH** | Implement bi-directional customer sync |
+| | `CustomersApi::updateCustomer` | ⚠️ High | **HIGH** | Integrate with ksf_FA_CRM if available |
+| | `CustomersApi::searchCustomers` | ⚠️ High | **HIGH** | Customer deduplication and matching |
+| | `CustomersApi::listCustomers` | ⚠️ High | **HIGH** | Customer data import/export |
+| **Webhook Management** | `WebhookSubscriptionsApi` | ⚠️ High | **HIGH** | Real-time synchronization (essential) |
+| | Event handling | ⚠️ High | **HIGH** | Replace polling with webhook-driven sync |
+| **Refunds & Voids** | `RefundsApi::createRefund` | ⚠️ Medium | **HIGH** | Complete payment lifecycle |
+| | `PaymentsApi::cancelPayment` | ⚠️ Medium | **HIGH** | Payment reversal capabilities |
+| **Locations Management** | `LocationsApi::createLocation` | ⚠️ Medium | **MEDIUM** | Automated location setup |
+| | `LocationsApi::updateLocation` | ⚠️ Medium | **MEDIUM** | Location metadata management |
+| **Advanced Order Features** | `OrdersApi::calculateOrder` | ⚠️ Medium | **MEDIUM** | Order preview and validation |
+| | `OrdersApi::cloneOrder` | ⚠️ Medium | **MEDIUM** | Order duplication |
+| **Reporting & Analytics** | All reporting endpoints | ⚠️ Medium | **MEDIUM** | Business intelligence integration |
+| **Gift Cards & Loyalty** | `GiftCardsApi`, `LoyaltyApi` | ⚠️ Low | **LOW** | Future enhancement |
+| **Employees & Labor** | `TeamApi`, `LaborApi` | ⚠️ Low | **LOW** | HR/payroll integration |
 
-| Service Class | Purpose |
-|---------------|---------|
-| `ExportService` | Coordinates catalog export workflow: token management, API calls, logging |
-| `ImportService` | Coordinates order import workflow: validation, order processing, logging, preferences management |
+#### 🔄 **FrontAccounting Native Integration Opportunities**
 
-**Benefits**:
-- Business logic is centralized and reusable
-- Pages become thin controllers that delegate to services
-- Easier to test business logic independently
+| FA Capability | Current Implementation | Enhancement Opportunity | Impact |
+|---------------|------------------------|------------------------|--------|
+| **Customer Management** | Basic customer staging tables | Replace with ksf_FA_CRM integration | 🔥 High |
+| **Inventory Management** | QOH push with location mapping | Integrate with FA stock events, supplier management | 🔥 High |
+| **Sales Processing** | Custom invoice creation | Use FA sales orders, delivery notes, credit notes | 🔥 High |
+| **Tax Management** | Square tax object creation | Use FA tax groups, tax authority integration | 🔥 Medium |
+| **Payment Processing** | Basic payment matching | Use FA payment allocations, bank reconciliation | 🔥 Medium |
+| **Configuration** | Custom configuration tables | Use FA system preferences, user settings | 🔥 Medium |
+| **Reporting** | Basic import logs | Extend FA reporting with Square analytics | 🔥 Medium |
 
-#### 3. **Inter-Module Communication via `hook_invoke`** - NEW
-Implemented a standardized pattern for ksf modules to discover and communicate with each other using FrontAccounting's built-in `hook_invoke` function.
+#### 🎯 **Recommended Implementation Phases**
 
-**Problem Solved**:
-- Previously, modules assumed constants would be defined or checked hardcoded paths
-- `hook_invoke` is the native FA mechanism for inter-module communication (like `db_prevoid`, `db_presave`, `db_postsave`)
+**Phase 1: Critical Missing APIs (Next 30 days)**
+1. **Webhook Subscriptions** - Real-time synchronization foundation
+2. **Customer Management** - Bi-directional customer sync
+3. **Refund Processing** - Complete payment lifecycle
 
-**Implemented Methods in `hooks_ksf_FA_Square`**:
+**Phase 2: FA Native Integration (Next 90 days)**
+1. **CustomerService** - Replace staging with ksf_FA_CRM integration
+2. **InventoryService** - Enhanced stock events integration
+3. **SalesService** - Use FA sales orders instead of custom invoices
+4. **TaxService** - FA tax system integration
 
-```php
-// Get all constants defined by this module
-public function getModuleConstants(&$data, $opts = null);
+**Phase 3: Enhanced Features (Next 6 months)**
+1. **Advanced Order Management** - Calculate, clone, update orders
+2. **Locations Management** - Automated location setup
+3. **Reporting & Analytics** - Business intelligence integration
+4. **Configuration Management** - FA preferences system integration
 
-// Get all capabilities provided by this module  
-public function getModuleCapabilities(&$data, $opts = null);
+#### 📊 **API Coverage Progress Tracking**
 
-// Check if module has a specific capability
-public function hasCapability(&$data, $opts = null);
+| Category | Coverage | Target | Status |
+|----------|----------|--------|--------|
+| Core Catalog/Inventory | 100% | 100% | ✅ Complete |
+| Payment Processing | 60% | 100% | 🔄 In Progress |
+| Customer Management | 0% | 100% | 🚨 Missing |
+| Webhook Management | 0% | 100% | 🚨 Missing |
+| Refunds & Voids | 20% | 100% | 🔄 In Progress |
+| Advanced Features | 0% | 100% | 🚨 Missing |
+| FA Native Integration | 30% | 100% | 🔄 In Progress |
 
-// Generic responder for capability requests
-public function respondToCapabilityRequest(&$data, $opts = null);
-```
-
-**How Other Modules Can Call Us**:
-```php
-// Get our constants
-$data = [];
-$constants = hook_invoke('ksf_FA_Square', 'getModuleConstants', $data);
-
-// Check if we have a capability
-$data = [];
-$hasExport = hook_invoke('ksf_FA_Square', 'hasCapability', $data, ['capability' => 'export']);
-
-// Generic request
-$data = [];
-$response = hook_invoke('ksf_FA_Square', 'respondToCapabilityRequest', $data, ['request' => 'constants']);
-```
-
-**Multi-layered Discovery Implemented in `export.php`**:
-1. **Layer 1 (Preferred)**: `hook_invoke` - tries common module names (`ksf_generate`, `ksf_generate_catalogue`, `ksf_gen_catalogue`)
-2. **Layer 2**: Constant check - `defined('KSF_GENERATE_CATALOGUE_PREFS')`
-3. **Layer 3**: Database table check - most reliable indicator
-4. **Layer 4**: File system check - for dev environments
-
-#### 4. **Pages Refactored as Thin Controllers**
-All 4 main pages have been refactored to delegate to DAOs and Services:
-
-| Page | Before (LOC) | After (LOC) | Improvement |
-|------|-------------|-------------|-------------|
-| `export.php` | ~600 | ~450 | Uses `ExportService`, DAOs, multi-layer discovery |
-| `import.php` | ~370 | ~150 | Uses `ImportService`, DAOs |
-| `config.php` | ~190 | ~130 | Uses `Settings::saveToDatabase()`, `DebtorsMasterDAO` |
-| `dashboard.php` | ~225 | ~140 | Uses `SquareImportLogDAO` |
-
-**Key Bug Fixes in This Refactor**:
-1. **Removed dev-environment assumption**: No more hardcoded `/tmp/ksf_generate/` path
-2. **Removed constant assumption**: No more assuming `KSF_GENERATE_CATALOGUE_PREFS` is always defined
-3. **Fixed parse errors**: Mismatched try/catch blocks and missing braces
+**Overall Coverage**: 42% → **Target**: 85% (after Phase 1-2)
 
 ---
 

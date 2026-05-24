@@ -125,3 +125,207 @@ CREATE TABLE IF NOT EXISTS 0_square_location_mappings (
     UNIQUE KEY idx_fa_loc_code (fa_loc_code),
     KEY idx_square_location (square_location_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================================================
+-- ksf_import_square_* tables - Backward compatible with FA_ImportSquareUp
+-- These tables exist in production with matched transaction data.
+-- Used for both CSV imports (legacy) and API imports (new).
+-- ============================================================================
+
+-- Unified staging transactions table (ksf_import_square_transactions)
+-- Combines:
+--   - Original CSV fields from FA_ImportSquareUp
+--   - API-specific fields (raw_json, environment, status tracking)
+-- Used by both CSV import and API import flows.
+CREATE TABLE IF NOT EXISTS 0_ksf_import_square_transactions (
+    id INT(11) NOT NULL AUTO_INCREMENT,
+    Date DATE NOT NULL,
+    Time VARCHAR(8) NOT NULL DEFAULT '',
+    Timezone VARCHAR(64) NOT NULL DEFAULT '',
+    gross_sales DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+    discounts DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+    service_charges DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+    gift_card_sales DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+    net_sales DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+    tax DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+    tip DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+    partial_refunds DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+    total_collected DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+    source VARCHAR(16) NOT NULL DEFAULT 'api',
+    card DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+    card_entry_methods VARCHAR(16) NOT NULL DEFAULT '',
+    cash DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+    square_gift_card DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+    other_tender DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+    other_tender_type VARCHAR(16) NOT NULL DEFAULT '',
+    other_tender_note VARCHAR(32) NOT NULL DEFAULT '',
+    fees DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+    net_total DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+    transaction_id VARCHAR(32) NOT NULL,
+    payment_id VARCHAR(32) NOT NULL DEFAULT '',
+    card_brand VARCHAR(16) NOT NULL DEFAULT '',
+    PAN_suffix INT(11) NOT NULL DEFAULT 0,
+    device_name VARCHAR(32) NOT NULL DEFAULT '',
+    staff_name VARCHAR(16) NOT NULL DEFAULT '',
+    staff_id VARCHAR(16) NOT NULL DEFAULT '',
+    description VARCHAR(64) NOT NULL DEFAULT '',
+    details VARCHAR(64) NOT NULL DEFAULT '',
+    event_type VARCHAR(32) NOT NULL DEFAULT '',
+    location VARCHAR(32) NOT NULL DEFAULT '',
+    Dining_option VARCHAR(16) NOT NULL DEFAULT '',
+    Customer_id INT(11) NOT NULL DEFAULT 0,
+    customer_name VARCHAR(64) NOT NULL DEFAULT '',
+    customer_reference_id VARCHAR(16) NOT NULL DEFAULT '',
+    device_nickname VARCHAR(16) NOT NULL DEFAULT '',
+    third_party_fees DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+    deposit_id VARCHAR(32) NOT NULL DEFAULT '',
+    deposit_date DATE DEFAULT NULL,
+    deposit_details VARCHAR(64) NOT NULL DEFAULT '',
+    fee_percentage_rate DECIMAL(5,4) NOT NULL DEFAULT 0.0000,
+    fee_fixed_rate DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+    refund_reason VARCHAR(64) NOT NULL DEFAULT '',
+    discount_name VARCHAR(16) NOT NULL DEFAULT '',
+    transaction_status VARCHAR(16) NOT NULL DEFAULT '',
+    order_reference_id VARCHAR(16) NOT NULL DEFAULT '',
+    fulfillment_note VARCHAR(32) NOT NULL DEFAULT '',
+    free_processing_applied DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+    channel VARCHAR(32) NOT NULL DEFAULT '',
+    unattributed_tips DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+    square_order_id VARCHAR(32) DEFAULT NULL,
+    square_location_id VARCHAR(32) DEFAULT NULL,
+    square_customer_id VARCHAR(32) DEFAULT NULL,
+    environment VARCHAR(20) NOT NULL DEFAULT 'sandbox',
+    status VARCHAR(16) NOT NULL DEFAULT 'staged',
+    raw_json LONGTEXT DEFAULT NULL,
+    error_log TEXT DEFAULT NULL,
+    fa_invoice_no INT(11) DEFAULT NULL,
+    fa_debtor_no INT(11) DEFAULT NULL,
+    fa_branch_code INT(11) DEFAULT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    UNIQUE KEY idx_transaction_id (transaction_id),
+    UNIQUE KEY idx_payment_id (payment_id),
+    KEY idx_date (Date),
+    KEY idx_status (status),
+    KEY idx_environment (environment),
+    KEY idx_source (source),
+    KEY idx_deposit_id (deposit_id),
+    KEY idx_fa_invoice (fa_invoice_no)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Staging line items table (ksf_import_square_items)
+-- Line items for each staged transaction.
+CREATE TABLE IF NOT EXISTS 0_ksf_import_square_items (
+    id INT(11) NOT NULL AUTO_INCREMENT,
+    Date DATE NOT NULL,
+    Time VARCHAR(8) NOT NULL DEFAULT '',
+    Timezone VARCHAR(64) NOT NULL DEFAULT '',
+    Category VARCHAR(32) NOT NULL DEFAULT '',
+    Item VARCHAR(64) NOT NULL DEFAULT '',
+    Price_Point_Name VARCHAR(32) NOT NULL DEFAULT '',
+    stock_id VARCHAR(32) NOT NULL DEFAULT '',
+    modifiers_applied VARCHAR(32) NOT NULL DEFAULT '',
+    quantity INT(11) NOT NULL DEFAULT 0,
+    gross_sales DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+    discounts DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+    net_sales DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+    tax DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+    transaction_id VARCHAR(32) NOT NULL,
+    payment_id VARCHAR(32) NOT NULL DEFAULT '',
+    device_name VARCHAR(32) NOT NULL DEFAULT '',
+    notes VARCHAR(64) NOT NULL DEFAULT '',
+    details VARCHAR(64) NOT NULL DEFAULT '',
+    event_type VARCHAR(32) NOT NULL DEFAULT '',
+    location VARCHAR(32) NOT NULL DEFAULT '',
+    dining_option VARCHAR(16) NOT NULL DEFAULT '',
+    Customer_id INT(11) NOT NULL DEFAULT 0,
+    customer_name VARCHAR(64) NOT NULL DEFAULT '',
+    customer_reference_id VARCHAR(16) NOT NULL DEFAULT '',
+    unit VARCHAR(16) NOT NULL DEFAULT '',
+    count DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+    itemization_type VARCHAR(16) NOT NULL DEFAULT '',
+    fulfillment_note VARCHAR(32) NOT NULL DEFAULT '',
+    sku VARCHAR(64) DEFAULT NULL,
+    name VARCHAR(256) DEFAULT NULL,
+    unit_price DECIMAL(15,2) DEFAULT 0.00,
+    total_amount DECIMAL(15,2) DEFAULT 0.00,
+    discount_amount DECIMAL(15,2) DEFAULT 0.00,
+    square_catalog_object_id VARCHAR(32) DEFAULT NULL,
+    square_variation_id VARCHAR(32) DEFAULT NULL,
+    raw_json LONGTEXT DEFAULT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_transaction_id (transaction_id),
+    KEY idx_payment_id (payment_id),
+    KEY idx_stock_id (stock_id),
+    KEY idx_sku (sku),
+    KEY idx_date (Date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Payment matching table (ksf_import_square_payments)
+-- Tracks matches between Square payment IDs and FA transactions.
+-- Existing production data should be preserved.
+CREATE TABLE IF NOT EXISTS 0_ksf_import_square_payments (
+    square_import_payments_id INT(11) NOT NULL AUTO_INCREMENT,
+    square_payment_id VARCHAR(32) NOT NULL,
+    total_collected DECIMAL(15,2) NOT NULL DEFAULT 0.00,
+    trans_type INT(11) NOT NULL DEFAULT 0,
+    trans_no VARCHAR(32) NOT NULL DEFAULT '',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (square_import_payments_id),
+    UNIQUE KEY idx_square_payment_id (square_payment_id),
+    KEY idx_fa_trans (trans_type, trans_no)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Sales matching table (ksf_import_square_sales)
+-- Tracks matches between Square transaction IDs and FA sales documents.
+-- Existing production data should be preserved.
+CREATE TABLE IF NOT EXISTS 0_ksf_import_square_sales (
+    ksf_import_square_sales_id INT(11) NOT NULL AUTO_INCREMENT,
+    square_transaction_id VARCHAR(32) NOT NULL,
+    sales_order_no VARCHAR(32) NOT NULL DEFAULT '',
+    sales_delivery_no VARCHAR(32) NOT NULL DEFAULT '',
+    sales_invoice_no VARCHAR(32) NOT NULL DEFAULT '',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (ksf_import_square_sales_id),
+    UNIQUE KEY idx_square_transaction_id (square_transaction_id),
+    KEY idx_sales_invoice (sales_invoice_no)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================================================
+-- Upgrade notes for existing FA_ImportSquareUp installations
+-- ============================================================================
+-- These columns need to be added to existing production tables:
+--
+-- For ksf_import_square_transactions:
+--   ALTER TABLE 0_ksf_import_square_transactions ADD COLUMN square_order_id VARCHAR(32) DEFAULT NULL;
+--   ALTER TABLE 0_ksf_import_square_transactions ADD COLUMN square_location_id VARCHAR(32) DEFAULT NULL;
+--   ALTER TABLE 0_ksf_import_square_transactions ADD COLUMN square_customer_id VARCHAR(32) DEFAULT NULL;
+--   ALTER TABLE 0_ksf_import_square_transactions ADD COLUMN environment VARCHAR(20) NOT NULL DEFAULT 'sandbox';
+--   ALTER TABLE 0_ksf_import_square_transactions ADD COLUMN status VARCHAR(16) NOT NULL DEFAULT 'staged';
+--   ALTER TABLE 0_ksf_import_square_transactions ADD COLUMN raw_json LONGTEXT DEFAULT NULL;
+--   ALTER TABLE 0_ksf_import_square_transactions ADD COLUMN error_log TEXT DEFAULT NULL;
+--   ALTER TABLE 0_ksf_import_square_transactions ADD COLUMN fa_invoice_no INT(11) DEFAULT NULL;
+--   ALTER TABLE 0_ksf_import_square_transactions ADD COLUMN fa_debtor_no INT(11) DEFAULT NULL;
+--   ALTER TABLE 0_ksf_import_square_transactions ADD COLUMN fa_branch_code INT(11) DEFAULT NULL;
+--   ALTER TABLE 0_ksf_import_square_transactions ADD KEY idx_status (status);
+--   ALTER TABLE 0_ksf_import_square_transactions ADD KEY idx_environment (environment);
+--   ALTER TABLE 0_ksf_import_square_transactions ADD KEY idx_fa_invoice (fa_invoice_no);
+--
+-- For ksf_import_square_items:
+--   ALTER TABLE 0_ksf_import_square_items ADD COLUMN sku VARCHAR(64) DEFAULT NULL;
+--   ALTER TABLE 0_ksf_import_square_items ADD COLUMN name VARCHAR(256) DEFAULT NULL;
+--   ALTER TABLE 0_ksf_import_square_items ADD COLUMN unit_price DECIMAL(15,2) DEFAULT 0.00;
+--   ALTER TABLE 0_ksf_import_square_items ADD COLUMN total_amount DECIMAL(15,2) DEFAULT 0.00;
+--   ALTER TABLE 0_ksf_import_square_items ADD COLUMN discount_amount DECIMAL(15,2) DEFAULT 0.00;
+--   ALTER TABLE 0_ksf_import_square_items ADD COLUMN square_catalog_object_id VARCHAR(32) DEFAULT NULL;
+--   ALTER TABLE 0_ksf_import_square_items ADD COLUMN square_variation_id VARCHAR(32) DEFAULT NULL;
+--   ALTER TABLE 0_ksf_import_square_items ADD COLUMN raw_json LONGTEXT DEFAULT NULL;
+--   ALTER TABLE 0_ksf_import_square_items ADD KEY idx_sku (sku);
+--
+-- TransactionStagingDAO::ensureTableExists() and ItemStagingDAO::ensureTableExists()
+-- will automatically add these columns if they don't exist (safe for production).

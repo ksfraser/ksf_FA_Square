@@ -25,7 +25,7 @@ class CustBranchDAO
 
     /**
      * Gets a branch by debtor_no and branch name.
-     * 
+     *
      * @param int $debtorNo Debtor number
      * @param string $branchName Branch name
      * @return array|null Branch data or null if not found
@@ -42,5 +42,47 @@ class CustBranchDAO
             }
         }
         return null;
+    }
+
+    /**
+     * Gets a branch by debtor_no and branch code.
+     *
+     * @param int $debtorNo Debtor number
+     * @param int $branchCode Branch code
+     * @return array|null Branch data or null if not found
+     */
+    public function getByDebtorNoAndBranchCode(int $debtorNo, int $branchCode): ?array
+    {
+        $sql = "SELECT * FROM {$this->tablePrefix}cust_branch "
+            . "WHERE debtor_no = " . $debtorNo . " AND branch_code = " . $branchCode;
+        $result = db_query($sql);
+        if ($result !== false && db_num_rows($result) > 0) {
+            $row = db_fetch_assoc($result);
+            if ($row !== false) {
+                return $row;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Gets all branches for a debtor.
+     *
+     * @param int $debtorNo Debtor number
+     * @return array Array of branch data
+     */
+    public function getByDebtorNo(int $debtorNo): array
+    {
+        $sql = "SELECT * FROM {$this->tablePrefix}cust_branch WHERE debtor_no = " . $debtorNo . " ORDER BY branch_code";
+        $result = db_query($sql);
+        $branches = [];
+        if ($result !== false) {
+            while ($row = db_fetch_assoc($result)) {
+                if ($row !== false) {
+                    $branches[] = $row;
+                }
+            }
+        }
+        return $branches;
     }
 }
