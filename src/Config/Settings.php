@@ -22,6 +22,7 @@ class Settings implements SettingsInterface
             'last_import_date' => null,
             'destination_customer' => null,
             'default_location' => null,
+            'default_tax_group' => null,
         ], $config);
     }
 
@@ -169,6 +170,34 @@ class Settings implements SettingsInterface
     public function setDefaultLocation(string $locationId): void
     {
         $this->config['default_location'] = $locationId;
+    }
+
+    /**
+     * Gets the default FA tax group used to resolve the catalog tax rate
+     * pushed to Square.
+     *
+     * @return int|null Tax group id or null when not configured
+     *
+     * @since 2.4.4
+     */
+    public function getDefaultTaxGroup(): ?int
+    {
+        $id = $this->config['default_tax_group'] ?? null;
+        return $id !== null ? (int)$id : null;
+    }
+
+    /**
+     * Sets the default FA tax group used to resolve the catalog tax rate
+     * pushed to Square.
+     *
+     * @param int $taxGroupId Tax group id
+     * @return void
+     *
+     * @since 2.4.4
+     */
+    public function setDefaultTaxGroup(int $taxGroupId): void
+    {
+        $this->config['default_tax_group'] = $taxGroupId;
     }
 
     public function toArray(): array

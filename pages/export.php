@@ -22,6 +22,7 @@ use Ksfraser\Frontaccounting\SquareUp\Push\CatalogExporter;
 use Ksfraser\Frontaccounting\SquareUp\DAO\SquareTokenDAO;
 use Ksfraser\Frontaccounting\SquareUp\DAO\StockMasterDAO;
 use Ksfraser\Frontaccounting\SquareUp\DAO\LocationMappingDAO;
+use Ksfraser\Frontaccounting\SquareUp\Services\TaxRateResolver;
 use Ksfraser\Frontaccounting\SquareUp\ValueObjects\SquarePrice;
 use Ksfraser\Frontaccounting\SquareUp\Exceptions\SquareException;
 use Square\Exceptions\ApiException;
@@ -34,6 +35,7 @@ try {
     display_error(_("Failed to load configuration: ") . $e->getMessage());
 }
 $accessToken = $settings->getAccessToken();
+$taxResolver = new TaxRateResolver();
 
 $help_context = "Export to Square";
 page(_($help_context), false, false, "", "");
@@ -357,7 +359,7 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
 
             $catName = $item['cat_description'] ?? 'General';
             $taxName = $item['tax_name'] ?? '';
-            $taxRate = $item['exempt'] ? 0.0 : 0.0;
+            $taxRate = $taxResolver->resolveForItem(!empty($item['exempt']), $settings->getDefaultTaxGroup());
 
             $existingItem = $existingSquareItems[$sku] ?? $existingSquareItems[$stockId] ?? null;
 

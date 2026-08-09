@@ -37,6 +37,17 @@ $accessToken = $settings->getAccessToken();
 $squareLocations = [];
 $faLocations = [];
 $existingMappings = [];
+$taxGroups = [];
+if (function_exists('get_all_tax_groups')) {
+    $taxGroupsResult = get_all_tax_groups(true);
+    if ($taxGroupsResult !== false) {
+        while ($taxGroupRow = db_fetch_assoc($taxGroupsResult)) {
+            if ($taxGroupRow !== false) {
+                $taxGroups[(int)$taxGroupRow['id']] = $taxGroupRow['name'];
+            }
+        }
+    }
+}
 
 try {
     $locMappingDao = new LocationMappingDAO($tablePrefix);
@@ -80,6 +91,9 @@ if (isset($_POST['action'])) {
 
                 $newEnv = $_POST['environment'] ?? 'sandbox';
                 Settings::saveToDatabase($tablePrefix, 'environment', $newEnv);
+
+                $defaultTaxGroup = $_POST['default_tax_group'] ?? '';
+                Settings::saveToDatabase($tablePrefix, 'default_tax_group', $defaultTaxGroup);
 
                 $msg = _("Configuration updated");
                 $settings = Settings::fromFADatabase($tablePrefix);
@@ -187,6 +201,15 @@ $defaultLoc = $settings->getDefaultLocation();
 if ($defaultLoc !== null) {
     label_row(_("Default Location:"), $defaultLoc);
 }
+
+$defaultTaxGroup = $settings->getDefaultTaxGroup();
+echo '<tr><td class="label">' . _("Default Tax Group:") . '</td><td>';
+echo array_selector('default_tax_group', $defaultTaxGroup, $taxGroups, [
+    'select_submit' => false,
+    'async' => false,
+]);
+echo '</td></tr>';
+label_row('', _('(Used to set the tax rate on items pushed to Square; leave unset to push items tax-free)'));
 
 end_table(1);
 

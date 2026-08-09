@@ -9,6 +9,7 @@ use Ksfraser\Frontaccounting\SquareUp\DAO\StockMasterDAO;
 use Ksfraser\Frontaccounting\SquareUp\Exceptions\SquareException;
 use Ksfraser\Frontaccounting\SquareUp\Push\CatalogExporter;
 use Ksfraser\Frontaccounting\SquareUp\Push\ItemEventSyncService;
+use Ksfraser\Frontaccounting\SquareUp\Services\TaxRateResolver;
 use PHPUnit\Framework\TestCase;
 use Square\Models\CatalogItem;
 use Square\Models\CatalogObject;
@@ -57,7 +58,7 @@ class ItemEventSyncServiceTest extends TestCase
         $this->mockStockDao->method('getItemPrice')->willReturn(12.34);
     }
 
-    private function buildService(string $currency = 'CAD', int $salesType = 1): ItemEventSyncService
+    private function buildService(string $currency = 'CAD', int $salesType = 1, ?TaxRateResolver $resolver = null): ItemEventSyncService
     {
         return new ItemEventSyncService(
             $this->mockSettings,
@@ -65,7 +66,8 @@ class ItemEventSyncServiceTest extends TestCase
             $this->mockStockDao,
             $this->mockTokenDao,
             $currency,
-            $salesType
+            $salesType,
+            $resolver ?? new TaxRateResolver()
         );
     }
 
@@ -172,6 +174,22 @@ class ItemEventSyncServiceTest extends TestCase
         $result = $service->sync('SKU-001', 'created');
 
         $this->assertSame('pushed', $result['status']);
+    }
+
+    public function testSyncResolvesTaxRateFromConfiguredTaxGroup(): void
+    {
+        $this->mockSettings->method('getDefaultTaxGroup')->willReturn(4);
+        $resolver = new TaxRateResolver(function (?int $groupId): ?float {
+            return $groupId === 4 ? 13.0 : 0.0;
+        });
+        $this->configureDefaults();
+        $this->mockExporter->expects($this->once())
+            ->method('upsertProduct')
+            ->with('SKU-001', 'Test Widget', 'Test Widget', 'General', 1234, 'CAD', 'GST', 13.0, null)
+            ->willReturn($this->catalogObjectMock());
+        $service = $this->buildService('CAD', 1, $resolver);
+
+        $service->sync('SKU-001', 'created');
     }
 
     public function testSyncUsesSquarePriceCents(): void

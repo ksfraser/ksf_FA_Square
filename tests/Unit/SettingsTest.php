@@ -16,6 +16,7 @@ class SettingsTest extends TestCase
         $this->assertNull($settings->getLastImportDate());
         $this->assertNull($settings->getDestinationCustomer());
         $this->assertNull($settings->getDefaultLocation());
+        $this->assertNull($settings->getDefaultTaxGroup());
     }
 
     public function testSetAndGetAccessToken(): void
@@ -97,6 +98,31 @@ class SettingsTest extends TestCase
         $settings = new Settings();
         $settings->setDefaultLocation('LOC_001');
         $this->assertSame('LOC_001', $settings->getDefaultLocation());
+    }
+
+    public function testSetAndGetDefaultTaxGroup(): void
+    {
+        $settings = new Settings();
+        $settings->setDefaultTaxGroup(3);
+        $this->assertSame(3, $settings->getDefaultTaxGroup());
+    }
+
+    public function testConstructorAcceptsDefaultTaxGroup(): void
+    {
+        $settings = new Settings(['default_tax_group' => '2']);
+
+        $this->assertSame(2, $settings->getDefaultTaxGroup());
+    }
+
+    public function testFromFADatabaseLoadsDefaultTaxGroup(): void
+    {
+        $GLOBALS['__fa_table'] = [
+            ['name' => 'default_tax_group', 'value' => '5'],
+        ];
+
+        $settings = Settings::fromFADatabase('0_');
+
+        $this->assertSame(5, $settings->getDefaultTaxGroup());
     }
 
     public function testConstructorAcceptsConfig(): void

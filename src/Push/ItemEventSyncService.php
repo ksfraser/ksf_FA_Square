@@ -7,6 +7,7 @@ use Ksfraser\Frontaccounting\SquareUp\Contracts\SettingsInterface;
 use Ksfraser\Frontaccounting\SquareUp\DAO\SquareTokenDAO;
 use Ksfraser\Frontaccounting\SquareUp\DAO\StockMasterDAO;
 use Ksfraser\Frontaccounting\SquareUp\Exceptions\SquareException;
+use Ksfraser\Frontaccounting\SquareUp\Services\TaxRateResolver;
 use Ksfraser\Frontaccounting\SquareUp\ValueObjects\SquarePrice;
 use Square\Exceptions\ApiException;
 
@@ -47,6 +48,9 @@ class ItemEventSyncService
     /** @var int */
     private $salesType;
 
+    /** @var TaxRateResolver */
+    private $taxResolver;
+
     /**
      * @param SettingsInterface $settings       Square configuration
      * @param CatalogExporter   $exporter       Catalog push engine
@@ -54,6 +58,7 @@ class ItemEventSyncService
      * @param SquareTokenDAO    $tokenDao       Square<->FA mapping store
      * @param string            $currency       Price currency code (e.g. 'CAD')
      * @param int               $salesType      FA sales type for pricing
+     * @param TaxRateResolver   $taxResolver    Resolves the catalog tax rate
      *
      * @since 2.4.4
      */
@@ -63,7 +68,8 @@ class ItemEventSyncService
         StockMasterDAO $stockMasterDao,
         SquareTokenDAO $tokenDao,
         string $currency = '',
-        int $salesType = 0
+        int $salesType = 0,
+        TaxRateResolver $taxResolver = null
     ) {
         $this->settings = $settings;
         $this->exporter = $exporter;
@@ -71,6 +77,7 @@ class ItemEventSyncService
         $this->tokenDao = $tokenDao;
         $this->currency = $currency;
         $this->salesType = $salesType;
+        $this->taxResolver = $taxResolver !== null ? $taxResolver : new TaxRateResolver();
     }
 
     /**
@@ -107,6 +114,10 @@ class ItemEventSyncService
         $description = (string) $item['description'];
         $categoryName = !empty($item['cat_description']) ? (string) $item['cat_description'] : 'General';
         $taxName = !empty($item['tax_name']) ? (string) $item['tax_name'] : '';
+        $taxRate = $this->taxResolver->resolveForItem(
+            !empty($item['exempt']),
+            $this->settings->getDefaultTaxGroup()
+        );
         $currency = $this->currency !== '' ? $this->currency : 'CAD';
 
         try {
@@ -118,7 +129,7 @@ class ItemEventSyncService
                 $priceCents,
                 $currency,
                 $taxName,
-                0.0
+                $taxRate
             );
         } catch (SquareException $e) {
             return ['status' => 'failed', 'event' => $event, 'reason' => $e->getMessage()];

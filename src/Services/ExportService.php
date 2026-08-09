@@ -56,14 +56,21 @@ class ExportService
      */
     private $existingSquareItems = [];
 
+    /**
+     * @var TaxRateResolver
+     */
+    private $taxResolver;
+
     public function __construct(
         string $tablePrefix,
         Settings $settings,
-        CatalogExporter $exporter
+        CatalogExporter $exporter,
+        TaxRateResolver $taxResolver = null
     ) {
         $this->tablePrefix = $tablePrefix;
         $this->settings = $settings;
         $this->exporter = $exporter;
+        $this->taxResolver = $taxResolver !== null ? $taxResolver : new TaxRateResolver();
         $this->squareTokenDao = new SquareTokenDAO($tablePrefix);
         $this->stockMasterDao = new StockMasterDAO($tablePrefix);
         $this->stockMovesDao = new StockMovesDAO($tablePrefix);
@@ -189,7 +196,7 @@ class ExportService
 
         $catName = $item['cat_description'] ?? 'General';
         $taxName = $item['tax_name'] ?? '';
-        $taxRate = $item['exempt'] ? 0.0 : 0.0;
+        $taxRate = $this->taxResolver->resolveForItem(!empty($item['exempt']), $this->settings->getDefaultTaxGroup());
 
         $existingItem = $this->existingSquareItems[$sku] ?? $this->existingSquareItems[$stockId] ?? null;
 

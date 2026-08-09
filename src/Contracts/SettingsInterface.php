@@ -32,4 +32,8 @@ interface SettingsInterface
     public function getDefaultLocation(): ?string;
 
     public function setDefaultLocation(string $locationId): void;
+
+    public function getDefaultTaxGroup(): ?int;
+
+    public function setDefaultTaxGroup(int $taxGroupId): void;
 }
