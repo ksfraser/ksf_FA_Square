@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Tests\Integration\Services;
+namespace Ksfraser\Frontaccounting\SquareUp\Tests\Integration;
 
 use PHPUnit\Framework\TestCase;
 use Ksfraser\Frontaccounting\SquareUp\Services\TransactionCorrectionService;

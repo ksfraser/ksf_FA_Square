@@ -45,8 +45,8 @@ class ItemStagingDAO
     {
         $tableName = $this->getTableName();
 
-        $checkTable = db_query("SHOW TABLES LIKE '{$tableName}'");
-        if (db_num_rows($checkTable) == 0) {
+        $checkTable = \db_query("SHOW TABLES LIKE '{$tableName}'");
+        if (\db_num_rows($checkTable) == 0) {
             $this->createTable();
         } else {
             $this->upgradeTable();
@@ -110,7 +110,7 @@ class ItemStagingDAO
             KEY idx_date (Date)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
 
-        if (!db_query($sql)) {
+        if (!\db_query($sql)) {
             throw new Exception(_("Cannot create ksf_import_square_items table: ") . db_error());
         }
     }
@@ -135,10 +135,10 @@ class ItemStagingDAO
 
         foreach ($newColumns as $colDef) {
             $colName = explode(' ', $colDef)[0];
-            $check = @db_query("SELECT {$colName} FROM {$tableName} LIMIT 1");
+            $check = @\db_query("SELECT {$colName} FROM {$tableName} LIMIT 1");
             if ($check === false) {
                 $alterSql = "ALTER TABLE {$tableName} ADD COLUMN {$colDef}";
-                db_query($alterSql);
+                \db_query($alterSql);
             }
         }
     }
@@ -178,7 +178,7 @@ class ItemStagingDAO
                 if ($value === null) {
                     $values[] = 'NULL';
                 } else {
-                    $values[] = "'" . db_escape((string)$value) . "'";
+                    $values[] = "'" . \db_escape((string)$value) . "'";
                 }
             }
         }
@@ -188,11 +188,11 @@ class ItemStagingDAO
 
         $sql = "INSERT INTO {$tableName} ({$fieldsStr}) VALUES ({$valuesStr})";
 
-        if (!db_query($sql)) {
+        if (!\db_query($sql)) {
             throw new Exception(_("Failed to insert item: ") . db_error());
         }
 
-        return (int)db_insert_id();
+        return (int)\db_insert_id();
     }
 
     /**
@@ -204,12 +204,12 @@ class ItemStagingDAO
     public function getByTransactionId(string $transactionId): array
     {
         $tableName = $this->getTableName();
-        $sql = "SELECT * FROM {$tableName} WHERE transaction_id = '" . db_escape($transactionId) . "' ORDER BY id ASC";
-        $result = db_query($sql);
+        $sql = "SELECT * FROM {$tableName} WHERE transaction_id = '" . \db_escape($transactionId) . "' ORDER BY id ASC";
+        $result = \db_query($sql);
         $items = [];
 
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $items[] = $row;
                 }
@@ -228,12 +228,12 @@ class ItemStagingDAO
     public function getByPaymentId(string $paymentId): array
     {
         $tableName = $this->getTableName();
-        $sql = "SELECT * FROM {$tableName} WHERE payment_id = '" . db_escape($paymentId) . "' ORDER BY id ASC";
-        $result = db_query($sql);
+        $sql = "SELECT * FROM {$tableName} WHERE payment_id = '" . \db_escape($paymentId) . "' ORDER BY id ASC";
+        $result = \db_query($sql);
         $items = [];
 
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $items[] = $row;
                 }
@@ -253,9 +253,9 @@ class ItemStagingDAO
     public function deleteByTransactionId(string $transactionId): void
     {
         $tableName = $this->getTableName();
-        $sql = "DELETE FROM {$tableName} WHERE transaction_id = '" . db_escape($transactionId) . "'";
+        $sql = "DELETE FROM {$tableName} WHERE transaction_id = '" . \db_escape($transactionId) . "'";
 
-        if (!db_query($sql)) {
+        if (!\db_query($sql)) {
             throw new Exception(_("Failed to delete items: ") . db_error());
         }
     }
@@ -270,10 +270,10 @@ class ItemStagingDAO
     {
         $tableName = $this->getTableName();
         $sql = "SELECT * FROM {$tableName} WHERE id = " . (int)$id;
-        $result = db_query($sql);
+        $result = \db_query($sql);
 
-        if ($result !== false && db_num_rows($result) > 0) {
-            $row = db_fetch_assoc($result);
+        if ($result !== false && \db_num_rows($result) > 0) {
+            $row = \db_fetch_assoc($result);
             return $row !== false ? $row : null;
         }
 
@@ -307,7 +307,7 @@ class ItemStagingDAO
                 if ($value === null) {
                     $sets[] = "{$key} = NULL";
                 } else {
-                    $sets[] = "{$key} = '" . db_escape((string)$value) . "'";
+                    $sets[] = "{$key} = '" . \db_escape((string)$value) . "'";
                 }
             }
         }
@@ -319,7 +319,7 @@ class ItemStagingDAO
         $setsStr = implode(', ', $sets);
         $sql = "UPDATE {$tableName} SET {$setsStr} WHERE id = " . (int)$id;
 
-        if (!db_query($sql)) {
+        if (!\db_query($sql)) {
             throw new Exception(_("Failed to update item: ") . db_error());
         }
     }
@@ -336,7 +336,7 @@ class ItemStagingDAO
         $tableName = $this->getTableName();
         $sql = "DELETE FROM {$tableName} WHERE id = " . (int)$id;
 
-        if (!db_query($sql)) {
+        if (!\db_query($sql)) {
             throw new Exception(_("Failed to delete item: ") . db_error());
         }
     }

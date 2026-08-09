@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+namespace Ksfraser\Frontaccounting\SquareUp\Services;
+
 /**
  * Report Distribution Service
  * 
@@ -13,7 +15,7 @@ class ReportDistributionService
 {
     private EmailService $emailService;
     private FileStorageService $fileStorage;
-    string $tablePrefix;
+    private string $tablePrefix;
 
     public function __construct(EmailService $emailService, FileStorageService $fileStorage, string $tablePrefix)
     {
@@ -126,9 +128,9 @@ class ReportDistributionService
         $tableName = $this->getDistributionTableName();
         $sql = "SELECT * FROM {$tableName} WHERE distribution_id = {$distributionId}";
         
-        $result = db_query($sql);
-        if ($result !== false && db_num_rows($result) > 0) {
-            $row = db_fetch_assoc($result);
+        $result = \db_query($sql);
+        if ($result !== false && \db_num_rows($result) > 0) {
+            $row = \db_fetch_assoc($result);
             return $row !== false ? $row : null;
         }
 
@@ -166,11 +168,11 @@ class ReportDistributionService
         
         $sql = "SELECT * FROM {$tableName} WHERE " . implode(' AND ', $conditions) . " ORDER BY created_at DESC";
         
-        $result = db_query($sql);
+        $result = \db_query($sql);
         $distributions = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $distributions[] = $row;
                 }
@@ -211,11 +213,11 @@ class ReportDistributionService
         
         $sql = "SELECT * FROM {$tableName} WHERE " . implode(' AND ', $conditions) . " ORDER BY created_at DESC";
         
-        $result = db_query($sql);
+        $result = \db_query($sql);
         $history = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $history[] = $row;
                 }
@@ -343,7 +345,7 @@ class ReportDistributionService
         $tableName = $this->getDistributionTableName();
         $sql = "UPDATE {$tableName} SET status = 'cancelled', updated_at = NOW() WHERE distribution_id = {$distributionId}";
         
-        return db_query($sql) !== false;
+        return \db_query($sql) !== false;
     }
 
     /**
@@ -358,7 +360,7 @@ class ReportDistributionService
         $tableName = $this->getDistributionTableName();
         $sql = "UPDATE {$tableName} SET status = '{$status}', updated_at = NOW() WHERE distribution_id = {$distributionId}";
         
-        return db_query($sql) !== false;
+        return \db_query($sql) !== false;
     }
 
     /**
@@ -373,9 +375,9 @@ class ReportDistributionService
     {
         $tableName = $this->getDistributionHistoryTableName();
         $sql = "INSERT INTO {$tableName} (distribution_id, status, message, created_at) 
-                VALUES ({$distributionId}, '{$status}', '" . db_escape($message) . "', NOW())";
+                VALUES ({$distributionId}, '{$status}', '" . \db_escape($message) . "', NOW())";
         
-        return db_query($sql) !== false;
+        return \db_query($sql) !== false;
     }
 
     /**
@@ -422,8 +424,9 @@ class ReportDistributionService
     private function executeEmailDistribution(array $distribution, array $reportData, array $config): array
     {
         // Generate report file
-        $fileContent = $this->generateReportFile($reportData, $config['format'] ?? 'pdf');
-        $fileName = "report_{$distribution['report_id']}_" . date('Y-m-d_H-i-s') . ".{$config['format'] ?? 'pdf'}";
+        $format = $config['format'] ?? 'pdf';
+        $fileContent = $this->generateReportFile($reportData, $format);
+        $fileName = "report_{$distribution['report_id']}_" . date('Y-m-d_H-i-s') . ".{$format}";
         
         // Upload to file storage
         $fileUrl = $this->fileStorage->uploadFile($fileName, $fileContent);
@@ -464,8 +467,9 @@ class ReportDistributionService
     private function executeFtpDistribution(array $distribution, array $reportData, array $config): array
     {
         // Generate report file
-        $fileContent = $this->generateReportFile($reportData, $config['format'] ?? 'pdf');
-        $fileName = "report_{$distribution['report_id']}_" . date('Y-m-d_H-i-s') . ".{$config['format'] ?? 'pdf'}";
+        $format = $config['format'] ?? 'pdf';
+        $fileContent = $this->generateReportFile($reportData, $format);
+        $fileName = "report_{$distribution['report_id']}_" . date('Y-m-d_H-i-s') . ".{$format}";
         
         // Connect to FTP
         $ftpConnection = ftp_connect($config['host'], $config['port'] ?? 21);
@@ -508,8 +512,9 @@ class ReportDistributionService
     private function executeS3Distribution(array $distribution, array $reportData, array $config): array
     {
         // Generate report file
-        $fileContent = $this->generateReportFile($reportData, $config['format'] ?? 'pdf');
-        $fileName = "report_{$distribution['report_id']}_" . date('Y-m-d_H-i-s') . ".{$config['format'] ?? 'pdf'}";
+        $format = $config['format'] ?? 'pdf';
+        $fileContent = $this->generateReportFile($reportData, $format);
+        $fileName = "report_{$distribution['report_id']}_" . date('Y-m-d_H-i-s') . ".{$format}";
         
         // Upload to S3
         $s3Result = $this->fileStorage->uploadToS3($fileName, $fileContent, $config['bucket'], $config['region']);
@@ -583,8 +588,9 @@ class ReportDistributionService
     private function executeDownloadDistribution(array $distribution, array $reportData, array $config): array
     {
         // Generate report file
-        $fileContent = $this->generateReportFile($reportData, $config['format'] ?? 'pdf');
-        $fileName = "report_{$distribution['report_id']}_" . date('Y-m-d_H-i-s') . ".{$config['format'] ?? 'pdf'}";
+        $format = $config['format'] ?? 'pdf';
+        $fileContent = $this->generateReportFile($reportData, $format);
+        $fileName = "report_{$distribution['report_id']}_" . date('Y-m-d_H-i-s') . ".{$format}";
         
         // Store file for download
         $fileUrl = $this->fileStorage->uploadFile($fileName, $fileContent);
@@ -848,13 +854,13 @@ class ReportDistributionService
         $values = [];
         foreach ($queueData as $key => $value) {
             $fields[] = $key;
-            $values[] = is_numeric($value) ? $value : "'" . db_escape($value) . "'";
+            $values[] = is_numeric($value) ? $value : "'" . \db_escape($value) . "'";
         }
         
         $sql = "INSERT INTO {$tableName} (" . implode(', ', $fields) . ") 
                 VALUES (" . implode(', ', $values) . ")";
         
-        return db_query($sql) !== false;
+        return \db_query($sql) !== false;
     }
 
     /**
@@ -871,14 +877,14 @@ class ReportDistributionService
         $values = [];
         foreach ($distributionData as $key => $value) {
             $fields[] = $key;
-            $values[] = is_numeric($value) ? $value : "'" . db_escape($value) . "'";
+            $values[] = is_numeric($value) ? $value : "'" . \db_escape($value) . "'";
         }
         
         $sql = "INSERT INTO {$tableName} (" . implode(', ', $fields) . ") 
                 VALUES (" . implode(', ', $values) . ")";
         
-        db_query($sql);
-        return db_insert_id($tableName);
+        \db_query($sql);
+        return \db_insert_id($tableName);
     }
 
     /**
@@ -897,14 +903,14 @@ class ReportDistributionService
             if ($key === 'updated_at') {
                 $updates[] = "{$key} = '{$value}'";
             } else {
-                $updates[] = "{$key} = " . (is_numeric($value) ? $value : "'" . db_escape($value) . "'");
+                $updates[] = "{$key} = " . (is_numeric($value) ? $value : "'" . \db_escape($value) . "'");
             }
         }
         
         $sql = "UPDATE {$tableName} SET " . implode(', ', $updates) . " 
                 WHERE distribution_id = {$distributionId}";
         
-        return db_query($sql) !== false;
+        return \db_query($sql) !== false;
     }
 
     /**
@@ -918,7 +924,7 @@ class ReportDistributionService
         $tableName = $this->getDistributionTableName();
         $sql = "DELETE FROM {$tableName} WHERE distribution_id = {$distributionId}";
         
-        return db_query($sql) !== false;
+        return \db_query($sql) !== false;
     }
 
     /**
@@ -962,9 +968,9 @@ class ReportDistributionService
         
         // Create distribution table
         $checkSql = "SHOW TABLES LIKE '{$distributionTable}'";
-        $result = db_query($checkSql);
+        $result = \db_query($checkSql);
         
-        if ($result !== false && db_num_rows($result) === 0) {
+        if ($result !== false && \db_num_rows($result) === 0) {
             $createSql = "CREATE TABLE {$distributionTable} (
                 distribution_id INT AUTO_INCREMENT PRIMARY KEY,
                 report_id INT NOT NULL,
@@ -981,14 +987,14 @@ class ReportDistributionService
                 INDEX idx_created_by (created_by)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
             
-            db_query($createSql);
+            \db_query($createSql);
         }
         
         // Create history table
         $checkSql = "SHOW TABLES LIKE '{$historyTable}'";
-        $result = db_query($checkSql);
+        $result = \db_query($checkSql);
         
-        if ($result !== false && db_num_rows($result) === 0) {
+        if ($result !== false && \db_num_rows($result) === 0) {
             $createSql = "CREATE TABLE {$historyTable} (
                 history_id INT AUTO_INCREMENT PRIMARY KEY,
                 distribution_id INT NOT NULL,
@@ -1000,14 +1006,14 @@ class ReportDistributionService
                 INDEX idx_created_at (created_at)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
             
-            db_query($createSql);
+            \db_query($createSql);
         }
         
         // Create queue table
         $checkSql = "SHOW TABLES LIKE '{$queueTable}'";
-        $result = db_query($checkSql);
+        $result = \db_query($checkSql);
         
-        if ($result !== false && db_num_rows($result) === 0) {
+        if ($result !== false && \db_num_rows($result) === 0) {
             $createSql = "CREATE TABLE {$queueTable} (
                 queue_id INT AUTO_INCREMENT PRIMARY KEY,
                 distribution_id INT NOT NULL,
@@ -1019,7 +1025,7 @@ class ReportDistributionService
                 INDEX idx_queued_at (queued_at)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
             
-            db_query($createSql);
+            \db_query($createSql);
         }
     }
 }

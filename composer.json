@@ -34,7 +34,10 @@
     "autoload": {
         "psr-4": {
             "Ksfraser\\Frontaccounting\\SquareUp\\": "src/"
-        }
+        },
+        "files": [
+            "src/Models/WebhookEventType.php"
+        ]
     },
     "autoload-dev": {
         "psr-4": {

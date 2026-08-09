@@ -1,6 +1,13 @@
 <?php
 declare(strict_types=1);
 
+namespace Ksfraser\Frontaccounting\SquareUp\Services;
+
+use Ksfraser\Frontaccounting\SquareUp\Contracts\SalesOrderServiceInterface;
+
+use Ksfraser\Frontaccounting\SquareUp\DAO\SalesOrdersDAO;
+use Ksfraser\Frontaccounting\SquareUp\Exceptions\SalesOrderException;
+use Square\Models\Customer;
 /**
  * Sales Order Service
  * 
@@ -37,6 +44,25 @@ class SalesOrderService implements SalesOrderServiceInterface
     /**
      * Creates a sales order from Square order data.
      * 
+     * Wraps createSalesOrderFromSquare and returns a summary result.
+     * 
+     * @param array $squareOrder Square order data
+     * @return array Sales order summary
+     * @throws SalesOrderException on creation failure
+     */
+    public function createSalesOrder(array $squareOrder): array
+    {
+        $faOrder = $this->createSalesOrderFromSquare($squareOrder);
+
+        return [
+            'success' => true,
+            'order_id' => $faOrder['order_id'] ?? null
+        ];
+    }
+
+    /**
+     * Creates a sales order from Square order data.
+     * 
      * @param array $squareOrder Square order data
      * @return array FA sales order data
      * @throws SalesOrderException on creation failure
@@ -48,7 +74,9 @@ class SalesOrderService implements SalesOrderServiceInterface
             $this->validateSquareOrder($squareOrder);
             
             // Get or create customer
-            $customer = $this->customerService->syncCustomerToSquare($squareOrder['customer']);
+            $customer = $this->customerService->syncCustomerToSquare(
+                $this->buildSquareCustomerModel($squareOrder['customer'])
+            );
             
             // Calculate taxes
             $taxData = $this->taxService->calculateSquareTaxes($squareOrder);
@@ -98,14 +126,14 @@ class SalesOrderService implements SalesOrderServiceInterface
     public function updateSalesOrder(int $orderId, array $updates): void
     {
         try {
+            // Validate update data
+            $this->validateOrderUpdate($updates);
+            
             // Validate order exists
             $order = $this->salesOrdersDao->getOrder($orderId);
             if (!$order) {
                 throw new SalesOrderException("Order not found: {$orderId}");
             }
-            
-            // Validate update data
-            $this->validateOrderUpdate($updates);
             
             // Update order
             $this->salesOrdersDao->updateOrder($orderId, $updates);
@@ -280,5 +308,22 @@ class SalesOrderService implements SalesOrderServiceInterface
         if (isset($updates['total']) && !is_numeric($updates['total'])) {
             throw new SalesOrderException("Total must be a numeric value");
         }
+    }
+
+    /**
+     * Builds a Square Customer model from order customer data.
+     *
+     * @param array $customerData Customer data from Square order
+     * @return Customer
+     */
+    private function buildSquareCustomerModel(array $customerData): Customer
+    {
+        $customer = new Customer();
+        $customer->setId($customerData['id'] ?? '');
+        $customer->setGivenName($customerData['given_name'] ?? '');
+        $customer->setFamilyName($customerData['family_name'] ?? '');
+        $customer->setEmailAddress($customerData['email_address'] ?? '');
+        $customer->setPhoneNumber($customerData['phone_number'] ?? '');
+        return $customer;
     }
 }

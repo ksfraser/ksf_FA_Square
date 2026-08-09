@@ -140,7 +140,13 @@ class SalesOrderServiceTest extends TestCase
         // Mock customer service
         $this->mockCustomerService->expects($this->once())
             ->method('syncCustomerToSquare')
-            ->with($squareOrder['customer'])
+            ->with($this->callback(function ($customer) {
+                return $customer instanceof \Square\Models\Customer
+                    && $customer->getId() === 'cus_123'
+                    && $customer->getGivenName() === 'John'
+                    && $customer->getFamilyName() === 'Doe'
+                    && $customer->getEmailAddress() === 'test@example.com';
+            }))
             ->willReturn($customer);
         
         // Mock tax service
@@ -161,6 +167,15 @@ class SalesOrderServiceTest extends TestCase
             ->with($faOrder)
             ->willReturn(456);
         
+        // Mock order adapter convert items
+        $this->mockOrderAdapter->expects($this->exactly(2))
+            ->method('convertToFAOrderItem')
+            ->withConsecutive(
+                [$squareOrder['line_items'][0], 456],
+                [$squareOrder['line_items'][1], 456]
+            )
+            ->willReturnOnConsecutiveCalls($faItem1, $faItem2);
+        
         // Mock order DAO insert items
         $this->mockSalesOrdersDao->expects($this->exactly(2))
             ->method('insertOrderItem')
@@ -174,7 +189,7 @@ class SalesOrderServiceTest extends TestCase
         $this->mockSalesOrdersDao->expects($this->once())
             ->method('updateMappingBySquareId')
             ->with('ord_123456', ['fa_order_id' => 456])
-            ->willReturn(1);
+            ->willReturn(true);
         
         // Mock order DAO log event
         $this->mockSalesOrdersDao->expects($this->once())
@@ -384,7 +399,14 @@ class SalesOrderServiceTest extends TestCase
         // Mock order DAO insert credit note
         $this->mockSalesOrdersDao->expects($this->once())
             ->method('insertOrder')
-            ->with($creditNote)
+            ->with($this->callback(function ($data) {
+                return $data['debtor_no'] === 123
+                    && $data['type'] === 11
+                    && $data['reference'] === 'Customer request for refund'
+                    && $data['tax_included'] === false
+                    && strpos($data['order_ref'], 'CN-') === 0
+                    && $data['total'] === 0;
+            }))
             ->willReturn(789);
         
         // Mock order DAO get order items
@@ -409,7 +431,7 @@ class SalesOrderServiceTest extends TestCase
         $this->mockSalesOrdersDao->expects($this->once())
             ->method('updateMappingByCreditNoteId')
             ->with(789, ['original_order_id' => 456])
-            ->willReturn(1);
+            ->willReturn(true);
         
         // Mock order DAO log event
         $this->mockSalesOrdersDao->expects($this->once())

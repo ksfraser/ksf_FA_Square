@@ -6,7 +6,7 @@ namespace Ksfraser\Frontaccounting\SquareUp\Tests\Unit\Services;
 use Ksfraser\Frontaccounting\SquareUp\Services\CustomerService;
 use Ksfraser\Frontaccounting\SquareUp\DAO\DebtorsMasterDAO;
 use Ksfraser\Frontaccounting\SquareUp\DAO\SquareCustomerDAO;
-use Ksfraser\Frontaccounting\SquareUp\Infrastructure\SquareClient;
+use Square\SquareClient;
 use Ksfraser\Frontaccounting\SquareUp\Exceptions\CustomerSyncException;
 use Ksfraser\Frontaccounting\SquareUp\Exceptions\CustomerNotFoundException;
 use PHPUnit\Framework\TestCase;
@@ -14,7 +14,7 @@ use Square\Models\Customer;
 use Square\Models\CreateCustomerRequest;
 use Square\Models\UpdateCustomerRequest;
 use Square\Models\Address;
-use Square\ApiException;
+use Square\Exceptions\ApiException;
 use PHPUnit\Framework\MockObject\MockObject;
 
 /**
@@ -75,12 +75,18 @@ class CustomerServiceTest extends TestCase
             'country' => 'US'
         ];
         
-        // Mock existing customer not found
-        $this->mockSquareClient->method('getCustomersApi->searchCustomers')
-            ->willReturn(null);
+        // Mock existing customer not found - search returns no customers
+        $mockSearchResponse = $this->createMock(\Square\Http\ApiResponse::class);
+        $mockSearchResponse->method('isSuccess')->willReturn(true);
+        $mockSearchResult = $this->createMock(\Square\Models\SearchCustomersResponse::class);
+        $mockSearchResult->method('getCustomers')->willReturn(null);
+        $mockSearchResponse->method('getResult')->willReturn($mockSearchResult);
+        
+        $mockApi = $this->createMock(\Square\Apis\CustomersApi::class);
+        $mockApi->method('searchCustomers')->willReturn($mockSearchResponse);
+        $this->mockSquareClient->method('getCustomersApi')->willReturn($mockApi);
         
         // Mock customer creation
-        $mockApi = $this->createMock(\Square\Api\CustomersApi::class);
         $mockCustomer = new Customer();
         $mockCustomer->setId('cus_123456');
         $mockCustomer->setGivenName('John');
@@ -88,22 +94,23 @@ class CustomerServiceTest extends TestCase
         $mockCustomer->setEmailAddress('john@example.com');
         $mockCustomer->setPhoneNumber('1234567890');
         
-        $mockResult = $this->createMock(\Square\ApiResponse::class);
+        $mockCreateResponse = $this->createMock(\Square\Models\CreateCustomerResponse::class);
+        $mockCreateResponse->method('getCustomer')->willReturn($mockCustomer);
+
+        $mockResult = $this->createMock(\Square\Http\ApiResponse::class);
         $mockResult->method('isSuccess')->willReturn(true);
-        $mockResult->method('getResult->getCustomer')->willReturn($mockCustomer);
+        $mockResult->method('getResult')->willReturn($mockCreateResponse);
         
         $mockApi->method('createCustomer')->willReturn($mockResult);
-        
-        $this->mockSquareClient->method('getCustomersApi')->willReturn($mockApi);
         
         // Mock DAO operations
         $this->mockSquareCustomerDao->expects($this->once())
             ->method('insertMapping')
-            ->with([
-                'fa_debtor_no' => 123,
-                'square_customer_id' => 'cus_123456',
-                $this->isType('string'), // sync_at
-            ])
+            ->with($this->callback(function ($data) {
+                return $data['fa_debtor_no'] === 123
+                    && $data['square_customer_id'] === 'cus_123456'
+                    && is_string($data['sync_at'] ?? null);
+            }))
             ->willReturn(1);
         
         // Act
@@ -168,7 +175,7 @@ class CustomerServiceTest extends TestCase
         // Mock existing debtor not found
         $this->mockDebtorDao->method('getByEmail')
             ->with('john@example.com')
-            ->willReturn(false);
+            ->willReturn(null);
         
         // Mock debtor creation
         $this->mockDebtorDao->expects($this->once())
@@ -184,11 +191,11 @@ class CustomerServiceTest extends TestCase
         // Mock mapping creation
         $this->mockSquareCustomerDao->expects($this->once())
             ->method('insertMapping')
-            ->with([
-                'fa_debtor_no' => 123,
-                'square_customer_id' => 'cus_123456',
-                $this->isType('string'), // sync_at
-            ])
+            ->with($this->callback(function ($data) {
+                return $data['fa_debtor_no'] === 123
+                    && $data['square_customer_id'] === 'cus_123456'
+                    && is_string($data['sync_at'] ?? null);
+            }))
             ->willReturn(1);
         
         // Act
@@ -214,11 +221,12 @@ class CustomerServiceTest extends TestCase
         $mockCustomer->setEmailAddress('email');
         
         // Mock API response
-        $mockApi = $this->createMock(\Square\Api\CustomersApi::class);
-        $mockResult = $this->createMock(\Square\ApiResponse::class);
+        $mockApi = $this->createMock(\Square\Apis\CustomersApi::class);
+        $mockResult = $this->createMock(\Square\Http\ApiResponse::class);
         $mockResult->method('isSuccess')->willReturn(true);
-        $mockResult->method('getResult->getCustomers')
-            ->willReturn([$mockCustomer]);
+        $mockSearchResult = $this->createMock(\Square\Models\SearchCustomersResponse::class);
+        $mockSearchResult->method('getCustomers')->willReturn([$mockCustomer]);
+        $mockResult->method('getResult')->willReturn($mockSearchResult);
         
         $mockApi->method('searchCustomers')->willReturn($mockResult);
         
@@ -241,10 +249,12 @@ class CustomerServiceTest extends TestCase
         $email = 'nonexistent@example.com';
         
         // Mock API response with no customers
-        $mockApi = $this->createMock(\Square\Api\CustomersApi::class);
-        $mockResult = $this->createMock(\Square\ApiResponse::class);
+        $mockApi = $this->createMock(\Square\Apis\CustomersApi::class);
+        $mockResult = $this->createMock(\Square\Http\ApiResponse::class);
         $mockResult->method('isSuccess')->willReturn(true);
-        $mockResult->method('getResult->getCustomers')->willReturn([]);
+        $mockSearchResult = $this->createMock(\Square\Models\SearchCustomersResponse::class);
+        $mockSearchResult->method('getCustomers')->willReturn([]);
+        $mockResult->method('getResult')->willReturn($mockSearchResult);
         
         $mockApi->method('searchCustomers')->willReturn($mockResult);
         
@@ -297,11 +307,11 @@ class CustomerServiceTest extends TestCase
         // Mock debtor not found
         $this->mockDebtorDao->method('getByEmail')
             ->with($email)
-            ->willReturn(false);
+            ->willReturn(null);
         
         $this->mockDebtorDao->method('getByPhone')
             ->with($phone)
-            ->willReturn(false);
+            ->willReturn(null);
         
         // Act
         $result = $this->customerService->matchCustomer($email, $phone);
@@ -322,11 +332,12 @@ class CustomerServiceTest extends TestCase
         $mockCustomer2 = new Customer();
         $mockCustomer2->setId('cus_456');
         
-        $mockApi = $this->createMock(\Square\Api\CustomersApi::class);
-        $mockResult = $this->createMock(\Square\ApiResponse::class);
+        $mockApi = $this->createMock(\Square\Apis\CustomersApi::class);
+        $mockResult = $this->createMock(\Square\Http\ApiResponse::class);
         $mockResult->method('isSuccess')->willReturn(true);
-        $mockResult->method('getResult->getCustomers')
-            ->willReturn([$mockCustomer1, $mockCustomer2]);
+        $mockListResult = $this->createMock(\Square\Models\ListCustomersResponse::class);
+        $mockListResult->method('getCustomers')->willReturn([$mockCustomer1, $mockCustomer2]);
+        $mockResult->method('getResult')->willReturn($mockListResult);
         
         $mockApi->method('listCustomers')->willReturn($mockResult);
         
@@ -350,9 +361,10 @@ class CustomerServiceTest extends TestCase
         $this->expectExceptionMessage("Square API error listing customers");
         
         // Arrange
-        $mockApi = $this->createMock(\Square\Api\CustomersApi::class);
+        $mockApi = $this->createMock(\Square\Apis\CustomersApi::class);
+        $mockRequest = $this->createMock(\Square\Http\HttpRequest::class);
         $mockApi->method('listCustomers')
-            ->willThrowException(new ApiException("API error", 400, null));
+            ->willThrowException(new ApiException("API error", $mockRequest, null));
         
         $this->mockSquareClient->method('getCustomersApi')->willReturn($mockApi);
         

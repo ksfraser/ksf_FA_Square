@@ -9,3 +9,14 @@ if (!file_exists($autoload)) {
 }
 
 require_once $autoload;
+
+// Load FA function stubs from famock package
+$famockDir = __DIR__ . '/../vendor/ksfraser/famock/php';
+if (is_dir($famockDir)) {
+    require_once $famockDir . '/FaDbStubs.php';
+    require_once $famockDir . '/FaBusinessStubs.php';
+    require_once $famockDir . '/FaConstantStubs.php';
+    require_once $famockDir . '/FaDateStubs.php';
+    require_once $famockDir . '/FaSessionStubs.php';
+    require_once $famockDir . '/FaSecurityStubs.php';
+}

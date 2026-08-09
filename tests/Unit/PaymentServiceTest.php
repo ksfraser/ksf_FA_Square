@@ -8,6 +8,7 @@ use Ksfraser\Frontaccounting\SquareUp\DAO\PaymentsDAO;
 use Ksfraser\Frontaccounting\SquareUp\Services\PaymentAdapter;
 use Ksfraser\Frontaccounting\SquareUp\Services\CustomerService;
 use Ksfraser\Frontaccounting\SquareUp\DAO\PaymentMappingDAO;
+use Ksfraser\Frontaccounting\SquareUp\Exceptions\PaymentMappingException;
 use Ksfraser\Frontaccounting\SquareUp\Exceptions\PaymentProcessingException;
 use Ksfraser\Frontaccounting\SquareUp\Exceptions\RefundProcessingException;
 use Ksfraser\Frontaccounting\SquareUp\Exceptions\ReconciliationException;
@@ -39,13 +40,16 @@ class PaymentServiceTest extends TestCase
         $this->mockCustomerService = $this->createMock(CustomerService::class);
         $this->mockPaymentMappingDao = $this->createMock(PaymentMappingDAO::class);
         
-        // Create payment service
-        $this->paymentService = new PaymentService(
-            $this->mockPaymentsDao,
-            $this->mockPaymentAdapter,
-            $this->mockCustomerService,
-            $this->mockPaymentMappingDao
-        );
+        // Create payment service (partial mock for method stubbing)
+        $this->paymentService = $this->getMockBuilder(PaymentService::class)
+            ->setConstructorArgs([
+                $this->mockPaymentsDao,
+                $this->mockPaymentAdapter,
+                $this->mockCustomerService,
+                $this->mockPaymentMappingDao
+            ])
+            ->onlyMethods(['getPaymentBySquareId'])
+            ->getMock();
     }
 
     protected function tearDown(): void
@@ -348,10 +352,10 @@ class PaymentServiceTest extends TestCase
         ];
         
         // Mock customer service
-        $this->mockCustomerService->expects($this->exactly(2))
+        $this->mockCustomerService->expects($this->once())
             ->method('matchCustomer')
-            ->withConsecutive(['test2@example.com'], ['test3@example.com'])
-            ->willReturnOnConsecutiveCalls($customer, null);
+            ->with('test2@example.com')
+            ->willReturn($customer);
         
         // Mock payment adapter
         $this->mockPaymentAdapter->expects($this->once())
@@ -365,24 +369,37 @@ class PaymentServiceTest extends TestCase
             ->with($faPayment)
             ->willReturn(791);
         
-        // Mock payment mapping DAO create
-        $this->mockPaymentMappingDao->expects($this->once())
+        // Mock payment mapping DAO create (record + update)
+        $this->mockPaymentMappingDao->expects($this->exactly(2))
             ->method('createMapping')
-            ->with($this->callback(function($data) {
-                return $data['square_payment_id'] === 'pay_789' &&
-                       $data['fa_payment_id'] === 791;
-            }))
-            ->willReturn(3);
+            ->withConsecutive(
+                [$this->callback(function($data) {
+                    return $data['square_payment_id'] === 'pay_789' &&
+                           $data['fa_payment_id'] === 791;
+                })],
+                [$this->callback(function($data) {
+                    return $data['square_payment_id'] === 'pay_790' &&
+                           $data['fa_payment_id'] === 792;
+                })]
+            )
+            ->willReturnOnConsecutiveCalls(3, 4);
         
-        // Mock payment DAO log event
-        $this->mockPaymentsDao->expects($this->once())
+        // Mock payment DAO log event (record + update)
+        $this->mockPaymentsDao->expects($this->exactly(2))
             ->method('logPaymentEvent')
-            ->with($this->callback(function($data) {
-                return $data['fa_payment_id'] === 791 &&
-                       $data['square_payment_id'] === 'pay_789' &&
-                       $data['event_type'] === 'recorded';
-            }))
-            ->willReturn(4);
+            ->withConsecutive(
+                [$this->callback(function($data) {
+                    return $data['fa_payment_id'] === 791 &&
+                           $data['square_payment_id'] === 'pay_789' &&
+                           $data['event_type'] === 'recorded';
+                })],
+                [$this->callback(function($data) {
+                    return $data['fa_payment_id'] === 792 &&
+                           $data['square_payment_id'] === 'pay_790' &&
+                           $data['event_type'] === 'recorded';
+                })]
+            )
+            ->willReturnOnConsecutiveCalls(4, 5);
         
         // Mock payment service for existing payment check
         $this->paymentService->method('getPaymentBySquareId')
@@ -396,25 +413,6 @@ class PaymentServiceTest extends TestCase
             ->method('updatePayment')
             ->with(792, ['status' => 'Completed', 'updated_at' => date('Y-m-d H:i:s')])
             ->willReturn(true);
-        
-        // Mock payment mapping DAO create for update
-        $this->mockPaymentMappingDao->expects($this->once())
-            ->method('createMapping')
-            ->with($this->callback(function($data) {
-                return $data['square_payment_id'] === 'pay_790' &&
-                       $data['fa_payment_id'] === 792;
-            }))
-            ->willReturn(4);
-        
-        // Mock payment DAO log event for update
-        $this->mockPaymentsDao->expects($this->once())
-            ->method('logPaymentEvent')
-            ->with($this->callback(function($data) {
-                return $data['fa_payment_id'] === 792 &&
-                       $data['square_payment_id'] === 'pay_790' &&
-                       $data['event_type'] === 'recorded';
-            }))
-            ->willReturn(5);
         
         // Act
         $result = $this->paymentService->reconcileSquarePayments($payments);
@@ -454,8 +452,16 @@ class PaymentServiceTest extends TestCase
             ->with($squarePaymentId)
             ->willReturn(null);
         
+        // Use a real service instance (the partial mock stubs out this method)
+        $paymentService = new PaymentService(
+            $this->mockPaymentsDao,
+            $this->mockPaymentAdapter,
+            $this->mockCustomerService,
+            $this->mockPaymentMappingDao
+        );
+        
         // Act
-        $result = $this->paymentService->getPaymentBySquareId($squarePaymentId);
+        $result = $paymentService->getPaymentBySquareId($squarePaymentId);
         
         // Assert
         $this->assertNull($result);

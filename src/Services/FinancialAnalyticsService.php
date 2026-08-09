@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+namespace Ksfraser\Frontaccounting\SquareUp\Services;
+
 /**
  * Financial Analytics Service
  * 
@@ -45,10 +47,10 @@ class FinancialAnalyticsService
             FROM {$salesTable} 
             WHERE {$dateCondition}";
         
-        $result = db_query($summarySql);
+        $result = \db_query($summarySql);
         $summary = [];
         if ($result !== false) {
-            $row = db_fetch_assoc($result);
+            $row = \db_fetch_assoc($result);
             $summary = [
                 'total_transactions' => (int)($row['total_transactions'] ?? 0),
                 'total_revenue' => (float)($row['total_revenue'] ?? 0),
@@ -73,11 +75,11 @@ class FinancialAnalyticsService
             GROUP BY DATE_FORMAT(date_1, '%Y-%m')
             ORDER BY month ASC";
         
-        $result = db_query($monthlySql);
+        $result = \db_query($monthlySql);
         $trends = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $trends[] = [
                         'month' => $row['month'],
@@ -123,10 +125,10 @@ class FinancialAnalyticsService
             JOIN {$detailsTable} d ON s.payment_id = d.payment_id
             WHERE {$dateCondition}";
         
-        $result = db_query($summarySql);
+        $result = \db_query($summarySql);
         $summary = [];
         if ($result !== false) {
-            $row = db_fetch_assoc($result);
+            $row = \db_fetch_assoc($result);
             $summary = [
                 'total_sales' => (int)($row['total_sales'] ?? 0),
                 'total_revenue' => (float)($row['total_revenue'] ?? 0),
@@ -155,11 +157,11 @@ class FinancialAnalyticsService
             ORDER BY profit DESC
             LIMIT 20";
         
-        $result = db_query($productSql);
+        $result = \db_query($productSql);
         $byProduct = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $byProduct[] = [
                         'item_code' => $row['item_code'],
@@ -205,11 +207,11 @@ class FinancialAnalyticsService
             GROUP BY date_1
             ORDER BY date_1 ASC";
         
-        $result = db_query($dailySql);
+        $result = \db_query($dailySql);
         $dailyFlow = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $dailyFlow[] = [
                         'date' => $row['date'],
@@ -233,11 +235,11 @@ class FinancialAnalyticsService
             GROUP BY DATE_FORMAT(date_1, '%Y-%u')
             ORDER BY week ASC";
         
-        $result = db_query($weeklySql);
+        $result = \db_query($weeklySql);
         $weeklyFlow = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $weeklyFlow[] = [
                         'week' => $row['week'],
@@ -279,10 +281,10 @@ class FinancialAnalyticsService
             FROM {$expensesTable} 
             WHERE {$dateCondition}";
         
-        $result = db_query($summarySql);
+        $result = \db_query($summarySql);
         $summary = [];
         if ($result !== false) {
-            $row = db_fetch_assoc($result);
+            $row = \db_fetch_assoc($result);
             $summary = [
                 'total_expenses' => (int)($row['total_expenses'] ?? 0),
                 'total_amount' => (float)($row['total_amount'] ?? 0),
@@ -305,11 +307,11 @@ class FinancialAnalyticsService
             GROUP BY category
             ORDER BY total_amount DESC";
         
-        $result = db_query($categorySql);
+        $result = \db_query($categorySql);
         $byCategory = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $byCategory[] = [
                         'category' => $row['category'],
@@ -332,11 +334,11 @@ class FinancialAnalyticsService
             GROUP BY DATE_FORMAT(date_1, '%Y-%m')
             ORDER BY month ASC";
         
-        $result = db_query($monthlySql);
+        $result = \db_query($monthlySql);
         $monthlyTrends = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $monthlyTrends[] = [
                         'month' => $row['month'],
@@ -377,10 +379,10 @@ class FinancialAnalyticsService
             FROM {$salesTable} 
             WHERE {$dateCondition}";
         
-        $result = db_query($revenueSql);
+        $result = \db_query($revenueSql);
         $revenue = [];
         if ($result !== false) {
-            $row = db_fetch_assoc($result);
+            $row = \db_fetch_assoc($result);
             $revenue = [
                 'total_revenue' => (float)($row['total_revenue'] ?? 0),
                 'transaction_count' => (int)($row['transaction_count'] ?? 0),
@@ -394,10 +396,10 @@ class FinancialAnalyticsService
             FROM {$expensesTable} 
             WHERE {$dateCondition}";
         
-        $result = db_query($expensesSql);
+        $result = \db_query($expensesSql);
         $expenses = [];
         if ($result !== false) {
-            $row = db_fetch_assoc($result);
+            $row = \db_fetch_assoc($result);
             $expenses = [
                 'total_expenses' => (float)($row['total_expenses'] ?? 0),
                 'expense_count' => (int)($row['expense_count'] ?? 0)
@@ -410,10 +412,10 @@ class FinancialAnalyticsService
             FROM {$paymentsTable} 
             WHERE {$dateCondition}";
         
-        $result = db_query($cashFlowSql);
+        $result = \db_query($cashFlowSql);
         $cashFlow = [];
         if ($result !== false) {
-            $row = db_fetch_assoc($result);
+            $row = \db_fetch_assoc($result);
             $cashFlow = [
                 'total_cash_in' => (float)($row['total_cash_in'] ?? 0),
                 'total_cash_out' => (float)($row['total_cash_out'] ?? 0),
@@ -463,10 +465,10 @@ class FinancialAnalyticsService
             FROM {$salesTable} 
             WHERE {$dateCondition}";
         
-        $result = db_query($performanceSql);
+        $result = \db_query($performanceSql);
         $metrics = [];
         if ($result !== false) {
-            $row = db_fetch_assoc($result);
+            $row = \db_fetch_assoc($result);
             $metrics = [
                 'total_sales' => (int)($row['total_sales'] ?? 0),
                 'total_revenue' => (float)($row['total_revenue'] ?? 0),
@@ -490,11 +492,11 @@ class FinancialAnalyticsService
             ORDER BY date ASC
             LIMIT 30";
         
-        $result = db_query($trendSql);
+        $result = \db_query($trendSql);
         $trends = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $trends[] = [
                         'date' => $row['date'],

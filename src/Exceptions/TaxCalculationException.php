@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+namespace Ksfraser\Frontaccounting\SquareUp\Exceptions;
+
 /**
  * Tax Calculation Exception
  * 

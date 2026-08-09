@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+namespace Ksfraser\Frontaccounting\SquareUp\Interfaces;
+
 /**
  * Transaction Review Interface
  * 

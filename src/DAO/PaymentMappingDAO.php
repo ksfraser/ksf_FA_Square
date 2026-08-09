@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+namespace Ksfraser\Frontaccounting\SquareUp\DAO;
+
 /**
  * Payment Mapping DAO
  * 
@@ -27,11 +29,11 @@ class PaymentMappingDAO
     public function getPaymentBySquareId(string $squarePaymentId): ?array
     {
         $tableName = $this->getMappingsTableName();
-        $sql = "SELECT * FROM {$tableName} WHERE square_payment_id = '" . db_escape($squarePaymentId) . "'";
+        $sql = "SELECT * FROM {$tableName} WHERE square_payment_id = '" . \db_escape($squarePaymentId) . "'";
         
-        $result = db_query($sql);
-        if ($result !== false && db_num_rows($result) > 0) {
-            $row = db_fetch_assoc($result);
+        $result = \db_query($sql);
+        if ($result !== false && \db_num_rows($result) > 0) {
+            $row = \db_fetch_assoc($result);
             return $row !== false ? $row : null;
         }
 
@@ -47,11 +49,11 @@ class PaymentMappingDAO
     public function getRefundBySquareId(string $squareRefundId): ?array
     {
         $tableName = $this->getMappingsTableName();
-        $sql = "SELECT * FROM {$tableName} WHERE square_refund_id = '" . db_escape($squareRefundId) . "'";
+        $sql = "SELECT * FROM {$tableName} WHERE square_refund_id = '" . \db_escape($squareRefundId) . "'";
         
-        $result = db_query($sql);
-        if ($result !== false && db_num_rows($result) > 0) {
-            $row = db_fetch_assoc($result);
+        $result = \db_query($sql);
+        if ($result !== false && \db_num_rows($result) > 0) {
+            $row = \db_fetch_assoc($result);
             return $row !== false ? $row : null;
         }
 
@@ -69,9 +71,9 @@ class PaymentMappingDAO
         $tableName = $this->getMappingsTableName();
         $sql = "SELECT * FROM {$tableName} WHERE fa_payment_id = {$faPaymentId}";
         
-        $result = db_query($sql);
-        if ($result !== false && db_num_rows($result) > 0) {
-            $row = db_fetch_assoc($result);
+        $result = \db_query($sql);
+        if ($result !== false && \db_num_rows($result) > 0) {
+            $row = \db_fetch_assoc($result);
             return $row !== false ? $row : null;
         }
 
@@ -89,9 +91,9 @@ class PaymentMappingDAO
         $tableName = $this->getMappingsTableName();
         $sql = "SELECT * FROM {$tableName} WHERE fa_refund_id = {$faRefundId}";
         
-        $result = db_query($sql);
-        if ($result !== false && db_num_rows($result) > 0) {
-            $row = db_fetch_assoc($result);
+        $result = \db_query($sql);
+        if ($result !== false && \db_num_rows($result) > 0) {
+            $row = \db_fetch_assoc($result);
             return $row !== false ? $row : null;
         }
 
@@ -108,11 +110,11 @@ class PaymentMappingDAO
         $tableName = $this->getMappingsTableName();
         $sql = "SELECT * FROM {$tableName} ORDER BY created_at DESC";
 
-        $result = db_query($sql);
+        $result = \db_query($sql);
         $mappings = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $mappings[] = $row;
                 }
@@ -141,15 +143,15 @@ class PaymentMappingDAO
             if (is_numeric($value)) {
                 $values[] = $value;
             } else {
-                $values[] = "'" . db_escape($value) . "'";
+                $values[] = "'" . \db_escape($value) . "'";
             }
         }
         
         $sql = "INSERT INTO {$tableName} (" . implode(', ', $fields) . ") 
                 VALUES (" . implode(', ', $values) . ")";
 
-        db_query($sql);
-        return db_insert_id($tableName);
+        \db_query($sql);
+        return \db_insert_id($tableName);
     }
 
     /**
@@ -168,14 +170,14 @@ class PaymentMappingDAO
             if ($key === 'updated_at') {
                 $updates[] = "{$key} = '{$value}'";
             } else {
-                $updates[] = "{$key} = " . (is_numeric($value) ? $value : "'" . db_escape($value) . "'");
+                $updates[] = "{$key} = " . (is_numeric($value) ? $value : "'" . \db_escape($value) . "'");
             }
         }
         
         $sql = "UPDATE {$tableName} SET " . implode(', ', $updates) . " 
                 WHERE id = {$id}";
         
-        return db_query($sql) !== false;
+        return \db_query($sql) !== false;
     }
 
     /**
@@ -189,7 +191,7 @@ class PaymentMappingDAO
         $tableName = $this->getMappingsTableName();
         $sql = "DELETE FROM {$tableName} WHERE id = {$id}";
         
-        return db_query($sql) !== false;
+        return \db_query($sql) !== false;
     }
 
     /**
@@ -206,11 +208,11 @@ class PaymentMappingDAO
                 WHERE fa_payment_id BETWEEN {$startId} AND {$endId}
                 ORDER BY fa_payment_id";
 
-        $result = db_query($sql);
+        $result = \db_query($sql);
         $mappings = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $mappings[] = $row;
                 }
@@ -230,14 +232,14 @@ class PaymentMappingDAO
     {
         $tableName = $this->getMappingsTableName();
         $sql = "SELECT * FROM {$tableName} 
-                WHERE square_payment_id LIKE '%" . db_escape($pattern) . "%'
+                WHERE square_payment_id LIKE '%" . \db_escape($pattern) . "%'
                 ORDER BY square_payment_id";
 
-        $result = db_query($sql);
+        $result = \db_query($sql);
         $mappings = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $mappings[] = $row;
                 }
@@ -258,38 +260,38 @@ class PaymentMappingDAO
         
         // Total mappings
         $totalSql = "SELECT COUNT(*) as total FROM {$tableName}";
-        $totalResult = db_query($totalSql);
+        $totalResult = \db_query($totalSql);
         $total = 0;
         if ($totalResult !== false) {
-            $row = db_fetch_assoc($totalResult);
+            $row = \db_fetch_assoc($totalResult);
             $total = (int)($row['total'] ?? 0);
         }
         
         // Payment mappings
         $paymentSql = "SELECT COUNT(*) as payments FROM {$tableName} WHERE fa_payment_id IS NOT NULL";
-        $paymentResult = db_query($paymentSql);
+        $paymentResult = \db_query($paymentSql);
         $payments = 0;
         if ($paymentResult !== false) {
-            $row = db_fetch_assoc($paymentResult);
+            $row = \db_fetch_assoc($paymentResult);
             $payments = (int)($row['payments'] ?? 0);
         }
         
         // Refund mappings
         $refundSql = "SELECT COUNT(*) as refunds FROM {$tableName} WHERE fa_refund_id IS NOT NULL";
-        $refundResult = db_query($refundSql);
+        $refundResult = \db_query($refundSql);
         $refunds = 0;
         if ($refundResult !== false) {
-            $row = db_fetch_assoc($refundResult);
+            $row = \db_fetch_assoc($refundResult);
             $refunds = (int)($row['refunds'] ?? 0);
         }
         
         // Recent mappings
         $recentSql = "SELECT COUNT(*) as recent FROM {$tableName} 
                      WHERE created_at > DATE_SUB(NOW(), INTERVAL 7 DAY)";
-        $recentResult = db_query($recentSql);
+        $recentResult = \db_query($recentSql);
         $recent = 0;
         if ($recentResult !== false) {
-            $row = db_fetch_assoc($recentResult);
+            $row = \db_fetch_assoc($recentResult);
             $recent = (int)($row['recent'] ?? 0);
         }
         
@@ -310,9 +312,9 @@ class PaymentMappingDAO
         
         // Check if table exists
         $checkSql = "SHOW TABLES LIKE '{$tableName}'";
-        $result = db_query($checkSql);
+        $result = \db_query($checkSql);
         
-        if ($result !== false && db_num_rows($result) === 0) {
+        if ($result !== false && \db_num_rows($result) === 0) {
             // Create table
             $createSql = "CREATE TABLE {$tableName} (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -331,7 +333,7 @@ class PaymentMappingDAO
                 INDEX idx_original_fa_payment_id (original_fa_payment_id)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
             
-            db_query($createSql);
+            \db_query($createSql);
         }
     }
 

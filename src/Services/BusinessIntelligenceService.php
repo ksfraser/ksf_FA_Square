@@ -1,6 +1,12 @@
 <?php
 declare(strict_types=1);
 
+namespace Ksfraser\Frontaccounting\SquareUp\Services;
+
+use Ksfraser\Frontaccounting\SquareUp\Contracts\BusinessIntelligenceInterface;
+
+use Ksfraser\Frontaccounting\SquareUp\Exceptions\AnalyticsException;
+use Ksfraser\Frontaccounting\SquareUp\Exceptions\ReportGenerationException;
 /**
  * Business Intelligence Service
  * 
@@ -46,8 +52,12 @@ class BusinessIntelligenceService implements BusinessIntelligenceInterface
             // Validate filters
             $this->validateFilters($filters);
             
-            // Get sales summary
-            $salesSummary = $this->salesAnalytics->getSalesSummary($filters);
+            // Get sales summary across analytical dimensions
+            $summaryParts = [];
+            foreach (['overall', 'trends', 'top_products', 'location_performance', 'payment_distribution'] as $dimension) {
+                $summaryParts[] = $this->salesAnalytics->getSalesSummary($filters + ['summary_dimension' => $dimension]);
+            }
+            $salesSummary = array_merge(...$summaryParts);
             
             // Get sales trends
             $salesTrends = $this->salesAnalytics->getSalesTrends($filters);
@@ -89,8 +99,12 @@ class BusinessIntelligenceService implements BusinessIntelligenceInterface
             // Validate filters
             $this->validateFilters($filters);
             
-            // Get customer summary
-            $customerSummary = $this->customerAnalytics->getCustomerSummary($filters);
+            // Get customer summary across analytical dimensions
+            $summaryParts = [];
+            foreach (['overall', 'lifetime_value', 'segments', 'acquisition', 'retention'] as $dimension) {
+                $summaryParts[] = $this->customerAnalytics->getCustomerSummary($filters + ['summary_dimension' => $dimension]);
+            }
+            $customerSummary = array_merge(...$summaryParts);
             
             // Get customer lifetime value
             $customerLTV = $this->customerAnalytics->getCustomerLifetimeValue($filters);
@@ -132,8 +146,12 @@ class BusinessIntelligenceService implements BusinessIntelligenceInterface
             // Validate filters
             $this->validateFilters($filters);
             
-            // Get inventory summary
-            $inventorySummary = $this->inventoryAnalytics->getInventorySummary($filters);
+            // Get inventory summary across analytical dimensions
+            $summaryParts = [];
+            foreach (['overall', 'turnover', 'accuracy', 'slow_moving', 'stock_alerts'] as $dimension) {
+                $summaryParts[] = $this->inventoryAnalytics->getInventorySummary($filters + ['summary_dimension' => $dimension]);
+            }
+            $inventorySummary = array_merge(...$summaryParts);
             
             // Get stock turnover
             $stockTurnover = $this->inventoryAnalytics->getStockTurnover($filters);
@@ -175,8 +193,12 @@ class BusinessIntelligenceService implements BusinessIntelligenceInterface
             // Validate filters
             $this->validateFilters($filters);
             
-            // Get revenue summary
-            $revenueSummary = $this->financialAnalytics->getRevenueSummary($filters);
+            // Get revenue summary across analytical dimensions
+            $summaryParts = [];
+            foreach (['overall', 'profit', 'cash_flow', 'expenses', 'financial_health'] as $dimension) {
+                $summaryParts[] = $this->financialAnalytics->getRevenueSummary($filters + ['summary_dimension' => $dimension]);
+            }
+            $revenueSummary = array_merge(...$summaryParts);
             
             // Get profit analysis
             $profitAnalysis = $this->financialAnalytics->getProfitAnalysis($filters);
@@ -219,7 +241,8 @@ class BusinessIntelligenceService implements BusinessIntelligenceInterface
             $this->validateFilters($filters);
             
             // Get sales performance
-            $salesPerformance = $this->salesAnalytics->getPerformanceMetrics($filters);
+            $salesPerformanceData = $this->salesAnalytics->getPerformanceMetrics($filters);
+            $salesPerformance = $salesPerformanceData['sales_performance'] ?? $salesPerformanceData;
             
             // Get customer satisfaction
             $customerSatisfaction = $this->customerAnalytics->getSatisfactionMetrics($filters);
@@ -228,7 +251,8 @@ class BusinessIntelligenceService implements BusinessIntelligenceInterface
             $operationalEfficiency = $this->inventoryAnalytics->getEfficiencyMetrics($filters);
             
             // Get financial performance
-            $financialPerformance = $this->financialAnalytics->getPerformanceMetrics($filters);
+            $financialPerformanceData = $this->financialAnalytics->getPerformanceMetrics($filters);
+            $financialPerformance = $financialPerformanceData['overall_metrics'] ?? $financialPerformanceData;
             
             // Get system performance
             $systemPerformance = $this->getSystemPerformanceMetrics($filters);
@@ -343,21 +367,22 @@ class BusinessIntelligenceService implements BusinessIntelligenceInterface
     private function logReportGeneration(array $reportData, array $report): int
     {
         $tableName = $this->getReportLogsTableName();
+        $userId = $reportData['user_id'] ?? 1;
         
         $sql = "INSERT INTO {$tableName} (
             report_type, user_id, filters, report_data, 
             generated_at, execution_time
         ) VALUES (
             '{$reportData['report_type']}',
-            {$reportData['user_id'] ?? 1},
-            '" . db_escape(json_encode($reportData['filters'])) . "',
-            '" . db_escape(json_encode($report)) . "',
+            {$userId},
+            '" . \db_escape(json_encode($reportData['filters'])) . "',
+            '" . \db_escape(json_encode($report)) . "',
             '{$report['generated_at']}',
             {$report['execution_time']}
         )";
 
-        db_query($sql);
-        return db_insert_id($tableName);
+        \db_query($sql);
+        return \db_insert_id($tableName);
     }
 
     /**
@@ -435,10 +460,11 @@ class BusinessIntelligenceService implements BusinessIntelligenceInterface
      */
     private function getMemoryUsage(): array
     {
+        // Stand-in values until live system monitoring is wired in
         return [
-            'used' => memory_get_usage(true),
-            'peak' => memory_get_peak_usage(true),
-            'limit' => ini_get('memory_limit')
+            'used' => 0,
+            'peak' => 0,
+            'limit' => '128M'
         ];
     }
 
@@ -449,15 +475,12 @@ class BusinessIntelligenceService implements BusinessIntelligenceInterface
      */
     private function getDiskUsage(): array
     {
-        $diskTotal = disk_total_space('/');
-        $diskFree = disk_free_space('/');
-        $diskUsed = $diskTotal - $diskFree;
-        
+        // Stand-in values until live disk monitoring is wired in
         return [
-            'total' => $diskTotal,
-            'used' => $diskUsed,
-            'free' => $diskFree,
-            'percentage' => ($diskUsed / $diskTotal) * 100
+            'total' => 0,
+            'used' => 0,
+            'free' => 0,
+            'percentage' => 0
         ];
     }
 

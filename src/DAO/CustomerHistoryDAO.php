@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+namespace Ksfraser\Frontaccounting\SquareUp\DAO;
+
 /**
  * Customer History DAO
  * 
@@ -34,12 +36,12 @@ class CustomerHistoryDAO
             {$historyData['debtor_no']},
             '{$historyData['action']}',
             '{$historyData['source']}',
-            '" . db_escape($historyData['details']) . "',
+            '" . \db_escape($historyData['details']) . "',
             '{$historyData['timestamp']}'
         )";
 
-        db_query($sql);
-        return db_insert_id($tableName);
+        \db_query($sql);
+        return \db_insert_id($tableName);
     }
 
     /**
@@ -57,11 +59,11 @@ class CustomerHistoryDAO
                 ORDER BY timestamp DESC 
                 LIMIT {$limit}";
 
-        $result = db_query($sql);
+        $result = \db_query($sql);
         $history = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $history[] = $row;
                 }
@@ -86,11 +88,11 @@ class CustomerHistoryDAO
                 ORDER BY timestamp DESC 
                 LIMIT {$limit}";
 
-        $result = db_query($sql);
+        $result = \db_query($sql);
         $history = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $history[] = $row;
                 }
@@ -111,20 +113,20 @@ class CustomerHistoryDAO
         
         // Total history records
         $totalSql = "SELECT COUNT(*) as total FROM {$tableName}";
-        $totalResult = db_query($totalSql);
+        $totalResult = \db_query($totalSql);
         $total = 0;
         if ($totalResult !== false) {
-            $row = db_fetch_assoc($totalResult);
+            $row = \db_fetch_assoc($totalResult);
             $total = (int)($row['total'] ?? 0);
         }
         
         // History by action
         $actionSql = "SELECT action, COUNT(*) as count FROM {$tableName} 
                      GROUP BY action ORDER BY count DESC";
-        $actionResult = db_query($actionSql);
+        $actionResult = \db_query($actionSql);
         $byAction = [];
         if ($actionResult !== false) {
-            while ($row = db_fetch_assoc($actionResult)) {
+            while ($row = \db_fetch_assoc($actionResult)) {
                 if ($row !== false) {
                     $byAction[$row['action']] = (int)$row['count'];
                 }
@@ -134,10 +136,10 @@ class CustomerHistoryDAO
         // Recent history
         $recentSql = "SELECT COUNT(*) as recent FROM {$tableName} 
                      WHERE timestamp > DATE_SUB(NOW(), INTERVAL 24 HOUR)";
-        $recentResult = db_query($recentSql);
+        $recentResult = \db_query($recentSql);
         $recent = 0;
         if ($recentResult !== false) {
-            $row = db_fetch_assoc($recentResult);
+            $row = \db_fetch_assoc($recentResult);
             $recent = (int)($row['recent'] ?? 0);
         }
         
@@ -157,9 +159,9 @@ class CustomerHistoryDAO
         
         // Check if table exists
         $checkSql = "SHOW TABLES LIKE '{$tableName}'";
-        $result = db_query($checkSql);
+        $result = \db_query($checkSql);
         
-        if ($result !== false && db_num_rows($result) === 0) {
+        if ($result !== false && \db_num_rows($result) === 0) {
             // Create table
             $createSql = "CREATE TABLE {$tableName} (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -173,7 +175,7 @@ class CustomerHistoryDAO
                 INDEX idx_timestamp (timestamp)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
             
-            db_query($createSql);
+            \db_query($createSql);
         }
     }
 

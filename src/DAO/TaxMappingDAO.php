@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+namespace Ksfraser\Frontaccounting\SquareUp\DAO;
+
 /**
  * Tax Mapping DAO
  * 
@@ -29,9 +31,9 @@ class TaxMappingDAO
         $tableName = $this->getMappingsTableName();
         $sql = "SELECT * FROM {$tableName} WHERE fa_tax_id = {$faTaxId}";
         
-        $result = db_query($sql);
-        if ($result !== false && db_num_rows($result) > 0) {
-            $row = db_fetch_assoc($result);
+        $result = \db_query($sql);
+        if ($result !== false && \db_num_rows($result) > 0) {
+            $row = \db_fetch_assoc($result);
             return $row !== false ? $row : null;
         }
 
@@ -47,11 +49,11 @@ class TaxMappingDAO
     public function getMappingBySquareId(string $squareTaxId): ?array
     {
         $tableName = $this->getMappingsTableName();
-        $sql = "SELECT * FROM {$tableName} WHERE square_tax_id = '" . db_escape($squareTaxId) . "'";
+        $sql = "SELECT * FROM {$tableName} WHERE square_tax_id = '" . \db_escape($squareTaxId) . "'";
         
-        $result = db_query($sql);
-        if ($result !== false && db_num_rows($result) > 0) {
-            $row = db_fetch_assoc($result);
+        $result = \db_query($sql);
+        if ($result !== false && \db_num_rows($result) > 0) {
+            $row = \db_fetch_assoc($result);
             return $row !== false ? $row : null;
         }
 
@@ -68,11 +70,11 @@ class TaxMappingDAO
         $tableName = $this->getMappingsTableName();
         $sql = "SELECT * FROM {$tableName} ORDER BY created_at DESC";
 
-        $result = db_query($sql);
+        $result = \db_query($sql);
         $mappings = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $mappings[] = $row;
                 }
@@ -96,13 +98,13 @@ class TaxMappingDAO
             fa_tax_id, square_tax_id, mapping_data, created_at
         ) VALUES (
             {$mappingData['fa_tax_id']},
-            '" . db_escape($mappingData['square_tax_id']) . "',
-            '" . db_escape($mappingData['mapping_data']) . "',
+            '" . \db_escape($mappingData['square_tax_id']) . "',
+            '" . \db_escape($mappingData['mapping_data']) . "',
             '{$mappingData['created_at']}'
         )";
 
-        db_query($sql);
-        return db_insert_id($tableName);
+        \db_query($sql);
+        return \db_insert_id($tableName);
     }
 
     /**
@@ -121,14 +123,14 @@ class TaxMappingDAO
             if ($key === 'updated_at') {
                 $updates[] = "{$key} = '{$value}'";
             } else {
-                $updates[] = "{$key} = " . (is_numeric($value) ? $value : "'" . db_escape($value) . "'");
+                $updates[] = "{$key} = " . (is_numeric($value) ? $value : "'" . \db_escape($value) . "'");
             }
         }
         
         $sql = "UPDATE {$tableName} SET " . implode(', ', $updates) . " 
                 WHERE id = {$id}";
         
-        return db_query($sql) !== false;
+        return \db_query($sql) !== false;
     }
 
     /**
@@ -142,7 +144,7 @@ class TaxMappingDAO
         $tableName = $this->getMappingsTableName();
         $sql = "DELETE FROM {$tableName} WHERE id = {$id}";
         
-        return db_query($sql) !== false;
+        return \db_query($sql) !== false;
     }
 
     /**
@@ -159,11 +161,11 @@ class TaxMappingDAO
                 WHERE fa_tax_id BETWEEN {$startId} AND {$endId}
                 ORDER BY fa_tax_id";
 
-        $result = db_query($sql);
+        $result = \db_query($sql);
         $mappings = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $mappings[] = $row;
                 }
@@ -183,14 +185,14 @@ class TaxMappingDAO
     {
         $tableName = $this->getMappingsTableName();
         $sql = "SELECT * FROM {$tableName} 
-                WHERE square_tax_id LIKE '%" . db_escape($pattern) . "%'
+                WHERE square_tax_id LIKE '%" . \db_escape($pattern) . "%'
                 ORDER BY square_tax_id";
 
-        $result = db_query($sql);
+        $result = \db_query($sql);
         $mappings = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $mappings[] = $row;
                 }
@@ -211,30 +213,30 @@ class TaxMappingDAO
         
         // Total mappings
         $totalSql = "SELECT COUNT(*) as total FROM {$tableName}";
-        $totalResult = db_query($totalSql);
+        $totalResult = \db_query($totalSql);
         $total = 0;
         if ($totalResult !== false) {
-            $row = db_fetch_assoc($totalResult);
+            $row = \db_fetch_assoc($totalResult);
             $total = (int)($row['total'] ?? 0);
         }
         
         // Mappings by environment
         $envSql = "SELECT COUNT(*) as count FROM {$tableName} 
                   WHERE mapping_data LIKE '%\"environment\":\"production\"%'";
-        $envResult = db_query($envSql);
+        $envResult = \db_query($envSql);
         $production = 0;
         if ($envResult !== false) {
-            $row = db_fetch_assoc($envResult);
+            $row = \db_fetch_assoc($envResult);
             $production = (int)($row['count'] ?? 0);
         }
         
         // Recent mappings
         $recentSql = "SELECT COUNT(*) as recent FROM {$tableName} 
                      WHERE created_at > DATE_SUB(NOW(), INTERVAL 7 DAY)";
-        $recentResult = db_query($recentSql);
+        $recentResult = \db_query($recentSql);
         $recent = 0;
         if ($recentResult !== false) {
-            $row = db_fetch_assoc($recentResult);
+            $row = \db_fetch_assoc($recentResult);
             $recent = (int)($row['recent'] ?? 0);
         }
         
@@ -255,9 +257,9 @@ class TaxMappingDAO
         
         // Check if table exists
         $checkSql = "SHOW TABLES LIKE '{$tableName}'";
-        $result = db_query($checkSql);
+        $result = \db_query($checkSql);
         
-        if ($result !== false && db_num_rows($result) === 0) {
+        if ($result !== false && \db_num_rows($result) === 0) {
             // Create table
             $createSql = "CREATE TABLE {$tableName} (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -271,7 +273,7 @@ class TaxMappingDAO
                 INDEX idx_square_tax_id (square_tax_id)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
             
-            db_query($createSql);
+            \db_query($createSql);
         }
     }
 

@@ -255,6 +255,93 @@ class hooks_ksf_FA_Square extends hooks {
             error_log('KSF Module: composer install failed: ' . implode("\n", $output));
         }
     }
+
+  /**//**
+  * Stock item lifecycle listeners
+  *
+  * These methods are invoked by ksf_FA_Common's shared ItemEventPublisher
+  * via hook_invoke_all('item_created' / 'item_updated', $data). Payload:
+  *   ['stock_id' => string, 'event' => 'created'|'updated', 'trigger' => string, ...]
+  *
+  * @param array &$data Event payload
+  * @param array|null $opts Options
+  * @return mixed
+  */
+  public function item_created(&$data, $opts = null) {
+      $this->handleItemEvent($data, 'created');
+      return null;
+  }
+
+  public function item_updated(&$data, $opts = null) {
+      $this->handleItemEvent($data, 'updated');
+      return null;
+  }
+
+  /**//**
+  * Handle an item lifecycle event by pushing the item to Square.
+  *
+  * @param array $data Event payload
+  * @param string $event 'created' or 'updated'
+  * @return void
+  */
+  private function handleItemEvent($data, $event) {
+      if (!isset($data['stock_id']) || $data['stock_id'] === '') {
+          return;
+      }
+      if (!function_exists('db_query')) {
+          return;
+      }
+      $stockId = (string) $data['stock_id'];
+      $service = $this->buildItemEventSyncService();
+      if ($service === null) {
+          return;
+      }
+      try {
+          $result = $service->sync($stockId, $event);
+          if ($result['status'] === 'failed') {
+              error_log('ksf_FA_Square: item_' . $event . ' sync failed for ' . $stockId . ': ' . $result['reason']);
+          }
+      } catch (\Throwable $e) {
+          error_log('ksf_FA_Square: item_' . $event . ' sync error for ' . $stockId . ': ' . $e->getMessage());
+      }
+  }
+
+  /**//**
+  * Build the item event sync service bound to the current FA company.
+  *
+  * @return \Ksfraser\Frontaccounting\SquareUp\Push\ItemEventSyncService|null
+  */
+  private function buildItemEventSyncService() {
+      $autoload = dirname(__FILE__) . '/vendor/autoload.php';
+      if (file_exists($autoload)) {
+          require_once $autoload;
+      }
+      if (!class_exists('\Ksfraser\Frontaccounting\SquareUp\Push\ItemEventSyncService')) {
+          return null;
+      }
+      try {
+          $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
+          $settings = \Ksfraser\Frontaccounting\SquareUp\Config\Settings::fromFADatabase($tablePrefix);
+          $accessToken = $settings->getAccessToken();
+          if ($accessToken === null || $accessToken === '') {
+              return null;
+          }
+          $client = \Ksfraser\Frontaccounting\SquareUp\Infrastructure\SquareClientFactory::create($settings);
+          $exporter = new \Ksfraser\Frontaccounting\SquareUp\Push\CatalogExporter($client, $settings);
+          $currency = function_exists('get_company_pref') ? (string) get_company_pref('curr_default') : '';
+          return new \Ksfraser\Frontaccounting\SquareUp\Push\ItemEventSyncService(
+              $settings,
+              $exporter,
+              new \Ksfraser\Frontaccounting\SquareUp\DAO\StockMasterDAO($tablePrefix),
+              new \Ksfraser\Frontaccounting\SquareUp\DAO\SquareTokenDAO($tablePrefix, $settings->getEnvironment()),
+              $currency,
+              0
+          );
+      } catch (\Throwable $e) {
+          error_log('ksf_FA_Square: item event sync unavailable: ' . $e->getMessage());
+          return null;
+      }
+  }
 }
 
 /**

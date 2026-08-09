@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace Ksfraser\Frontaccounting\SquareUp\Tests\Unit\Services;
 
 use Ksfraser\Frontaccounting\SquareUp\Services\CRMIntegrationService;
-use Ksfraser\Frontaccounting\SquareUp\Services\CRMAdapterInterface;
+use Ksfraser\Frontaccounting\SquareUp\Contracts\CRMAdapterInterface;
 use Ksfraser\Frontaccounting\SquareUp\Services\CustomerMatchStrategy;
 use Ksfraser\Frontaccounting\SquareUp\DAO\DebtorsMasterDAO;
 use Ksfraser\Frontaccounting\SquareUp\DAO\SquareCustomerDAO;
@@ -88,16 +88,23 @@ class CRMIntegrationServiceTest extends TestCase
         // Mock CRM adapter
         $this->mockCrmAdapter->expects($this->once())
             ->method('updateContact')
-            ->with($expectedCrmData)
+            ->with($this->callback(function ($data) use ($expectedCrmData) {
+                foreach ($expectedCrmData as $key => $value) {
+                    if (($data[$key] ?? null) !== $value) {
+                        return false;
+                    }
+                }
+                return is_string($data['last_sync_at'] ?? null);
+            }))
             ->willReturn(true);
         
         // Mock customer DAO update
         $this->mockCustomerDao->expects($this->once())
             ->method('updateMappingBySquareId')
-            ->with('cus_123456', [
-                'crm_sync_at' => $this->isType('string')
-            ])
-            ->willReturn(1);
+            ->with('cus_123456', $this->callback(function ($data) {
+                return is_string($data['crm_sync_at'] ?? null);
+            }))
+            ->willReturn(true);
         
         // Act
         $result = $this->crmService->syncCustomerWithCRM($debtor, $squareCustomer);
@@ -210,7 +217,7 @@ class CRMIntegrationServiceTest extends TestCase
         $this->mockDebtorDao->expects($this->once())
             ->method('getDebtor')
             ->with($debtorNo)
-            ->willReturn(false);
+            ->willReturn(null);
         
         // Act
         $this->crmService->getCRMContactHistory($debtorNo);
@@ -293,18 +300,18 @@ class CRMIntegrationServiceTest extends TestCase
         $this->mockDebtorDao->expects($this->once())
             ->method('updateDebtor')
             ->with(123, $this->callback(function($data) {
-                return isset($data['name']) && $data['name'] === 'John Doe';
+                return isset($data['country']) && $data['country'] === 'US';
             }))
             ->willReturn(true);
         
         // Mock customer DAO update
         $this->mockCustomerDao->expects($this->once())
             ->method('updateMappingBySquareId')
-            ->with('cus_123456', [
-                'fa_debtor_no' => 123,
-                'sync_at' => $this->isType('string')
-            ])
-            ->willReturn(1);
+            ->with('cus_123456', $this->callback(function ($data) {
+                return $data['fa_debtor_no'] === 123
+                    && is_string($data['sync_at'] ?? null);
+            }))
+            ->willReturn(true);
         
         // Act
         $result = $this->crmService->syncCustomerToSquare($squareCustomer);
@@ -352,12 +359,12 @@ class CRMIntegrationServiceTest extends TestCase
         // Mock customer DAO insert
         $this->mockCustomerDao->expects($this->once())
             ->method('insertMapping')
-            ->with([
-                'fa_debtor_no' => 123,
-                'square_customer_id' => 'cus_123456',
-                'sync_direction' => 'square_to_fa',
-                'sync_at' => $this->isType('string')
-            ])
+            ->with($this->callback(function ($data) {
+                return $data['fa_debtor_no'] === 123
+                    && $data['square_customer_id'] === 'cus_123456'
+                    && $data['sync_direction'] === 'square_to_fa'
+                    && is_string($data['sync_at'] ?? null);
+            }))
             ->willReturn(1);
         
         // Act
@@ -432,11 +439,11 @@ class CRMIntegrationServiceTest extends TestCase
         // Mock customer DAO update mapping
         $this->mockCustomerDao->expects($this->once())
             ->method('updateMappingBySquareId')
-            ->with('cus_123456', [
-                'fa_debtor_no' => 123,
-                'sync_at' => $this->isType('string')
-            ])
-            ->willReturn(1);
+            ->with('cus_123456', $this->callback(function ($data) {
+                return $data['fa_debtor_no'] === 123
+                    && is_string($data['sync_at'] ?? null);
+            }))
+            ->willReturn(true);
         
         // Act
         $result = $this->crmService->syncCustomerToSquare($squareCustomer);

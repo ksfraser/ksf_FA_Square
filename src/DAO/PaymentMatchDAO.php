@@ -45,8 +45,8 @@ class PaymentMatchDAO
     {
         $tableName = $this->getTableName();
 
-        $checkTable = db_query("SHOW TABLES LIKE '{$tableName}'");
-        if (db_num_rows($checkTable) == 0) {
+        $checkTable = \db_query("SHOW TABLES LIKE '{$tableName}'");
+        if (\db_num_rows($checkTable) == 0) {
             $sql = "CREATE TABLE {$tableName} (
                 square_import_payments_id INT(11) NOT NULL AUTO_INCREMENT,
                 square_payment_id VARCHAR(32) NOT NULL,
@@ -60,7 +60,7 @@ class PaymentMatchDAO
                 KEY idx_fa_trans (trans_type, trans_no)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
 
-            if (!db_query($sql)) {
+            if (!\db_query($sql)) {
                 throw new Exception(_("Cannot create ksf_import_square_payments table: ") . db_error());
             }
         }
@@ -86,7 +86,7 @@ class PaymentMatchDAO
 
         $fields = ['square_payment_id', 'trans_type', 'trans_no'];
         $values = [
-            "'" . db_escape($squarePaymentId) . "'",
+            "'" . \db_escape($squarePaymentId) . "'",
             (int)$transType,
             (int)$transNo,
         ];
@@ -102,11 +102,11 @@ class PaymentMatchDAO
         $sql = "INSERT INTO {$tableName} ({$fieldsStr}) VALUES ({$valuesStr}) "
              . "ON DUPLICATE KEY UPDATE updated_at = NOW()";
 
-        if (!db_query($sql)) {
+        if (!\db_query($sql)) {
             throw new Exception(_("Failed to insert payment match: ") . db_error());
         }
 
-        $id = (int)db_insert_id();
+        $id = (int)\db_insert_id();
         if ($id === 0) {
             $existing = $this->getBySquarePaymentId($squarePaymentId);
             if ($existing !== null) {
@@ -126,11 +126,11 @@ class PaymentMatchDAO
     public function getBySquarePaymentId(string $squarePaymentId): ?array
     {
         $tableName = $this->getTableName();
-        $sql = "SELECT * FROM {$tableName} WHERE square_payment_id = '" . db_escape($squarePaymentId) . "'";
-        $result = db_query($sql);
+        $sql = "SELECT * FROM {$tableName} WHERE square_payment_id = '" . \db_escape($squarePaymentId) . "'";
+        $result = \db_query($sql);
 
-        if ($result !== false && db_num_rows($result) > 0) {
-            $row = db_fetch_assoc($result);
+        if ($result !== false && \db_num_rows($result) > 0) {
+            $row = \db_fetch_assoc($result);
             return $row !== false ? $row : null;
         }
 
@@ -148,12 +148,12 @@ class PaymentMatchDAO
     {
         $tableName = $this->getTableName();
         $sql = "SELECT * FROM {$tableName} WHERE trans_type = " . (int)$transType
-             . " AND trans_no = '" . db_escape((string)$transNo) . "'";
-        $result = db_query($sql);
+             . " AND trans_no = '" . \db_escape((string)$transNo) . "'";
+        $result = \db_query($sql);
         $matches = [];
 
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $matches[] = $row;
                 }
@@ -184,9 +184,9 @@ class PaymentMatchDAO
     public function deleteMatch(string $squarePaymentId): void
     {
         $tableName = $this->getTableName();
-        $sql = "DELETE FROM {$tableName} WHERE square_payment_id = '" . db_escape($squarePaymentId) . "'";
+        $sql = "DELETE FROM {$tableName} WHERE square_payment_id = '" . \db_escape($squarePaymentId) . "'";
 
-        if (!db_query($sql)) {
+        if (!\db_query($sql)) {
             throw new Exception(_("Failed to delete payment match: ") . db_error());
         }
     }

@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace Ksfraser\Frontaccounting\SquareUp\Services;
 
-use Ksfraser\Frontaccounting\SquareUp\Infrastructure\SquareClient;
+use Square\SquareClient;
 use Ksfraser\Frontaccounting\SquareUp\DAO\DebtorsMasterDAO;
 use Ksfraser\Frontaccounting\SquareUp\DAO\SquareCustomerDAO;
 use Ksfraser\Frontaccounting\SquareUp\Contracts\CustomerServiceInterface;
@@ -13,6 +13,9 @@ use Square\Models\Customer;
 use Square\Models\CreateCustomerRequest;
 use Square\Models\UpdateCustomerRequest;
 use Square\Models\SearchCustomersRequest;
+use Square\Models\CustomerQuery;
+use Square\Models\CustomerFilter;
+use Square\Models\CustomerTextFilter;
 use Square\Models\Address;
 use Square\Exceptions\ApiException;
 
@@ -62,11 +65,11 @@ class CustomerService implements CustomerServiceInterface
      * @var array
      */
     private $nameFieldMapping = [
-        'name' => 'given_name',
-        'customer_name' => 'given_name',
         'first_name' => 'given_name',
         'last_name' => 'family_name',
         'surname' => 'family_name',
+        'name' => 'given_name',
+        'customer_name' => 'given_name',
     ];
 
     public function __construct(
@@ -155,8 +158,13 @@ class CustomerService implements CustomerServiceInterface
             $api = $this->client->getCustomersApi();
             
             $request = new SearchCustomersRequest();
-            $query = 'email:"' . addslashes($email) . '"';
-            $request->setQuery($query);
+            $customerQuery = new CustomerQuery();
+            $filter = new CustomerFilter();
+            $emailFilter = new CustomerTextFilter();
+            $emailFilter->setExact($email);
+            $filter->setEmailAddress($emailFilter);
+            $customerQuery->setFilter($filter);
+            $request->setQuery($customerQuery);
             
             $result = $api->searchCustomers($request);
             
@@ -170,6 +178,17 @@ class CustomerService implements CustomerServiceInterface
         }
         
         return null;
+    }
+
+    /**
+     * Gets an FA debtor by debtor number.
+     *
+     * @param int $debtorNo FA debtor number
+     * @return array|null Matched FA debtor
+     */
+    public function getCustomerByDebtorNo(int $debtorNo): ?array
+    {
+        return $this->debtorDao->getDebtor($debtorNo);
     }
 
     /**
@@ -256,6 +275,20 @@ class CustomerService implements CustomerServiceInterface
     }
 
     /**
+     * Finds a Square customer by email.
+     *
+     * @param string $email Email to search for
+     * @return Customer|null
+     */
+    private function findSquareCustomerByEmail(string $email): ?Customer
+    {
+        if (empty($email)) {
+            return null;
+        }
+        return $this->findCustomerByEmail($email);
+    }
+
+    /**
      * Creates a new Square customer from FA debtor.
      *
      * @param array $debtor Debtor data
@@ -265,15 +298,14 @@ class CustomerService implements CustomerServiceInterface
     {
         $api = $this->client->getCustomersApi();
         
-        $request = new CreateCustomerRequest([
-            'given_name' => $this->extractName($debtor, 'given_name', $debtor['name']),
-            'family_name' => $this->extractName($debtor, 'family_name'),
-            'email_address' => $debtor['email'] ?? '',
-            'phone_number' => $debtor['phone'] ?? '',
-            'address' => $this->buildAddress($debtor),
-            'reference_id' => 'debtor_' . ($debtor['debtor_no'] ?? ''),
-            'note' => 'Synced from FrontAccounting',
-        ]);
+        $request = new CreateCustomerRequest();
+        $request->setGivenName($this->extractName($debtor, 'given_name', $debtor['name']));
+        $request->setFamilyName($this->extractName($debtor, 'family_name'));
+        $request->setEmailAddress($debtor['email'] ?? '');
+        $request->setPhoneNumber($debtor['phone'] ?? '');
+        $request->setAddress($this->buildAddress($debtor));
+        $request->setReferenceId('debtor_' . ($debtor['debtor_no'] ?? ''));
+        $request->setNote('Synced from FrontAccounting');
 
         $result = $api->createCustomer($request);
         
@@ -306,14 +338,13 @@ class CustomerService implements CustomerServiceInterface
     {
         $api = $this->client->getCustomersApi();
         
-        $request = new UpdateCustomerRequest([
-            'given_name' => $this->extractName($debtor, 'given_name', $debtor['name']),
-            'family_name' => $this->extractName($debtor, 'family_name'),
-            'email_address' => $debtor['email'] ?? '',
-            'phone_number' => $debtor['phone'] ?? '',
-            'address' => $this->buildAddress($debtor),
-            'version' => $existingCustomer->getVersion(),
-        ]);
+        $request = new UpdateCustomerRequest();
+        $request->setGivenName($this->extractName($debtor, 'given_name', $debtor['name']));
+        $request->setFamilyName($this->extractName($debtor, 'family_name'));
+        $request->setEmailAddress($debtor['email'] ?? '');
+        $request->setPhoneNumber($debtor['phone'] ?? '');
+        $request->setAddress($this->buildAddress($debtor));
+        $request->setVersion($existingCustomer->getVersion());
 
         $result = $api->updateCustomer($existingCustomer->getId(), $request);
         
@@ -452,33 +483,40 @@ class CustomerService implements CustomerServiceInterface
      */
     private function buildAddress(array $debtor): ?Address
     {
-        $address = [];
+        $address = new Address();
+        $hasData = false;
         
         if (!empty($debtor['address1'])) {
-            $address['address_line_1'] = $debtor['address1'];
+            $address->setAddressLine1($debtor['address1']);
+            $hasData = true;
         }
         
         if (!empty($debtor['address2'])) {
-            $address['address_line_2'] = $debtor['address2'];
+            $address->setAddressLine2($debtor['address2']);
+            $hasData = true;
         }
         
         if (!empty($debtor['city'])) {
-            $address['locality'] = $debtor['city'];
+            $address->setLocality($debtor['city']);
+            $hasData = true;
         }
         
         if (!empty($debtor['state'])) {
-            $address['administrative_district_level_1'] = $debtor['state'];
+            $address->setAdministrativeDistrictLevel1($debtor['state']);
+            $hasData = true;
         }
         
         if (!empty($debtor['zip'])) {
-            $address['postal_code'] = $debtor['zip'];
+            $address->setPostalCode($debtor['zip']);
+            $hasData = true;
         }
         
         if (!empty($debtor['country'])) {
-            $address['country'] = $debtor['country'];
+            $address->setCountry($debtor['country']);
+            $hasData = true;
         }
 
-        return !empty($address) ? new Address($address) : null;
+        return $hasData ? $address : null;
     }
 
     /**

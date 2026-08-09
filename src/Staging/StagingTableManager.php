@@ -25,10 +25,10 @@ class StagingTableManager
 
     public function dropStagingTables(): void
     {
-        db_query("DROP TABLE IF EXISTS {$this->tablePrefix}square_staging_transactions");
-        db_query("DROP TABLE IF EXISTS {$this->tablePrefix}square_staging_items");
-        db_query("DROP TABLE IF EXISTS {$this->tablePrefix}square_customer_mappings");
-        db_query("DROP TABLE IF EXISTS {$this->tablePrefix}square_import_log");
+        \db_query("DROP TABLE IF EXISTS {$this->tablePrefix}square_staging_transactions");
+        \db_query("DROP TABLE IF EXISTS {$this->tablePrefix}square_staging_items");
+        \db_query("DROP TABLE IF EXISTS {$this->tablePrefix}square_customer_mappings");
+        \db_query("DROP TABLE IF EXISTS {$this->tablePrefix}square_import_log");
     }
 
     public function insertStagingTransaction(array $data): int
@@ -36,19 +36,19 @@ class StagingTableManager
         $table = "{$this->tablePrefix}square_staging_transactions";
         $columns = implode(', ', array_keys($data));
         $values = "'" . implode("', '", array_map(function ($v) {
-            return db_escape((string)$v);
+            return \db_escape((string)$v);
         }, array_values($data))) . "'";
 
-        db_query("INSERT INTO {$table} ({$columns}) VALUES ({$values})");
-        return (int)db_insert_id();
+        \db_query("INSERT INTO {$table} ({$columns}) VALUES ({$values})");
+        return (int)\db_insert_id();
     }
 
     public function getUnprocessedTransactions(string $source = 'api'): array
     {
         $table = "{$this->tablePrefix}square_staging_transactions";
-        $result = db_query("SELECT * FROM {$table} WHERE status = 'staged' AND source = '" . db_escape($source) . "' ORDER BY transaction_date ASC");
+        $result = \db_query("SELECT * FROM {$table} WHERE status = 'staged' AND source = '" . \db_escape($source) . "' ORDER BY transaction_date ASC");
         $rows = [];
-        while ($row = db_fetch_assoc($result)) {
+        while ($row = \db_fetch_assoc($result)) {
             $rows[] = $row;
         }
         return $rows;
@@ -57,20 +57,20 @@ class StagingTableManager
     public function markProcessed(int $id): void
     {
         $table = "{$this->tablePrefix}square_staging_transactions";
-        db_query("UPDATE {$table} SET status = 'imported' WHERE id = " . (int)$id);
+        \db_query("UPDATE {$table} SET status = 'imported' WHERE id = " . (int)$id);
     }
 
     public function markFailed(int $id, string $error): void
     {
         $table = "{$this->tablePrefix}square_staging_transactions";
-        $error = db_escape($error);
-        db_query("UPDATE {$table} SET status = 'failed', error_log = '{$error}' WHERE id = " . (int)$id);
+        $error = \db_escape($error);
+        \db_query("UPDATE {$table} SET status = 'failed', error_log = '{$error}' WHERE id = " . (int)$id);
     }
 
     private function createTransactionStagingTable(): void
     {
         $table = "{$this->tablePrefix}square_staging_transactions";
-        db_query("CREATE TABLE IF NOT EXISTS {$table} (
+        \db_query("CREATE TABLE IF NOT EXISTS {$table} (
             id INT(11) NOT NULL AUTO_INCREMENT,
             source VARCHAR(16) NOT NULL DEFAULT 'api',
             square_transaction_id VARCHAR(32) NOT NULL,
@@ -101,7 +101,7 @@ class StagingTableManager
     private function createItemStagingTable(): void
     {
         $table = "{$this->tablePrefix}square_staging_items";
-        db_query("CREATE TABLE IF NOT EXISTS {$table} (
+        \db_query("CREATE TABLE IF NOT EXISTS {$table} (
             id INT(11) NOT NULL AUTO_INCREMENT,
             staging_transaction_id INT(11) DEFAULT NULL,
             sku VARCHAR(64) DEFAULT NULL,
@@ -122,7 +122,7 @@ class StagingTableManager
     private function createCustomerMappingTable(): void
     {
         $table = "{$this->tablePrefix}square_customer_mappings";
-        db_query("CREATE TABLE IF NOT EXISTS {$table} (
+        \db_query("CREATE TABLE IF NOT EXISTS {$table} (
             id INT(11) NOT NULL AUTO_INCREMENT,
             square_customer_id VARCHAR(32) NOT NULL,
             fa_debtor_no INT(11) NOT NULL,
@@ -136,7 +136,7 @@ class StagingTableManager
     private function createImportLogTable(): void
     {
         $table = "{$this->tablePrefix}square_import_log";
-        db_query("CREATE TABLE IF NOT EXISTS {$table} (
+        \db_query("CREATE TABLE IF NOT EXISTS {$table} (
             id INT(11) NOT NULL AUTO_INCREMENT,
             run_date DATETIME NOT NULL,
             source VARCHAR(16) NOT NULL DEFAULT 'api',

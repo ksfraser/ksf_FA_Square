@@ -29,9 +29,9 @@ class Settings implements SettingsInterface
     {
         $config = [];
 
-        $result = db_query("SELECT `name`, `value` FROM {$tablePrefix}square");
+        $result = \db_query("SELECT `name`, `value` FROM {$tablePrefix}square");
         if ($result !== false) {
-            while ($row = db_fetch($result)) {
+            while ($row = \db_fetch($result)) {
                 $map = [
                     'access_token' => 'access_token',
                     'sandbox_access_token' => 'sandbox_access_token',
@@ -188,19 +188,19 @@ class Settings implements SettingsInterface
     public static function saveToDatabase(string $tablePrefix, string $name, $value): void
     {
         $table = $tablePrefix . 'square';
-        $escapedName = db_escape($name);
-        $escapedValue = db_escape((string)$value);
+        $escapedName = \db_escape($name);
+        $escapedValue = \db_escape((string)$value);
 
         $sql = "SELECT COUNT(*) AS cnt FROM {$table} WHERE name = {$escapedName}";
-        $result = db_query($sql);
+        $result = \db_query($sql);
         if ($result !== false) {
-            $row = db_fetch_assoc($result);
+            $row = \db_fetch_assoc($result);
             if ((int)$row['cnt'] > 0) {
                 $sql = "UPDATE {$table} SET value = {$escapedValue} WHERE name = {$escapedName}";
             } else {
                 $sql = "INSERT INTO {$table} (name, value) VALUES ({$escapedName}, {$escapedValue})";
             }
-            db_query($sql);
+            \db_query($sql);
         }
     }
 

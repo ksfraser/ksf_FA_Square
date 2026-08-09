@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+namespace Ksfraser\Frontaccounting\SquareUp\DAO;
+
 /**
  * Square Customer DAO
  * 
@@ -27,11 +29,11 @@ class SquareCustomerDAO
     public function getBySquareId(string $squareCustomerId): ?array
     {
         $tableName = $this->getTableName();
-        $sql = "SELECT * FROM {$tableName} WHERE square_customer_id = '" . db_escape($squareCustomerId) . "'";
+        $sql = "SELECT * FROM {$tableName} WHERE square_customer_id = '" . \db_escape($squareCustomerId) . "'";
         
-        $result = db_query($sql);
-        if ($result !== false && db_num_rows($result) > 0) {
-            $row = db_fetch_assoc($result);
+        $result = \db_query($sql);
+        if ($result !== false && \db_num_rows($result) > 0) {
+            $row = \db_fetch_assoc($result);
             return $row !== false ? $row : null;
         }
 
@@ -49,9 +51,9 @@ class SquareCustomerDAO
         $tableName = $this->getTableName();
         $sql = "SELECT * FROM {$tableName} WHERE fa_debtor_no = {$debtorNo}";
         
-        $result = db_query($sql);
-        if ($result !== false && db_num_rows($result) > 0) {
-            $row = db_fetch_assoc($result);
+        $result = \db_query($sql);
+        if ($result !== false && \db_num_rows($result) > 0) {
+            $row = \db_fetch_assoc($result);
             return $row !== false ? $row : null;
         }
 
@@ -74,14 +76,14 @@ class SquareCustomerDAO
             if ($key === 'sync_at' || $key === 'crm_sync_at') {
                 $updates[] = "{$key} = '{$value}'";
             } else {
-                $updates[] = "{$key} = " . (is_numeric($value) ? $value : "'" . db_escape($value) . "'");
+                $updates[] = "{$key} = " . (is_numeric($value) ? $value : "'" . \db_escape($value) . "'");
             }
         }
         
         $sql = "UPDATE {$tableName} SET " . implode(', ', $updates) . " 
-                WHERE square_customer_id = '" . db_escape($squareCustomerId) . "'";
+                WHERE square_customer_id = '" . \db_escape($squareCustomerId) . "'";
         
-        return db_query($sql) !== false;
+        return \db_query($sql) !== false;
     }
 
     /**
@@ -100,14 +102,14 @@ class SquareCustomerDAO
             if ($key === 'sync_at' || $key === 'crm_sync_at') {
                 $updates[] = "{$key} = '{$value}'";
             } else {
-                $updates[] = "{$key} = " . (is_numeric($value) ? $value : "'" . db_escape($value) . "'");
+                $updates[] = "{$key} = " . (is_numeric($value) ? $value : "'" . \db_escape($value) . "'");
             }
         }
         
         $sql = "UPDATE {$tableName} SET " . implode(', ', $updates) . " 
                 WHERE fa_debtor_no = {$debtorNo}";
         
-        return db_query($sql) !== false;
+        return \db_query($sql) !== false;
     }
 
     /**
@@ -124,15 +126,15 @@ class SquareCustomerDAO
             fa_debtor_no, square_customer_id, sync_at, sync_direction, crm_sync_at, created_at
         ) VALUES (
             {$data['fa_debtor_no']},
-            '" . db_escape($data['square_customer_id']) . "',
+            '" . \db_escape($data['square_customer_id']) . "',
             '{$data['sync_at']}',
-            '" . db_escape($data['sync_direction'] ?? 'bidirectional') . "',
-            " . (isset($data['crm_sync_at']) ? "'" . db_escape($data['crm_sync_at']) . "'" : 'NULL') . ",
+            '" . \db_escape($data['sync_direction'] ?? 'bidirectional') . "',
+            " . (isset($data['crm_sync_at']) ? "'" . \db_escape($data['crm_sync_at']) . "'" : 'NULL') . ",
             '{$data['created_at']}'
         )";
 
-        db_query($sql);
-        return db_insert_id($tableName);
+        \db_query($sql);
+        return \db_insert_id($tableName);
     }
 
     /**
@@ -146,11 +148,11 @@ class SquareCustomerDAO
         $tableName = $this->getTableName();
         $sql = "SELECT * FROM {$tableName} ORDER BY created_at DESC LIMIT {$limit}";
 
-        $result = db_query($sql);
+        $result = \db_query($sql);
         $mappings = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $mappings[] = $row;
                 }
@@ -171,20 +173,20 @@ class SquareCustomerDAO
         
         // Total mappings
         $totalSql = "SELECT COUNT(*) as total FROM {$tableName}";
-        $totalResult = db_query($totalSql);
+        $totalResult = \db_query($totalSql);
         $total = 0;
         if ($totalResult !== false) {
-            $row = db_fetch_assoc($totalResult);
+            $row = \db_fetch_assoc($totalResult);
             $total = (int)($row['total'] ?? 0);
         }
         
         // Mapped by direction
         $directionSql = "SELECT sync_direction, COUNT(*) as count FROM {$tableName} 
                         GROUP BY sync_direction";
-        $directionResult = db_query($directionSql);
+        $directionResult = \db_query($directionSql);
         $byDirection = [];
         if ($directionResult !== false) {
-            while ($row = db_fetch_assoc($directionResult)) {
+            while ($row = \db_fetch_assoc($directionResult)) {
                 if ($row !== false) {
                     $byDirection[$row['sync_direction']] = (int)$row['count'];
                 }
@@ -194,10 +196,10 @@ class SquareCustomerDAO
         // Recent syncs
         $recentSql = "SELECT COUNT(*) as recent FROM {$tableName} 
                      WHERE sync_at > DATE_SUB(NOW(), INTERVAL 24 HOUR)";
-        $recentResult = db_query($recentSql);
+        $recentResult = \db_query($recentSql);
         $recent = 0;
         if ($recentResult !== false) {
-            $row = db_fetch_assoc($recentResult);
+            $row = \db_fetch_assoc($recentResult);
             $recent = (int)($row['recent'] ?? 0);
         }
         
@@ -217,9 +219,9 @@ class SquareCustomerDAO
         
         // Check if table exists
         $checkSql = "SHOW TABLES LIKE '{$tableName}'";
-        $result = db_query($checkSql);
+        $result = \db_query($checkSql);
         
-        if ($result !== false && db_num_rows($result) === 0) {
+        if ($result !== false && \db_num_rows($result) === 0) {
             // Create table
             $createSql = "CREATE TABLE {$tableName} (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -235,7 +237,7 @@ class SquareCustomerDAO
                 INDEX idx_sync_at (sync_at)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
             
-            db_query($createSql);
+            \db_query($createSql);
         }
     }
 

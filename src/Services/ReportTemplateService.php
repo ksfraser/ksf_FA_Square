@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+namespace Ksfraser\Frontaccounting\SquareUp\Services;
+
 /**
  * Report Template Service
  * 
@@ -115,9 +117,9 @@ class ReportTemplateService
         $tableName = $this->getTemplateTableName();
         $sql = "SELECT * FROM {$tableName} WHERE template_id = {$templateId}";
         
-        $result = db_query($sql);
-        if ($result !== false && db_num_rows($result) > 0) {
-            $row = db_fetch_assoc($result);
+        $result = \db_query($sql);
+        if ($result !== false && \db_num_rows($result) > 0) {
+            $row = \db_fetch_assoc($result);
             return $row !== false ? $row : null;
         }
 
@@ -138,7 +140,7 @@ class ReportTemplateService
         $conditions = ["1=1"];
         
         if (isset($filters['template_name'])) {
-            $conditions[] = "template_name LIKE '%" . db_escape($filters['template_name']) . "%'";
+            $conditions[] = "template_name LIKE '%" . \db_escape($filters['template_name']) . "%'";
         }
         
         if (isset($filters['report_type'])) {
@@ -155,11 +157,11 @@ class ReportTemplateService
         
         $sql = "SELECT * FROM {$tableName} WHERE " . implode(' AND ', $conditions) . " ORDER BY created_at DESC";
         
-        $result = db_query($sql);
+        $result = \db_query($sql);
         $templates = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $templates[] = $row;
                 }
@@ -178,11 +180,11 @@ class ReportTemplateService
     public function getTemplateByName(string $templateName): ?array
     {
         $tableName = $this->getTemplateTableName();
-        $sql = "SELECT * FROM {$tableName} WHERE template_name = '" . db_escape($templateName) . "'";
+        $sql = "SELECT * FROM {$tableName} WHERE template_name = '" . \db_escape($templateName) . "'";
         
-        $result = db_query($sql);
-        if ($result !== false && db_num_rows($result) > 0) {
-            $row = db_fetch_assoc($result);
+        $result = \db_query($sql);
+        if ($result !== false && \db_num_rows($result) > 0) {
+            $row = \db_fetch_assoc($result);
             return $row !== false ? $row : null;
         }
 
@@ -254,15 +256,15 @@ class ReportTemplateService
             if (is_numeric($value)) {
                 $values[] = $value;
             } else {
-                $values[] = "'" . db_escape($value) . "'";
+                $values[] = "'" . \db_escape($value) . "'";
             }
         }
         
         $sql = "INSERT INTO {$tableName} (" . implode(', ', $fields) . ") 
                 VALUES (" . implode(', ', $values) . ")";
 
-        db_query($sql);
-        return db_insert_id($tableName);
+        \db_query($sql);
+        return \db_insert_id($tableName);
     }
 
     /**
@@ -281,14 +283,14 @@ class ReportTemplateService
             if ($key === 'updated_at') {
                 $updates[] = "{$key} = '{$value}'";
             } else {
-                $updates[] = "{$key} = " . (is_numeric($value) ? $value : "'" . db_escape($value) . "'");
+                $updates[] = "{$key} = " . (is_numeric($value) ? $value : "'" . \db_escape($value) . "'");
             }
         }
         
         $sql = "UPDATE {$tableName} SET " . implode(', ', $updates) . " 
                 WHERE template_id = {$templateId}";
         
-        return db_query($sql) !== false;
+        return \db_query($sql) !== false;
     }
 
     /**
@@ -302,7 +304,7 @@ class ReportTemplateService
         $tableName = $this->getTemplateTableName();
         $sql = "DELETE FROM {$tableName} WHERE template_id = {$templateId}";
         
-        return db_query($sql) !== false;
+        return \db_query($sql) !== false;
     }
 
     /**
@@ -324,9 +326,9 @@ class ReportTemplateService
         
         // Check if table exists
         $checkSql = "SHOW TABLES LIKE '{$tableName}'";
-        $result = db_query($checkSql);
+        $result = \db_query($checkSql);
         
-        if ($result !== false && db_num_rows($result) === 0) {
+        if ($result !== false && \db_num_rows($result) === 0) {
             // Create table
             $createSql = "CREATE TABLE {$tableName} (
                 template_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -345,7 +347,7 @@ class ReportTemplateService
                 INDEX idx_is_active (is_active)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
             
-            db_query($createSql);
+            \db_query($createSql);
         }
     }
 }

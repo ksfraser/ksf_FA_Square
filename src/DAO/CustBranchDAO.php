@@ -33,10 +33,10 @@ class CustBranchDAO
     public function getByDebtorNoAndName(int $debtorNo, string $branchName): ?array
     {
         $sql = "SELECT * FROM {$this->tablePrefix}cust_branch "
-            . "WHERE debtor_no = " . $debtorNo . " AND br_name = " . db_escape($branchName);
-        $result = db_query($sql);
-        if ($result !== false && db_num_rows($result) > 0) {
-            $row = db_fetch_assoc($result);
+            . "WHERE debtor_no = " . $debtorNo . " AND br_name = " . \db_escape($branchName);
+        $result = \db_query($sql);
+        if ($result !== false && \db_num_rows($result) > 0) {
+            $row = \db_fetch_assoc($result);
             if ($row !== false) {
                 return $row;
             }
@@ -55,9 +55,9 @@ class CustBranchDAO
     {
         $sql = "SELECT * FROM {$this->tablePrefix}cust_branch "
             . "WHERE debtor_no = " . $debtorNo . " AND branch_code = " . $branchCode;
-        $result = db_query($sql);
-        if ($result !== false && db_num_rows($result) > 0) {
-            $row = db_fetch_assoc($result);
+        $result = \db_query($sql);
+        if ($result !== false && \db_num_rows($result) > 0) {
+            $row = \db_fetch_assoc($result);
             if ($row !== false) {
                 return $row;
             }
@@ -74,10 +74,10 @@ class CustBranchDAO
     public function getByDebtorNo(int $debtorNo): array
     {
         $sql = "SELECT * FROM {$this->tablePrefix}cust_branch WHERE debtor_no = " . $debtorNo . " ORDER BY branch_code";
-        $result = db_query($sql);
+        $result = \db_query($sql);
         $branches = [];
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $branches[] = $row;
                 }

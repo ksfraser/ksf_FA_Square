@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+namespace Ksfraser\Frontaccounting\SquareUp\Services;
+
 /**
  * Tax Adapter
  * 
@@ -41,6 +43,17 @@ class TaxAdapter
         }
 
         return $squareTax;
+    }
+
+    /**
+     * Converts a Square tax to FA tax format without mapping.
+     * 
+     * @param array $squareTax Square tax data
+     * @return array FA tax data
+     */
+    public function convertToFATax(array $squareTax): array
+    {
+        return $this->convertSquareTaxToFA($squareTax, null);
     }
 
     /**

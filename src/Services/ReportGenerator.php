@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+namespace Ksfraser\Frontaccounting\SquareUp\Services;
+
 /**
  * Report Generator
  * 
@@ -93,10 +95,10 @@ class ReportGenerator
             FROM {$salesTable} 
             WHERE {$dateCondition}";
         
-        $result = db_query($summarySql);
+        $result = \db_query($summarySql);
         $summary = [];
         if ($result !== false) {
-            $row = db_fetch_assoc($result);
+            $row = \db_fetch_assoc($result);
             $summary = $row ? [
                 'total_transactions' => (int)$row['total_transactions'],
                 'total_revenue' => (float)$row['total_revenue'],
@@ -119,10 +121,10 @@ class ReportGenerator
             GROUP BY payment_method
             ORDER BY count DESC";
         
-        $result = db_query($methodSql);
+        $result = \db_query($methodSql);
         $byMethod = [];
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row) {
                     $byMethod[] = [
                         'payment_method' => $row['payment_method'],
@@ -145,10 +147,10 @@ class ReportGenerator
             GROUP BY location_id
             ORDER BY total_amount DESC";
         
-        $result = db_query($locationSql);
+        $result = \db_query($locationSql);
         $byLocation = [];
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row) {
                     $byLocation[] = [
                         'location_id' => $row['location_id'],
@@ -189,10 +191,10 @@ class ReportGenerator
             COUNT(DISTINCT company_id) as unique_companies
             FROM {$customerTable} c";
         
-        $result = db_query($summarySql);
+        $result = \db_query($summarySql);
         $summary = [];
         if ($result !== false) {
-            $row = db_fetch_assoc($result);
+            $row = \db_fetch_assoc($result);
             $summary = $row ? [
                 'total_customers' => (int)$row['total_customers'],
                 'unique_customers' => (int)$row['unique_customers'],
@@ -217,10 +219,10 @@ class ReportGenerator
             ORDER BY total_spent DESC
             LIMIT 20";
         
-        $result = db_query($spendingSql);
+        $result = \db_query($spendingSql);
         $spending = [];
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row) {
                     $spending[] = [
                         'debtor_no' => (int)$row['debtor_no'],
@@ -267,10 +269,10 @@ class ReportGenerator
             FROM {$inventoryTable} 
             WHERE {$dateCondition}";
         
-        $result = db_query($summarySql);
+        $result = \db_query($summarySql);
         $summary = [];
         if ($result !== false) {
-            $row = db_fetch_assoc($result);
+            $row = \db_fetch_assoc($result);
             $summary = $row ? [
                 'total_items' => (int)$row['total_items'],
                 'total_quantity' => (int)$row['total_quantity'],
@@ -295,10 +297,10 @@ class ReportGenerator
             GROUP BY category
             ORDER BY total_value DESC";
         
-        $result = db_query($categorySql);
+        $result = \db_query($categorySql);
         $byCategory = [];
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row) {
                     $byCategory[] = [
                         'category' => $row['category'],
@@ -342,10 +344,10 @@ class ReportGenerator
             FROM {$salesTable} 
             WHERE {$dateCondition}";
         
-        $result = db_query($summarySql);
+        $result = \db_query($summarySql);
         $summary = [];
         if ($result !== false) {
-            $row = db_fetch_assoc($result);
+            $row = \db_fetch_assoc($result);
             $summary = $row ? [
                 'total_transactions' => (int)$row['total_transactions'],
                 'total_amount' => (float)$row['total_amount'],
@@ -367,10 +369,10 @@ class ReportGenerator
             GROUP BY date_1
             ORDER BY date_1 ASC";
         
-        $result = db_query($cashFlowSql);
+        $result = \db_query($cashFlowSql);
         $cashFlow = [];
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row) {
                     $cashFlow[] = [
                         'date' => $row['date'],
@@ -412,10 +414,10 @@ class ReportGenerator
             FROM {$salesTable} 
             WHERE {$dateCondition}";
         
-        $result = db_query($metricsSql);
+        $result = \db_query($metricsSql);
         $metrics = [];
         if ($result !== false) {
-            $row = db_fetch_assoc($result);
+            $row = \db_fetch_assoc($result);
             $metrics = $row ? [
                 'total_sales' => (int)$row['total_sales'],
                 'total_revenue' => (float)$row['total_revenue'],

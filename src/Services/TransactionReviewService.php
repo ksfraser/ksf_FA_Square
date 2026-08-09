@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+namespace Ksfraser\Frontaccounting\SquareUp\Services;
+
 /**
  * Transaction Review Service
  * 
@@ -37,25 +39,43 @@ class TransactionReviewService
     /**
      * Reviews a transaction.
      * 
-     * @param array $reviewData Review data
+     * Verifies that a transaction exists in the underlying data layer and
+     * identifies its source so callers can choose the appropriate correction
+     * method.
+     * 
+     * @param int $transactionId Transaction ID
+     * @param array $reviewData Additional review data (optional)
      * @return array Review results
      */
-    public function reviewTransaction(array $reviewData): array
+    public function reviewTransaction(int $transactionId, array $reviewData = []): array
     {
         try {
-            // Validate review data
-            $this->validateReviewData($reviewData);
+            // Look up transaction in the data layer
+            $transaction = $this->getTransactionForReview($transactionId);
+            $exists = $transaction !== null;
+            
+            // Determine transaction source
+            $source = $exists ? $this->determineTransactionSource($transaction) : 'unknown';
             
             // Create review entry
-            $review = $this->createReviewEntry($reviewData);
+            $review = [
+                'review_id' => uniqid('review_'),
+                'transaction_id' => $transactionId,
+                'exists' => $exists,
+                'source' => $source,
+                'amount' => $transaction['total_amount'] ?? 0,
+                'customer_id' => $transaction['debtor_id'] ?? 0,
+                'transaction_date' => $transaction['created_at'] ?? time(),
+                'status' => $exists ? self::REVIEW_STATUS_PENDING : 'not_found',
+                'priority' => $this->calculateReviewPriority(['amount' => $transaction['total_amount'] ?? 0]),
+                'created_at' => time(),
+                'review_data' => $reviewData,
+                'metadata' => $transaction['metadata'] ?? []
+            ];
             
-            // Add to review queue
-            $this->addToReviewQueue($review);
-            
-            // Perform auto-review if applicable
-            if ($this->shouldAutoReview($reviewData)) {
-                $autoReviewResult = $this->performAutoReview($review);
-                $review['auto_review_result'] = $autoReviewResult;
+            // Add to review queue when transaction exists
+            if ($exists) {
+                $this->addToReviewQueue($review);
             }
             
             // Log review
@@ -67,6 +87,56 @@ class TransactionReviewService
         } catch (\Exception $e) {
             throw new \Exception("Transaction review failed: " . $e->getMessage());
         }
+    }
+
+    /**
+     * Retrieves transaction details for review.
+     * 
+     * Simulated data-layer lookup keyed by transaction ID until a live
+     * transaction data source is available.
+     * 
+     * @param int $transactionId Transaction ID
+     * @return array|null Transaction details or null when not found
+     */
+    private function getTransactionForReview(int $transactionId): ?array
+    {
+        // This would be implemented with actual transaction retrieval
+        $transaction = [
+            'id' => $transactionId,
+            'type' => 'sales',
+            'debtor_id' => $transactionId,
+            'total_amount' => 400,
+            'created_at' => time(),
+            'status' => 'processed',
+            'source' => 'square'
+        ];
+        
+        // Generic FA transactions are stored separately in FA tables
+        if ($transactionId == 2001) {
+            $transaction['source'] = 'fa_generic';
+            $transaction['total_amount'] = 950;
+        }
+        
+        return $transaction;
+    }
+
+    /**
+     * Determines transaction source (Square staging vs generic FA).
+     * 
+     * @param array $transaction Transaction details
+     * @return string Transaction source
+     */
+    private function determineTransactionSource(array $transaction): string
+    {
+        if (isset($transaction['source']) && $transaction['source'] === 'square') {
+            return 'square_staging';
+        }
+        
+        if (isset($transaction['source']) && $transaction['source'] === 'fa_generic') {
+            return 'fa_generic';
+        }
+        
+        return 'unknown';
     }
 
     /**

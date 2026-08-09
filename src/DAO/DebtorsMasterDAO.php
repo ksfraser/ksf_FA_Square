@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+namespace Ksfraser\Frontaccounting\SquareUp\DAO;
+
 /**
  * Debtors Master DAO
  * 
@@ -29,9 +31,9 @@ class DebtorsMasterDAO
         $tableName = $this->getTableName();
         $sql = "SELECT * FROM {$tableName} WHERE debtor_no = {$debtorNo}";
         
-        $result = db_query($sql);
-        if ($result !== false && db_num_rows($result) > 0) {
-            $row = db_fetch_assoc($result);
+        $result = \db_query($sql);
+        if ($result !== false && \db_num_rows($result) > 0) {
+            $row = \db_fetch_assoc($result);
             return $row !== false ? $row : null;
         }
 
@@ -47,11 +49,11 @@ class DebtorsMasterDAO
     public function getByEmail(string $email): ?array
     {
         $tableName = $this->getTableName();
-        $sql = "SELECT * FROM {$tableName} WHERE email = '" . db_escape($email) . "'";
+        $sql = "SELECT * FROM {$tableName} WHERE email = '" . \db_escape($email) . "'";
         
-        $result = db_query($sql);
-        if ($result !== false && db_num_rows($result) > 0) {
-            $row = db_fetch_assoc($result);
+        $result = \db_query($sql);
+        if ($result !== false && \db_num_rows($result) > 0) {
+            $row = \db_fetch_assoc($result);
             return $row !== false ? $row : null;
         }
 
@@ -67,11 +69,11 @@ class DebtorsMasterDAO
     public function getByPhone(string $phone): ?array
     {
         $tableName = $this->getTableName();
-        $sql = "SELECT * FROM {$tableName} WHERE phone = '" . db_escape($phone) . "'";
+        $sql = "SELECT * FROM {$tableName} WHERE phone = '" . \db_escape($phone) . "'";
         
-        $result = db_query($sql);
-        if ($result !== false && db_num_rows($result) > 0) {
-            $row = db_fetch_assoc($result);
+        $result = \db_query($sql);
+        if ($result !== false && \db_num_rows($result) > 0) {
+            $row = \db_fetch_assoc($result);
             return $row !== false ? $row : null;
         }
 
@@ -87,13 +89,13 @@ class DebtorsMasterDAO
     public function getByName(string $name): ?array
     {
         $tableName = $this->getTableName();
-        $sql = "SELECT * FROM {$tableName} WHERE name LIKE '%" . db_escape($name) . "%'";
+        $sql = "SELECT * FROM {$tableName} WHERE name LIKE '%" . \db_escape($name) . "%'";
         
-        $result = db_query($sql);
+        $result = \db_query($sql);
         $debtors = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $debtors[] = $row;
                 }
@@ -119,14 +121,14 @@ class DebtorsMasterDAO
             if ($key === 'updated_at') {
                 $updates[] = "{$key} = '{$value}'";
             } else {
-                $updates[] = "{$key} = " . (is_numeric($value) ? $value : "'" . db_escape($value) . "'");
+                $updates[] = "{$key} = " . (is_numeric($value) ? $value : "'" . \db_escape($value) . "'");
             }
         }
         
         $sql = "UPDATE {$tableName} SET " . implode(', ', $updates) . " 
                 WHERE debtor_no = {$debtorNo}";
         
-        return db_query($sql) !== false;
+        return \db_query($sql) !== false;
     }
 
     /**
@@ -148,15 +150,15 @@ class DebtorsMasterDAO
             if (is_numeric($value)) {
                 $values[] = $value;
             } else {
-                $values[] = "'" . db_escape($value) . "'";
+                $values[] = "'" . \db_escape($value) . "'";
             }
         }
         
         $sql = "INSERT INTO {$tableName} (" . implode(', ', $fields) . ") 
                 VALUES (" . implode(', ', $values) . ")";
 
-        db_query($sql);
-        return db_insert_id($tableName);
+        \db_query($sql);
+        return \db_insert_id($tableName);
     }
 
     /**
@@ -170,11 +172,11 @@ class DebtorsMasterDAO
         $tableName = $this->getTableName();
         $sql = "SELECT * FROM {$tableName} ORDER BY name ASC LIMIT {$limit}";
 
-        $result = db_query($sql);
+        $result = \db_query($sql);
         $debtors = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $debtors[] = $row;
                 }
@@ -196,19 +198,19 @@ class DebtorsMasterDAO
         $conditions = [];
         
         if (!empty($criteria['name'])) {
-            $conditions[] = "name LIKE '%" . db_escape($criteria['name']) . "%'";
+            $conditions[] = "name LIKE '%" . \db_escape($criteria['name']) . "%'";
         }
         
         if (!empty($criteria['email'])) {
-            $conditions[] = "email = '" . db_escape($criteria['email']) . "'";
+            $conditions[] = "email = '" . \db_escape($criteria['email']) . "'";
         }
         
         if (!empty($criteria['phone'])) {
-            $conditions[] = "phone = '" . db_escape($criteria['phone']) . "'";
+            $conditions[] = "phone = '" . \db_escape($criteria['phone']) . "'";
         }
         
         if (!empty($criteria['category_id'])) {
-            $conditions[] = = "category_id = " . (int)$criteria['category_id'];
+            $conditions[] = "category_id = " . (int)$criteria['category_id'];
         }
         
         $sql = "SELECT * FROM {$tableName}";
@@ -219,11 +221,11 @@ class DebtorsMasterDAO
         
         $sql .= " ORDER BY name ASC LIMIT 100";
 
-        $result = db_query($sql);
+        $result = \db_query($sql);
         $debtors = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $debtors[] = $row;
                 }
@@ -244,20 +246,20 @@ class DebtorsMasterDAO
         
         // Total debtors
         $totalSql = "SELECT COUNT(*) as total FROM {$tableName}";
-        $totalResult = db_query($totalSql);
+        $totalResult = \db_query($totalSql);
         $total = 0;
         if ($totalResult !== false) {
-            $row = db_fetch_assoc($totalResult);
+            $row = \db_fetch_assoc($totalResult);
             $total = (int)($row['total'] ?? 0);
         }
         
         // Debtors by category
         $categorySql = "SELECT category_id, COUNT(*) as count FROM {$tableName} 
                        GROUP BY category_id ORDER BY count DESC";
-        $categoryResult = db_query($categorySql);
+        $categoryResult = \db_query($categorySql);
         $byCategory = [];
         if ($categoryResult !== false) {
-            while ($row = db_fetch_assoc($categoryResult)) {
+            while ($row = \db_fetch_assoc($categoryResult)) {
                 if ($row !== false) {
                     $byCategory[$row['category_id']] = (int)$row['count'];
                 }
@@ -267,10 +269,10 @@ class DebtorsMasterDAO
         // Recent debtors
         $recentSql = "SELECT COUNT(*) as recent FROM {$tableName} 
                      WHERE created_at > DATE_SUB(NOW(), INTERVAL 30 DAY)";
-        $recentResult = db_query($recentSql);
+        $recentResult = \db_query($recentSql);
         $recent = 0;
         if ($recentResult !== false) {
-            $row = db_fetch_assoc($recentResult);
+            $row = \db_fetch_assoc($recentResult);
             $recent = (int)($row['recent'] ?? 0);
         }
         
@@ -290,9 +292,9 @@ class DebtorsMasterDAO
         
         // Check if table exists
         $checkSql = "SHOW TABLES LIKE '{$tableName}'";
-        $result = db_query($checkSql);
+        $result = \db_query($checkSql);
         
-        if ($result !== false && db_num_rows($result) === 0) {
+        if ($result !== false && \db_num_rows($result) === 0) {
             // Create table
             $createSql = "CREATE TABLE {$tableName} (
                 debtor_no INT AUTO_INCREMENT PRIMARY KEY,
@@ -316,7 +318,7 @@ class DebtorsMasterDAO
                 INDEX idx_category (category_id)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
             
-            db_query($createSql);
+            \db_query($createSql);
         }
     }
 

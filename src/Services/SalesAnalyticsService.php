@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+namespace Ksfraser\Frontaccounting\SquareUp\Services;
+
 /**
  * Sales Analytics Service
  * 
@@ -41,10 +43,10 @@ class SalesAnalyticsService
             FROM {$tableName} 
             WHERE {$dateCondition}";
         
-        $result = db_query($totalSql);
+        $result = \db_query($totalSql);
         $summary = [];
         if ($result !== false) {
-            $row = db_fetch_assoc($result);
+            $row = \db_fetch_assoc($result);
             $summary = [
                 'total_transactions' => (int)($row['total_transactions'] ?? 0),
                 'total_amount' => (float)($row['total_amount'] ?? 0),
@@ -82,11 +84,11 @@ class SalesAnalyticsService
             ORDER BY date ASC
             LIMIT 30";
         
-        $result = db_query($dailySql);
+        $result = \db_query($dailySql);
         $trends = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $trends[] = [
                         'date' => $row['date'],
@@ -125,11 +127,11 @@ class SalesAnalyticsService
             ORDER BY total_revenue DESC
             LIMIT 10";
         
-        $result = db_query($sql);
+        $result = \db_query($sql);
         $products = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $products[] = [
                         'item_code' => $row['item_code'],
@@ -168,11 +170,11 @@ class SalesAnalyticsService
             GROUP BY location_id
             ORDER BY total_amount DESC";
         
-        $result = db_query($sql);
+        $result = \db_query($sql);
         $locations = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $locations[] = [
                         'location_id' => $row['location_id'],
@@ -211,11 +213,11 @@ class SalesAnalyticsService
             GROUP BY payment_method
             ORDER BY count DESC";
         
-        $result = db_query($sql);
+        $result = \db_query($sql);
         $distribution = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $distribution[] = [
                         'payment_method' => $row['payment_method'],
@@ -254,11 +256,11 @@ class SalesAnalyticsService
             GROUP BY HOUR(created_at)
             ORDER BY transactions DESC";
         
-        $result = db_query($peakHoursSql);
+        $result = \db_query($peakHoursSql);
         $peakHours = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $peakHours[] = [
                         'hour' => $row['hour'],
@@ -279,11 +281,11 @@ class SalesAnalyticsService
             GROUP BY DAYOFWEEK(date_1)
             ORDER BY day_of_week";
         
-        $result = db_query($dayOfWeekSql);
+        $result = \db_query($dayOfWeekSql);
         $dayOfWeek = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $dayOfWeek[] = [
                         'day_of_week' => $row['day_of_week'],

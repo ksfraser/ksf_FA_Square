@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+namespace Ksfraser\Frontaccounting\SquareUp\DAO;
+
 /**
  * Tax Rates DAO
  * 
@@ -29,9 +31,9 @@ class TaxRatesDAO
         $tableName = $this->getTaxRatesTableName();
         $sql = "SELECT * FROM {$tableName} WHERE tax_type_id = {$id}";
         
-        $result = db_query($sql);
-        if ($result !== false && db_num_rows($result) > 0) {
-            $row = db_fetch_assoc($result);
+        $result = \db_query($sql);
+        if ($result !== false && \db_num_rows($result) > 0) {
+            $row = \db_fetch_assoc($result);
             return $row !== false ? $row : null;
         }
 
@@ -48,11 +50,11 @@ class TaxRatesDAO
         $tableName = $this->getTaxRatesTableName();
         $sql = "SELECT * FROM {$tableName} ORDER BY name";
 
-        $result = db_query($sql);
+        $result = \db_query($sql);
         $taxRates = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $taxRates[] = $row;
                 }
@@ -72,11 +74,11 @@ class TaxRatesDAO
         $tableName = $this->getTaxRatesTableName();
         $sql = "SELECT * FROM {$tableName} WHERE inactive = 0 ORDER BY name";
 
-        $result = db_query($sql);
+        $result = \db_query($sql);
         $taxRates = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $taxRates[] = $row;
                 }
@@ -105,15 +107,15 @@ class TaxRatesDAO
             if (is_numeric($value)) {
                 $values[] = $value;
             } else {
-                $values[] = "'" . db_escape($value) . "'";
+                $values[] = "'" . \db_escape($value) . "'";
             }
         }
         
         $sql = "INSERT INTO {$tableName} (" . implode(', ', $fields) . ") 
                 VALUES (" . implode(', ', $values) . ")";
 
-        db_query($sql);
-        return db_insert_id($tableName);
+        \db_query($sql);
+        return \db_insert_id($tableName);
     }
 
     /**
@@ -132,14 +134,14 @@ class TaxRatesDAO
             if ($key === 'updated_at') {
                 $updates[] = "{$key} = '{$value}'";
             } else {
-                $updates[] = "{$key} = " . (is_numeric($value) ? $value : "'" . db_escape($value) . "'");
+                $updates[] = "{$key} = " . (is_numeric($value) ? $value : "'" . \db_escape($value) . "'");
             }
         }
         
         $sql = "UPDATE {$tableName} SET " . implode(', ', $updates) . " 
                 WHERE tax_type_id = {$id}";
         
-        return db_query($sql) !== false;
+        return \db_query($sql) !== false;
     }
 
     /**
@@ -153,7 +155,7 @@ class TaxRatesDAO
         $tableName = $this->getTaxRatesTableName();
         $sql = "DELETE FROM {$tableName} WHERE tax_type_id = {$id}";
         
-        return db_query($sql) !== false;
+        return \db_query($sql) !== false;
     }
 
     /**
@@ -166,14 +168,14 @@ class TaxRatesDAO
     {
         $tableName = $this->getTaxRatesTableName();
         $sql = "SELECT * FROM {$tableName} 
-                WHERE name LIKE '%" . db_escape($name) . "%' 
+                WHERE name LIKE '%" . \db_escape($name) . "%' 
                 ORDER BY name";
 
-        $result = db_query($sql);
+        $result = \db_query($sql);
         $taxRates = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $taxRates[] = $row;
                 }
@@ -196,11 +198,11 @@ class TaxRatesDAO
                 WHERE rate = {$rate} 
                 ORDER BY name";
 
-        $result = db_query($sql);
+        $result = \db_query($sql);
         $taxRates = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $taxRates[] = $row;
                 }
@@ -221,19 +223,19 @@ class TaxRatesDAO
         
         // Total tax rates
         $totalSql = "SELECT COUNT(*) as total FROM {$tableName}";
-        $totalResult = db_query($totalSql);
+        $totalResult = \db_query($totalSql);
         $total = 0;
         if ($totalResult !== false) {
-            $row = db_fetch_assoc($totalResult);
+            $row = \db_fetch_assoc($totalResult);
             $total = (int)($row['total'] ?? 0);
         }
         
         // Active tax rates
         $activeSql = "SELECT COUNT(*) as active FROM {$tableName} WHERE inactive = 0";
-        $activeResult = db_query($activeSql);
+        $activeResult = \db_query($activeSql);
         $active = 0;
         if ($activeResult !== false) {
-            $row = db_fetch_assoc($activeResult);
+            $row = \db_fetch_assoc($activeResult);
             $active = (int)($row['active'] ?? 0);
         }
         
@@ -246,9 +248,9 @@ class TaxRatesDAO
         
         $byRange = [];
         foreach ($ranges as $range => $sql) {
-            $result = db_query($sql);
+            $result = \db_query($sql);
             if ($result !== false) {
-                $row = db_fetch_assoc($result);
+                $row = \db_fetch_assoc($result);
                 $byRange[$range] = (int)($row['count'] ?? 0);
             }
         }
@@ -270,9 +272,9 @@ class TaxRatesDAO
         
         // Check if table exists
         $checkSql = "SHOW TABLES LIKE '{$tableName}'";
-        $result = db_query($checkSql);
+        $result = \db_query($checkSql);
         
-        if ($result !== false && db_num_rows($result) === 0) {
+        if ($result !== false && \db_num_rows($result) === 0) {
             // Create table
             $createSql = "CREATE TABLE {$tableName} (
                 tax_type_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -290,7 +292,7 @@ class TaxRatesDAO
                 INDEX idx_inactive (inactive)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
             
-            db_query($createSql);
+            \db_query($createSql);
         }
     }
 

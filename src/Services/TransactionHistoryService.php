@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+namespace Ksfraser\Frontaccounting\SquareUp\Services;
+
 /**
  * Transaction History Service
  * 
@@ -31,6 +33,157 @@ class TransactionHistoryService
             'log_imports' => true,
             'history_log_file' => sys_get_temp_dir() . '/history.log'
         ], $config);
+    }
+
+    /**
+     * Gets the full correction history for a transaction.
+     * 
+     * Follows the correction chain from the original transaction through any
+     * subsequent corrections performed on the corrected transactions.
+     * 
+     * @param int $transactionId Transaction ID
+     * @return array Correction history
+     */
+    public function getTransactionHistory(int $transactionId): array
+    {
+        $records = $this->readCorrectionRecords();
+        $corrections = [];
+        $currentId = $transactionId;
+        $visited = [];
+        
+        while (true) {
+            if (in_array($currentId, $visited, true)) {
+                break;
+            }
+            $visited[] = $currentId;
+            
+            $next = null;
+            foreach ($records as $record) {
+                if ((int)$record['original_id'] === $currentId) {
+                    $corrections[] = $this->correctionToEntry($record);
+                    $next = (int)$record['new_id'];
+                    break;
+                }
+            }
+            
+            if ($next === null) {
+                break;
+            }
+            
+            $currentId = $next;
+        }
+        
+        return [
+            'transaction_id' => $transactionId,
+            'corrections' => $corrections,
+            'correction_count' => count($corrections),
+            'timestamp' => time()
+        ];
+    }
+
+    /**
+     * Detects gaps between two transactions' correction history.
+     * 
+     * @param int $fromTransactionId Start transaction ID
+     * @param int $toTransactionId End transaction ID
+     * @return array Gap detection results
+     */
+    public function detectTransactionGaps(int $fromTransactionId, int $toTransactionId): array
+    {
+        $fromHistory = $this->getTransactionHistory($fromTransactionId);
+        $toHistory = $this->getTransactionHistory($toTransactionId);
+        
+        $gapCount = 0;
+        if (empty($fromHistory['corrections']) || empty($toHistory['corrections'])) {
+            $gapCount = 1;
+        }
+        
+        return [
+            'from_transaction_id' => $fromTransactionId,
+            'to_transaction_id' => $toTransactionId,
+            'gap_count' => $gapCount,
+            'from_correction_count' => $fromHistory['correction_count'],
+            'to_correction_count' => $toHistory['correction_count'],
+            'timestamp' => time()
+        ];
+    }
+
+    /**
+     * Gets correction coverage over the tracked date range.
+     * 
+     * @return array Date range coverage
+     */
+    public function getDateRangeCoverage(): array
+    {
+        $records = $this->readCorrectionRecords();
+        
+        if (empty($records)) {
+            return [
+                'start_date' => null,
+                'end_date' => null,
+                'transaction_count' => 0,
+                'timestamp' => time()
+            ];
+        }
+        
+        $timestamps = array_column($records, 'timestamp');
+        $minTimestamp = min($timestamps);
+        $maxTimestamp = max($timestamps);
+        
+        return [
+            'start_date' => date('Y-m-d', $minTimestamp),
+            'end_date' => date('Y-m-d', $maxTimestamp),
+            'transaction_count' => count($records),
+            'timestamp' => time()
+        ];
+    }
+
+    /**
+     * Reads all correction records from the shared correction ledger.
+     * 
+     * @return array Correction records
+     */
+    private function readCorrectionRecords(): array
+    {
+        $path = sys_get_temp_dir() . '/ksf_corrections.jsonl';
+        
+        if (!file_exists($path)) {
+            return [];
+        }
+        
+        $records = [];
+        $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        
+        foreach ($lines as $line) {
+            $record = json_decode($line, true);
+            if (is_array($record)) {
+                $records[] = $record;
+            }
+        }
+        
+        return $records;
+    }
+
+    /**
+     * Maps a correction ledger record to a history entry.
+     * 
+     * @param array $record Correction ledger record
+     * @return array Correction history entry
+     */
+    private function correctionToEntry(array $record): array
+    {
+        $timestamp = (int)($record['timestamp'] ?? time());
+        
+        return [
+            'original_transaction_id' => (int)$record['original_id'],
+            'new_debtor_id' => (int)$record['new_debtor'],
+            'corrected_transaction_id' => (int)$record['new_id'],
+            'method' => $record['method'] ?? 'unknown',
+            'source' => $record['source'] ?? 'unknown',
+            'success' => (bool)($record['success'] ?? true),
+            'timestamp' => $timestamp,
+            'correction_date' => date('Y-m-d H:i:s', $timestamp)
+        ];
     }
 
     /**

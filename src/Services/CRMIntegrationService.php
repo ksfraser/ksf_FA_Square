@@ -1,6 +1,15 @@
 <?php
 declare(strict_types=1);
 
+namespace Ksfraser\Frontaccounting\SquareUp\Services;
+
+use Ksfraser\Frontaccounting\SquareUp\Contracts\CRMAdapterInterface;
+use Ksfraser\Frontaccounting\SquareUp\Contracts\CRMIntegrationInterface;
+
+use Ksfraser\Frontaccounting\SquareUp\DAO\DebtorsMasterDAO;
+use Ksfraser\Frontaccounting\SquareUp\DAO\SquareCustomerDAO;
+use Ksfraser\Frontaccounting\SquareUp\Exceptions\CRMIntegrationException;
+use Ksfraser\Frontaccounting\SquareUp\Exceptions\CustomerNotFoundException;
 /**
  * CRM Integration Service
  * 
@@ -105,6 +114,30 @@ class CRMIntegrationService implements CRMIntegrationInterface
             
         } catch (\Exception $e) {
             throw new CRMIntegrationException("Communication tracking failed: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Synchronizes a Square customer from FrontAccounting.
+     * 
+     * Wraps syncCustomerToSquare and returns a summary result with the
+     * matched or created customer ID.
+     * 
+     * @param array $squareCustomer Square customer data
+     * @return array Sync result summary
+     * @throws CRMIntegrationException on failure
+     */
+    public function syncCustomerFromSquare(array $squareCustomer): array
+    {
+        try {
+            $result = $this->syncCustomerToSquare($squareCustomer);
+
+            return [
+                'success' => true,
+                'customer_id' => $result['debtor_no'] ?? ($result['id'] ?? null)
+            ];
+        } catch (\Exception $e) {
+            throw new CRMIntegrationException("Customer sync failed: " . $e->getMessage());
         }
     }
 
@@ -226,11 +259,21 @@ class CRMIntegrationService implements CRMIntegrationInterface
         $changes = [];
         
         foreach ($newData as $key => $value) {
-            if (!array_key_exists($key, $oldData) || $oldData[$key] !== $value) {
-                // Skip timestamp fields that are always updated
-                if ($key !== 'updated_at') {
+            // Skip timestamp fields that are always updated
+            if ($key === 'updated_at') {
+                continue;
+            }
+            
+            if (!array_key_exists($key, $oldData)) {
+                // New field: only count as a change if it has a value
+                if (!empty($value)) {
                     $changes[$key] = $value;
                 }
+                continue;
+            }
+            
+            if ($oldData[$key] !== $value) {
+                $changes[$key] = $value;
             }
         }
         

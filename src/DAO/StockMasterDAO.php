@@ -59,23 +59,23 @@ class StockMasterDAO
         }
         
         if ($stockLike !== '' && $stockLike !== null) {
-            $sql .= " AND item.stock_id LIKE " . db_escape('%' . $stockLike . '%');
+            $sql .= " AND item.stock_id LIKE " . \db_escape('%' . $stockLike . '%');
         }
         
         // Special prefix handling from ksf_generate_catalogue
         $prefixConditions = [];
         if ($ksfGenCatalogueInstalled && is_array($ksfGenPrefs)) {
             if (!empty($ksfGenPrefs['DISCONTINUED_PREFIX'])) {
-                $prefixConditions[] = "item.description LIKE " . db_escape($ksfGenPrefs['DISCONTINUED_PREFIX'] . '%');
+                $prefixConditions[] = "item.description LIKE " . \db_escape($ksfGenPrefs['DISCONTINUED_PREFIX'] . '%');
             }
             if (!empty($ksfGenPrefs['SPECIAL_ORDER_PREFIX'])) {
-                $prefixConditions[] = "item.description LIKE " . db_escape($ksfGenPrefs['SPECIAL_ORDER_PREFIX'] . '%');
+                $prefixConditions[] = "item.description LIKE " . \db_escape($ksfGenPrefs['SPECIAL_ORDER_PREFIX'] . '%');
             }
             if (!empty($ksfGenPrefs['CLEARANCE_PREFIX'])) {
-                $prefixConditions[] = "item.description LIKE " . db_escape($ksfGenPrefs['CLEARANCE_PREFIX'] . '%');
+                $prefixConditions[] = "item.description LIKE " . \db_escape($ksfGenPrefs['CLEARANCE_PREFIX'] . '%');
             }
             if (!empty($ksfGenPrefs['CUSTOM_PREFIX'])) {
-                $prefixConditions[] = "item.description LIKE " . db_escape($ksfGenPrefs['CUSTOM_PREFIX'] . '%');
+                $prefixConditions[] = "item.description LIKE " . \db_escape($ksfGenPrefs['CUSTOM_PREFIX'] . '%');
             }
             
             if (!empty($prefixConditions)) {
@@ -85,8 +85,8 @@ class StockMasterDAO
             $orderBy = " ORDER BY item.category_id, item.stock_id";
             if (!empty($_POST['sort_recent'])) {
                 // Check if the last modified column exists in stock_master
-                $checkResult = db_query("SHOW COLUMNS FROM {$this->tablePrefix}stock_master LIKE 'last_updated'");
-                if ($checkResult !== false && db_num_rows($checkResult) > 0) {
+                $checkResult = \db_query("SHOW COLUMNS FROM {$this->tablePrefix}stock_master LIKE 'last_updated'");
+                if ($checkResult !== false && \db_num_rows($checkResult) > 0) {
                     $orderBy = " ORDER BY item.last_updated DESC, item.category_id, item.stock_id";
                 }
             }
@@ -96,7 +96,7 @@ class StockMasterDAO
             $sql .= " ORDER BY item.category_id, item.stock_id";
         }
 
-        $result = db_query($sql);
+        $result = \db_query($sql);
         if ($result === false) {
             throw new Exception(_("Failed to query stock items"));
         }
@@ -128,12 +128,37 @@ class StockMasterDAO
         $barcodeResult = get_all_item_codes($stockId);
         $barcodeRow = false;
         if ($barcodeResult !== false) {
-            $barcodeRow = db_fetch($barcodeResult);
+            $barcodeRow = \db_fetch($barcodeResult);
         }
         if ($barcodeRow && !empty($barcodeRow['item_code'])) {
             return $barcodeRow['item_code'];
         }
         return null;
+    }
+
+    /**
+     * Fetches a single stock item (with category and tax context) for
+     * event-driven sync, e.g. from item_created / item_updated broadcasts.
+     *
+     * @param string $stockId Stock ID
+     * @return array|null Item row or null when the item does not exist
+     * @throws Exception if query fails
+     */
+    public function getItemForSync(string $stockId): ?array
+    {
+        $sql = "SELECT item.stock_id, item.description, item.units, item.inactive, "
+            . "cat.description AS cat_description, tt.name AS tax_name, tt.exempt "
+            . "FROM {$this->tablePrefix}stock_master item "
+            . "LEFT JOIN {$this->tablePrefix}stock_category cat ON item.category_id = cat.category_id "
+            . "LEFT JOIN {$this->tablePrefix}item_tax_types tt ON item.tax_type_id = tt.id "
+            . "WHERE item.stock_id = " . \db_escape($stockId) . " LIMIT 1";
+
+        $result = \db_query($sql);
+        if ($result === false) {
+            throw new Exception(_("Failed to query stock item"));
+        }
+        $row = \db_fetch_assoc($result);
+        return $row === false ? null : $row;
     }
 
     /**
@@ -144,10 +169,10 @@ class StockMasterDAO
      */
     public function countActiveStockItems(string $stockId): int
     {
-        $sql = "SELECT COUNT(*) AS cnt FROM {$this->tablePrefix}stock_master WHERE stock_id = " . db_escape($stockId) . " AND inactive = 0";
-        $result = db_query($sql);
-        if ($result !== false && db_num_rows($result) > 0) {
-            $row = db_fetch_assoc($result);
+        $sql = "SELECT COUNT(*) AS cnt FROM {$this->tablePrefix}stock_master WHERE stock_id = " . \db_escape($stockId) . " AND inactive = 0";
+        $result = \db_query($sql);
+        if ($result !== false && \db_num_rows($result) > 0) {
+            $row = \db_fetch_assoc($result);
             if ($row !== false) {
                 return (int)$row['cnt'];
             }

@@ -1,6 +1,11 @@
 <?php
 declare(strict_types=1);
 
+namespace Ksfraser\Frontaccounting\SquareUp\Services;
+
+use Ksfraser\Frontaccounting\SquareUp\DAO\StockEventDAO;
+use Ksfraser\Frontaccounting\SquareUp\DAO\LocationMappingDAO;
+use Ksfraser\Frontaccounting\SquareUp\Contracts\StockEventServiceInterface;
 /**
  * Stock Event Service
  * 

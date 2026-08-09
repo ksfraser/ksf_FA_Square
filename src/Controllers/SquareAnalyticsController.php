@@ -1,6 +1,9 @@
 <?php
 declare(strict_types=1);
 
+namespace Ksfraser\Frontaccounting\SquareUp\Controllers;
+
+use Ksfraser\Frontaccounting\SquareUp\Services\BusinessIntelligenceService;
 /**
  * Square Analytics Controller
  * 

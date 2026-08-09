@@ -44,8 +44,8 @@ class WebhookEventDAO
     {
         $tableName = $this->getTableName();
 
-        $checkTable = db_query("SHOW TABLES LIKE '{$tableName}'");
-        if (db_num_rows($checkTable) == 0) {
+        $checkTable = \db_query("SHOW TABLES LIKE '{$tableName}'");
+        if (\db_num_rows($checkTable) == 0) {
             $this->createTable();
         }
     }
@@ -75,7 +75,7 @@ class WebhookEventDAO
             KEY idx_processed_successfully (processed_successfully)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
 
-        if (!db_query($sql)) {
+        if (!\db_query($sql)) {
             throw new Exception(_("Cannot create square_webhook_events table: ") . db_error());
         }
     }
@@ -107,7 +107,7 @@ class WebhookEventDAO
             if ($value === null) {
                 $values[] = 'NULL';
             } else {
-                $values[] = "'" . db_escape((string)$value) . "'";
+                $values[] = "'" . \db_escape((string)$value) . "'";
             }
         }
 
@@ -116,11 +116,11 @@ class WebhookEventDAO
 
         $sql = "INSERT INTO {$tableName} ({$fieldsStr}) VALUES ({$valuesStr})";
 
-        if (!db_query($sql)) {
+        if (!\db_query($sql)) {
             throw new Exception(_("Failed to insert webhook event: ") . db_error());
         }
 
-        return (int)db_insert_id();
+        return (int)\db_insert_id();
     }
 
     /**
@@ -141,11 +141,11 @@ class WebhookEventDAO
         
         $sql .= " ORDER BY processed_at DESC LIMIT " . (int)$limit;
         
-        $result = db_query($sql);
+        $result = \db_query($sql);
         $events = [];
 
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $events[] = $row;
                 }
@@ -166,14 +166,14 @@ class WebhookEventDAO
     {
         $tableName = $this->getTableName();
         $sql = "SELECT * FROM {$tableName} 
-                WHERE event_type = '" . db_escape($eventType) . "' 
+                WHERE event_type = '" . \db_escape($eventType) . "' 
                 ORDER BY processed_at DESC LIMIT " . (int)$limit;
         
-        $result = db_query($sql);
+        $result = \db_query($sql);
         $events = [];
 
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $events[] = $row;
                 }
@@ -194,15 +194,15 @@ class WebhookEventDAO
     {
         $tableName = $this->getTableName();
         $sql = "SELECT * FROM {$tableName} 
-                WHERE processed_at >= '" . db_escape($fromDate . " 00:00:00") . "' 
-                AND processed_at <= '" . db_escape($toDate . " 23:59:59") . "'
+                WHERE processed_at >= '" . \db_escape($fromDate . " 00:00:00") . "' 
+                AND processed_at <= '" . \db_escape($toDate . " 23:59:59") . "'
                 ORDER BY processed_at DESC";
         
-        $result = db_query($sql);
+        $result = \db_query($sql);
         $events = [];
 
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $events[] = $row;
                 }
@@ -236,11 +236,11 @@ class WebhookEventDAO
         $tableName = $this->getTableName();
         $sql = "UPDATE {$tableName} 
                 SET processed_successfully = FALSE, 
-                    error_message = '" . db_escape($errorMessage) . "',
+                    error_message = '" . \db_escape($errorMessage) . "',
                     processed_at = NOW()
-                WHERE event_id = '" . db_escape($eventId) . "'";
+                WHERE event_id = '" . \db_escape($eventId) . "'";
 
-        if (!db_query($sql)) {
+        if (!\db_query($sql)) {
             throw new Exception(_("Failed to mark event as failed: ") . db_error());
         }
     }
@@ -257,13 +257,13 @@ class WebhookEventDAO
         $tableName = $this->getTableName();
         $cutoffDate = date('Y-m-d H:i:s', strtotime("-{$daysToKeep} days"));
         
-        $sql = "DELETE FROM {$tableName} WHERE processed_at < '" . db_escape($cutoffDate) . "'";
+        $sql = "DELETE FROM {$tableName} WHERE processed_at < '" . \db_escape($cutoffDate) . "'";
         
-        if (!db_query($sql)) {
+        if (!\db_query($sql)) {
             throw new Exception(_("Failed to cleanup old events: ") . db_error());
         }
         
-        return (int)db_affected_rows();
+        return (int)\db_affected_rows();
     }
 
     /**
@@ -275,11 +275,11 @@ class WebhookEventDAO
     public function getEventById(string $eventId): ?array
     {
         $tableName = $this->getTableName();
-        $sql = "SELECT * FROM {$tableName} WHERE event_id = '" . db_escape($eventId) . "'";
+        $sql = "SELECT * FROM {$tableName} WHERE event_id = '" . \db_escape($eventId) . "'";
         
-        $result = db_query($sql);
-        if ($result !== false && db_num_rows($result) > 0) {
-            $row = db_fetch_assoc($result);
+        $result = \db_query($sql);
+        if ($result !== false && \db_num_rows($result) > 0) {
+            $row = \db_fetch_assoc($result);
             return $row !== false ? $row : null;
         }
 
@@ -297,19 +297,19 @@ class WebhookEventDAO
         
         // Total events
         $totalSql = "SELECT COUNT(*) as total FROM {$tableName}";
-        $totalResult = db_query($totalSql);
+        $totalResult = \db_query($totalSql);
         $total = 0;
         if ($totalResult !== false) {
-            $row = db_fetch_assoc($totalResult);
+            $row = \db_fetch_assoc($totalResult);
             $total = (int)($row['total'] ?? 0);
         }
         
         // Successful events
         $successSql = "SELECT COUNT(*) as success FROM {$tableName} WHERE processed_successfully = TRUE";
-        $successResult = db_query($successSql);
+        $successResult = \db_query($successSql);
         $success = 0;
         if ($successResult !== false) {
-            $row = db_fetch_assoc($successResult);
+            $row = \db_fetch_assoc($successResult);
             $success = (int)($row['success'] ?? 0);
         }
         
@@ -318,10 +318,10 @@ class WebhookEventDAO
         
         // Events by type
         $typeSql = "SELECT event_type, COUNT(*) as count FROM {$tableName} GROUP BY event_type ORDER BY count DESC";
-        $typeResult = db_query($typeSql);
+        $typeResult = \db_query($typeSql);
         $byType = [];
         if ($typeResult !== false) {
-            while ($row = db_fetch_assoc($typeResult)) {
+            while ($row = \db_fetch_assoc($typeResult)) {
                 if ($row !== false) {
                     $byType[$row['event_type']] = (int)$row['count'];
                 }

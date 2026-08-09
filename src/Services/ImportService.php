@@ -470,13 +470,13 @@ class ImportService
     ): array {
         $tableName = $this->transactionStagingDao->getTableName();
         $sql = "SELECT * FROM {$tableName} WHERE id = " . (int)$stagingId;
-        $result = db_query($sql);
+        $result = \db_query($sql);
 
-        if ($result === false || db_num_rows($result) === 0) {
+        if ($result === false || \db_num_rows($result) === 0) {
             throw new Exception(_("Staged transaction not found: ") . $stagingId);
         }
 
-        $trans = db_fetch_assoc($result);
+        $trans = \db_fetch_assoc($result);
         if ($trans === false) {
             throw new Exception(_("Failed to read staged transaction"));
         }

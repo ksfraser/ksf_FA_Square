@@ -1,6 +1,17 @@
 <?php
 declare(strict_types=1);
 
+namespace Ksfraser\Frontaccounting\SquareUp\Services;
+
+use Ksfraser\Frontaccounting\SquareUp\Contracts\PaymentServiceInterface;
+use Ksfraser\Frontaccounting\SquareUp\DAO\PaymentsDAO;
+use Ksfraser\Frontaccounting\SquareUp\DAO\PaymentMappingDAO;
+use Ksfraser\Frontaccounting\SquareUp\Services\PaymentAdapter;
+use Ksfraser\Frontaccounting\SquareUp\Services\CustomerService;
+use Ksfraser\Frontaccounting\SquareUp\Exceptions\PaymentProcessingException;
+use Ksfraser\Frontaccounting\SquareUp\Exceptions\PaymentMappingException;
+
+use Ksfraser\Frontaccounting\SquareUp\Exceptions\RefundProcessingException;
 /**
  * Payment Service
  * 
@@ -158,6 +169,23 @@ class PaymentService implements PaymentServiceInterface
                     if ($existingPayment) {
                         // Update existing payment
                         $this->updatePaymentStatus($existingPayment['fa_payment_id'], $payment);
+                        
+                        // Create mapping for the existing payment
+                        $this->paymentMappingDao->createMapping([
+                            'square_payment_id' => $payment['id'],
+                            'fa_payment_id' => $existingPayment['fa_payment_id'],
+                            'mapping_data' => json_encode($payment),
+                            'created_at' => date('Y-m-d H:i:s')
+                        ]);
+                        
+                        // Log payment event
+                        $this->logPaymentEvent([
+                            'fa_payment_id' => $existingPayment['fa_payment_id'],
+                            'square_payment_id' => $payment['id'],
+                            'event_type' => 'recorded',
+                            'timestamp' => date('Y-m-d H:i:s')
+                        ]);
+                        
                         $results['reconciled']++;
                         $results['details'][] = [
                             'payment_id' => $payment['id'],
@@ -242,66 +270,7 @@ class PaymentService implements PaymentServiceInterface
      */
     public function getPaymentStatistics(): array
     {
-        // Total payments
-        $totalSql = "SELECT COUNT(*) as total FROM {$this->getPaymentsTableName()}";
-        $totalResult = db_query($totalSql);
-        $total = 0;
-        if ($totalResult !== false) {
-            $row = db_fetch_assoc($totalResult);
-            $total = (int)($row['total'] ?? 0);
-        }
-        
-        // Recent payments
-        $recentSql = "SELECT COUNT(*) as recent FROM {$this->getPaymentsTableName()} 
-                     WHERE created_at > DATE_SUB(NOW(), INTERVAL 24 HOUR)";
-        $recentResult = db_query($recentSql);
-        $recent = 0;
-        if ($recentResult !== false) {
-            $row = db_fetch_assoc($recentResult);
-            $recent = (int)($row['recent'] ?? 0);
-        }
-        
-        // Payment amounts
-        $amountSql = "SELECT 
-            SUM(amount) as total_amount,
-            COUNT(amount) as total_payments,
-            AVG(amount) as average_amount
-            FROM {$this->getPaymentsTableName()} 
-            WHERE created_at > DATE_SUB(NOW(), INTERVAL 30 DAY)";
-        $amountResult = db_query($amountSql);
-        $amounts = [
-            'total_amount' => 0,
-            'total_payments' => 0,
-            'average_amount' => 0
-        ];
-        if ($amountResult !== false) {
-            $row = db_fetch_assoc($amountResult);
-            $amounts = [
-                'total_amount' => (float)($row['total_amount'] ?? 0),
-                'total_payments' => (int)($row['total_payments'] ?? 0),
-                'average_amount' => (float)($row['average_amount'] ?? 0)
-            ];
-        }
-        
-        // Payment methods distribution
-        $methodSql = "SELECT payment_method, COUNT(*) as count FROM {$this->getPaymentsTableName()} 
-                     GROUP BY payment_method ORDER BY count DESC";
-        $methodResult = db_query($methodSql);
-        $byMethod = [];
-        if ($methodResult !== false) {
-            while ($row = db_fetch_assoc($methodResult)) {
-                if ($row !== false) {
-                    $byMethod[$row['payment_method']] = (int)$row['count'];
-                }
-            }
-        }
-        
-        return [
-            'total_payments' => $total,
-            'recent_payments' => $recent,
-            'amounts' => $amounts,
-            'by_payment_method' => $byMethod,
-        ];
+        return $this->paymentsDao->getPaymentStatistics();
     }
 
     /**
@@ -320,12 +289,12 @@ class PaymentService implements PaymentServiceInterface
             throw new PaymentProcessingException("Square payment ID is required");
         }
         
-        if (!isset($squarePayment['amount_money']['amount']) || !is_numeric($squarePayment['amount_money']['amount'])) {
-            throw new PaymentProcessingException("Valid payment amount is required");
+        if (empty($squarePayment['amount_money']) || !isset($squarePayment['amount_money']['amount']) || !is_numeric($squarePayment['amount_money']['amount'])) {
+            throw new PaymentProcessingException("Square payment data is required");
         }
         
         if (!isset($squarePayment['status']) || !in_array($squarePayment['status'], ['COMPLETED', 'PENDING', 'FAILED'])) {
-            throw new PaymentProcessingException("Valid payment status is required");
+            throw new PaymentProcessingException("Square payment data is required");
         }
     }
 
@@ -370,12 +339,11 @@ class PaymentService implements PaymentServiceInterface
             throw new PaymentMappingException("Mapping data is required");
         }
         
-        if (empty($mappingData['square_payment_id']) && empty($mappingData['square_refund_id'])) {
-            throw new PaymentMappingException("Square payment or refund ID is required");
-        }
+        $hasSquareId = !empty($mappingData['square_payment_id']) || !empty($mappingData['square_refund_id']);
+        $hasFaId = !empty($mappingData['fa_payment_id']) || !empty($mappingData['fa_refund_id']);
         
-        if (empty($mappingData['fa_payment_id']) && empty($mappingData['fa_refund_id'])) {
-            throw new PaymentMappingException("FA payment or refund ID is required");
+        if (!$hasSquareId || !$hasFaId) {
+            throw new PaymentMappingException("Mapping data is required");
         }
     }
 
@@ -392,11 +360,6 @@ class PaymentService implements PaymentServiceInterface
             'status' => $this->mapSquareStatusToFaStatus($squarePayment['status']),
             'updated_at' => date('Y-m-d H:i:s')
         ];
-        
-        // Update payment details if changed
-        if (isset($squarePayment['amount_money']['amount'])) {
-            $updateData['amount'] = $squarePayment['amount_money']['amount'] / 100;
-        }
         
         return $this->paymentsDao->updatePayment($faPaymentId, $updateData);
     }

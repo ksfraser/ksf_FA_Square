@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Tests\Unit\Services;
+namespace Ksfraser\Frontaccounting\SquareUp\Tests\Unit\Services;
 
 use PHPUnit\Framework\TestCase;
 use Ksfraser\Frontaccounting\SquareUp\Services\TransactionCorrectionService;
@@ -168,11 +168,11 @@ class TransactionCorrectionServiceTest extends TestCase
             'source' => 'square'
         ];
         
-        // Mock the getTransactionDetails method
+        // Prime the transaction fixture for this test
         $reflection = new \ReflectionClass($this->service);
         $method = $reflection->getMethod('getTransactionDetails');
         $method->setAccessible(true);
-        $method->invoke($this->service, $transactionId);
+        $method->invoke($this->service, $transactionId, $transaction);
         
         // Act
         $result = $this->service->correctDebtorAssignment($transactionId, $newDebtorId, $correctionData);
@@ -246,7 +246,7 @@ class TransactionCorrectionServiceTest extends TestCase
         $reflection = new \ReflectionClass($this->service);
         $method = $reflection->getMethod('getTransactionDetails');
         $method->setAccessible(true);
-        $method->invoke($this->service, 1001);
+        $method->invoke($this->service, 1001, $transaction);
         
         $this->service->correctDebtorAssignment(1001, 1002);
     }
@@ -457,7 +457,7 @@ class TransactionCorrectionServiceTest extends TestCase
         
         $this->assertCount(1, $history);
         $this->assertEquals($transactionId, $history[0]['original_transaction_id']);
-        $this->assertEquals(newDebtorId, $history[0]['new_debtor_id']);
+        $this->assertEquals($newDebtorId, $history[0]['new_debtor_id']);
         $this->assertEquals('clone_void', $history[0]['correction_method']);
         $this->assertEquals('completed', $history[0]['status']);
     }

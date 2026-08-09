@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace Ksfraser\Frontaccounting\SquareUp\Services;
 
-use Ksfraser\Frontaccounting\SquareUp\Infrastructure\SquareClient;
+use Square\SquareClient;
 use Ksfraser\Frontaccounting\SquareUp\DAO\SquareImportLogDAO;
 use Ksfraser\Frontaccounting\SquareUp\DAO\PaymentMatchDAO;
 use Ksfraser\Frontaccounting\SquareUp\Contracts\RefundServiceInterface;

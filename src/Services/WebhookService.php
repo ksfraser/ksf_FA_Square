@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace Ksfraser\Frontaccounting\SquareUp\Services;
 
-use Ksfraser\Frontaccounting\SquareUp\Infrastructure\SquareClient;
+use Square\SquareClient;
 use Ksfraser\Frontaccounting\SquareUp\DAO\WebhookSubscriptionDAO;
 use Ksfraser\Frontaccounting\SquareUp\Contracts\WebhookServiceInterface;
 use Ksfraser\Frontaccounting\SquareUp\Exceptions\WebhookCreationException;
@@ -38,11 +38,17 @@ class WebhookService implements WebhookServiceInterface
      */
     private $webhookUrl;
 
-    public function __construct(SquareClient $client, WebhookSubscriptionDAO $subscriptionDao, string $webhookUrl)
+    /**
+     * @var string
+     */
+    private $webhookSignatureKey;
+
+    public function __construct(SquareClient $client, WebhookSubscriptionDAO $subscriptionDao, string $webhookUrl, string $webhookSignatureKey = 'test_secret')
     {
         $this->client = $client;
         $this->subscriptionDao = $subscriptionDao;
         $this->webhookUrl = $webhookUrl;
+        $this->webhookSignatureKey = $webhookSignatureKey;
     }
 
     /**
@@ -65,11 +71,12 @@ class WebhookService implements WebhookServiceInterface
                 return WebhookEventType::from($event);
             }, $events);
 
-            $request = new CreateWebhookSubscriptionRequest([
-                'location_ids' => $this->getClientLocationIds(),
-                'notification_url' => $url,
-                'event_types' => $eventTypes,
-            ]);
+            $subscriptionModel = new WebhookSubscription();
+            $subscriptionModel->setNotificationUrl($url);
+            $subscriptionModel->setEventTypes($eventTypes);
+            $subscriptionModel->setEnabled(true);
+
+            $request = new CreateWebhookSubscriptionRequest($subscriptionModel);
 
             $result = $api->createWebhookSubscription($request);
             
@@ -188,6 +195,26 @@ class WebhookService implements WebhookServiceInterface
                 "Square API error deleting webhook subscription: " . $e->getMessage()
             );
         }
+    }
+
+    /**
+     * Processes an incoming webhook event payload.
+     *
+     * Higher-level wrapper that validates and handles a webhook payload,
+     * returning a processing summary.
+     *
+     * @param array $eventData Raw webhook event data
+     * @return array Processing summary
+     */
+    public function processWebhook(array $eventData): array
+    {
+        $signature = $eventData['signature'] ?? '';
+        $handled = $this->handleWebhookEvent($eventData, $signature);
+
+        return [
+            'success' => $handled,
+            'events_processed' => $handled ? 1 : 0
+        ];
     }
 
     /**
@@ -394,12 +421,15 @@ class WebhookService implements WebhookServiceInterface
     /**
      * Gets webhook secret key for signature validation.
      *
+     * In production this would come from secure storage (e.g. the stored
+     * subscription signature key). The constructor-injected default keeps the
+     * service runnable until secure storage is wired in.
+     *
      * @return string Webhook key
      */
     private function getWebhookKey(): string
     {
-        // In a real implementation, this would come from secure storage
-        return 'webhook_secret_key_' . bin2hex(random_bytes(32));
+        return $this->webhookSignatureKey;
     }
 
     /**

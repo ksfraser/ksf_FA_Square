@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+namespace Ksfraser\Frontaccounting\SquareUp\Services;
+
 /**
  * Customer Analytics Service
  * 
@@ -40,10 +42,10 @@ class CustomerAnalyticsService
             FROM {$tableName} 
             WHERE {$dateCondition}";
         
-        $result = db_query($totalSql);
+        $result = \db_query($totalSql);
         $summary = [];
         if ($result !== false) {
-            $row = db_fetch_assoc($result);
+            $row = \db_fetch_assoc($result);
             $summary = [
                 'total_customers' => (int)($row['total_customers'] ?? 0),
                 'unique_individuals' => (int)($row['unique_individuals'] ?? 0),
@@ -86,11 +88,11 @@ class CustomerAnalyticsService
             ORDER BY total_spent DESC
             LIMIT 20";
         
-        $result = db_query($sql);
+        $result = \db_query($sql);
         $customers = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $customers[] = [
                         'debtor_no' => (int)$row['debtor_no'],
@@ -187,11 +189,11 @@ class CustomerAnalyticsService
             GROUP BY DATE_FORMAT(created_at, '%Y-%m')
             ORDER BY month ASC";
         
-        $result = db_query($monthlySql);
+        $result = \db_query($monthlySql);
         $acquisition = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $acquisition[] = [
                         'month' => $row['month'],
@@ -211,11 +213,11 @@ class CustomerAnalyticsService
             GROUP BY source
             ORDER BY new_customers DESC";
         
-        $result = db_query($sourceSql);
+        $result = \db_query($sourceSql);
         $bySource = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $bySource[] = [
                         'source' => $row['source'],
@@ -258,11 +260,11 @@ class CustomerAnalyticsService
             GROUP BY DATE_FORMAT(c.created_at, '%Y-%m')
             ORDER BY cohort ASC";
         
-        $result = db_query($cohortSql);
+        $result = \db_query($cohortSql);
         $retention = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $retention[] = [
                         'cohort' => $row['cohort'],
@@ -312,10 +314,10 @@ class CustomerAnalyticsService
             FROM {$tableName} 
             WHERE {$dateCondition}";
         
-        $result = db_query($overallSql);
+        $result = \db_query($overallSql);
         $overall = [];
         if ($result !== false) {
-            $row = db_fetch_assoc($result);
+            $row = \db_fetch_assoc($result);
             $overall = [
                 'average_rating' => (float)($row['average_rating'] ?? 0),
                 'total_responses' => (int)($row['total_responses'] ?? 0),
@@ -338,11 +340,11 @@ class CustomerAnalyticsService
             GROUP BY category
             ORDER BY average_rating DESC";
         
-        $result = db_query($categorySql);
+        $result = \db_query($categorySql);
         $byCategory = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $byCategory[] = [
                         'category' => $row['category'],

@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+namespace Ksfraser\Frontaccounting\SquareUp\DAO;
+
 /**
  * Stock Event DAO
  * 
@@ -182,11 +184,11 @@ class StockEventDAO
                 ORDER BY processed_at DESC 
                 LIMIT {$limit}";
 
-        $result = db_query($sql);
+        $result = \db_query($sql);
         $events = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $events[] = $row;
                 }
@@ -211,11 +213,11 @@ class StockEventDAO
                 ORDER BY processed_at DESC 
                 LIMIT {$limit}";
 
-        $result = db_query($sql);
+        $result = \db_query($sql);
         $events = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $events[] = $row;
                 }
@@ -237,10 +239,10 @@ class StockEventDAO
         // Total events
         $totalSql = "SELECT COUNT(*) as total FROM {$tableName} 
                     WHERE event_type IN ('stock_move', 'stock_adjustment', 'inventory_count')";
-        $totalResult = db_query($totalSql);
+        $totalResult = \db_query($totalSql);
         $total = 0;
         if ($totalResult !== false) {
-            $row = db_fetch_assoc($totalResult);
+            $row = \db_fetch_assoc($totalResult);
             $total = (int)($row['total'] ?? 0);
         }
         
@@ -248,10 +250,10 @@ class StockEventDAO
         $successSql = "SELECT COUNT(*) as success FROM {$tableName} 
                       WHERE event_type IN ('stock_move', 'stock_adjustment', 'inventory_count')
                       AND processed_successfully = TRUE";
-        $successResult = db_query($successSql);
+        $successResult = \db_query($successSql);
         $success = 0;
         if ($successResult !== false) {
-            $row = db_fetch_assoc($successResult);
+            $row = \db_fetch_assoc($successResult);
             $success = (int)($row['success'] ?? 0);
         }
         
@@ -262,10 +264,10 @@ class StockEventDAO
         $typeSql = "SELECT event_type, COUNT(*) as count FROM {$tableName} 
                    WHERE event_type IN ('stock_move', 'stock_adjustment', 'inventory_count')
                    GROUP BY event_type ORDER BY count DESC";
-        $typeResult = db_query($typeSql);
+        $typeResult = \db_query($typeSql);
         $byType = [];
         if ($typeResult !== false) {
-            while ($row = db_fetch_assoc($typeResult)) {
+            while ($row = \db_fetch_assoc($typeResult)) {
                 if ($row !== false) {
                     $byType[$row['event_type']] = (int)$row['count'];
                 }
@@ -306,18 +308,18 @@ class StockEventDAO
             " . ($data['counted_quantity'] ?? 'NULL') . ", 
             " . ($data['expected_quantity'] ?? 'NULL') . ", 
             " . ($data['difference'] ?? 'NULL') . ", 
-            '" . db_escape($data['reason']) . "', 
+            '" . \db_escape($data['reason']) . "', 
             " . ($data['fa_move_id'] ?? 'NULL') . ", 
             " . ($data['fa_adjustment_id'] ?? 'NULL') . ", 
             " . ($data['fa_count_id'] ?? 'NULL') . ", 
-            '" . db_escape($data['event_data']) . "', 
+            '" . \db_escape($data['event_data']) . "', 
             " . ($data['processed_successfully'] ? 'TRUE' : 'FALSE') . ", 
-            " . ($data['error_message'] ? "'" . db_escape($data['error_message']) . "'" : 'NULL') . ", 
+            " . ($data['error_message'] ? "'" . \db_escape($data['error_message']) . "'" : 'NULL') . ", 
             '{$data['processed_at']}'
         )";
 
-        db_query($sql);
-        return db_insert_id($tableName);
+        \db_query($sql);
+        return \db_insert_id($tableName);
     }
 
     /**
@@ -339,9 +341,9 @@ class StockEventDAO
         
         // Check if table exists
         $checkSql = "SHOW TABLES LIKE '{$tableName}'";
-        $result = db_query($checkSql);
+        $result = \db_query($checkSql);
         
-        if ($result !== false && db_num_rows($result) === 0) {
+        if ($result !== false && \db_num_rows($result) === 0) {
             // Create table
             $createSql = "CREATE TABLE {$tableName} (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -368,7 +370,7 @@ class StockEventDAO
                 INDEX idx_stock_id (stock_id)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
             
-            db_query($createSql);
+            \db_query($createSql);
         }
         
         // Check for new columns and add if missing
@@ -384,34 +386,34 @@ class StockEventDAO
         
         // Check if difference column exists
         $checkSql = "SHOW COLUMNS FROM {$tableName} LIKE 'difference'";
-        $result = db_query($checkSql);
+        $result = \db_query($checkSql);
         
-        if ($result !== false && db_num_rows($result) === 0) {
+        if ($result !== false && \db_num_rows($result) === 0) {
             // Add difference column
             $alterSql = "ALTER TABLE {$tableName} ADD COLUMN difference INT";
-            db_query($alterSql);
+            \db_query($alterSql);
         }
         
         // Check if fa_count_id column exists
         $checkSql = "SHOW COLUMNS FROM {$tableName} LIKE 'fa_count_id'";
-        $result = db_query($checkSql);
+        $result = \db_query($checkSql);
         
-        if ($result !== false && db_num_rows($result) === 0) {
+        if ($result !== false && \db_num_rows($result) === 0) {
             // Add fa_count_id column
             $alterSql = "ALTER TABLE {$tableName} ADD COLUMN fa_count_id INT";
-            db_query($alterSql);
+            \db_query($alterSql);
         }
         
         // Check if JSON event_data column exists
         $checkSql = "SHOW COLUMNS FROM {$tableName} LIKE 'event_data'";
-        $result = db_query($checkSql);
+        $result = \db_query($checkSql);
         
-        if ($result !== false && db_num_rows($result) > 0) {
-            $row = db_fetch_assoc($result);
+        if ($result !== false && \db_num_rows($result) > 0) {
+            $row = \db_fetch_assoc($result);
             if ($row !== false && stripos($row['Type'], 'json') === false) {
                 // Alter to JSON type if supported
                 $alterSql = "ALTER TABLE {$tableName} MODIFY COLUMN event_data JSON";
-                db_query($alterSql);
+                \db_query($alterSql);
             }
         }
     }

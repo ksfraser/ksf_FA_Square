@@ -224,9 +224,13 @@ class SquareIntegrationTest extends TestCase
         
         // Sync customer
         $result = $this->mockCrmIntegrationService->syncCustomerFromSquare($squareCustomer);
-        
+
+        // Convert via CRM adapter
+        $converted = $this->mockCrmAdapter->convertToFacustomer($squareCustomer);
+
         $this->assertTrue($result['success']);
         $this->assertEquals(123, $result['customer_id']);
+        $this->assertEquals(123, $converted['debtor_no']);
     }
 
     /**
@@ -267,8 +271,12 @@ class SquareIntegrationTest extends TestCase
         
         // Process payment
         $result = $this->mockPaymentService->recordSquarePayment($squarePayment);
-        
+
+        // Convert via payment adapter
+        $converted = $this->mockPaymentAdapter->convertToFAPayment($squarePayment, ['debtor_no' => 123, 'person_id' => 456]);
+
         $this->assertEquals(789, $result);
+        $this->assertEquals('Default Card Processing', $converted['bank_act']);
     }
 
     /**
@@ -298,9 +306,13 @@ class SquareIntegrationTest extends TestCase
         ];
         
         $result = $this->mockTaxService->calculateTax($orderData);
-        
+
+        // Convert via tax adapter
+        $converted = $this->mockTaxAdapter->convertToFATax($orderData);
+
         $this->assertEquals(10.00, $result['tax_amount']);
         $this->assertEquals(8.0, $result['tax_rate']);
+        $this->assertEquals(1, $converted['tax_type_id']);
     }
 
     /**
@@ -349,9 +361,13 @@ class SquareIntegrationTest extends TestCase
         
         // Process order
         $result = $this->mockSalesOrderService->createSalesOrder($squareOrder);
-        
+
+        // Convert via square order adapter
+        $converted = $this->mockSquareOrderAdapter->convertToFASalesOrder($squareOrder);
+
         $this->assertTrue($result['success']);
         $this->assertEquals(456, $result['order_id']);
+        $this->assertEquals(456, $converted['order_id']);
     }
 
     /**
@@ -360,7 +376,7 @@ class SquareIntegrationTest extends TestCase
     private function testAnalyticsGeneration(): void
     {
         // Mock sales analytics service
-        $this->mockSalesAnalyticsService->expects($this->once())
+        $this->mockSalesAnalyticsService->expects($this->exactly(5))
             ->method('getSalesSummary')
             ->willReturn([
                 'total_transactions' => 100,
@@ -369,7 +385,7 @@ class SquareIntegrationTest extends TestCase
             ]);
         
         // Mock customer analytics service
-        $this->mockCustomerAnalyticsService->expects($this->once())
+        $this->mockCustomerAnalyticsService->expects($this->exactly(5))
             ->method('getCustomerSummary')
             ->willReturn([
                 'total_customers' => 50,
@@ -378,7 +394,7 @@ class SquareIntegrationTest extends TestCase
             ]);
         
         // Mock financial analytics service
-        $this->mockFinancialAnalyticsService->expects($this->once())
+        $this->mockFinancialAnalyticsService->expects($this->exactly(5))
             ->method('getRevenueSummary')
             ->willReturn([
                 'total_revenue' => 5000.00,
@@ -394,6 +410,14 @@ class SquareIntegrationTest extends TestCase
         $this->assertArrayHasKey('summary', $result);
         $this->assertEquals(100, $result['summary']['total_transactions']);
         $this->assertEquals(5000.00, $result['summary']['total_amount']);
+
+        // Generate customer analytics
+        $customerResult = $this->biService->getCustomerAnalytics($filters);
+        $this->assertEquals(50, $customerResult['summary']['total_customers']);
+
+        // Generate financial analytics
+        $financialResult = $this->biService->getFinancialAnalytics($filters);
+        $this->assertEquals(5000.00, $financialResult['revenue_summary']['total_revenue']);
     }
 
     /**
@@ -445,7 +469,7 @@ class SquareIntegrationTest extends TestCase
         ];
         
         // Mock sales analytics service
-        $this->mockSalesAnalyticsService->expects($this->once())
+        $this->mockSalesAnalyticsService->expects($this->exactly(5))
             ->method('getSalesSummary')
             ->willReturn([
                 'total_transactions' => 100,

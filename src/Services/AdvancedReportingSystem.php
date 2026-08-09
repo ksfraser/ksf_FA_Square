@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+namespace Ksfraser\Frontaccounting\SquareUp\Services;
+
 /**
  * Advanced Reporting System
  * 
@@ -568,11 +570,11 @@ class AdvancedReportingSystem
         
         $sql = "SELECT * FROM {$tableName} WHERE " . implode(' AND ', $conditions) . " ORDER BY created_at DESC";
         
-        $result = db_query($sql);
+        $result = \db_query($sql);
         $history = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $history[] = $row;
                 }

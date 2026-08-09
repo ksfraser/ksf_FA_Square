@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+namespace Ksfraser\Frontaccounting\SquareUp\Services;
+
 /**
  * Inventory Analytics Service
  * 
@@ -44,10 +46,10 @@ class InventoryAnalyticsService
             FROM {$tableName} 
             WHERE {$dateCondition}";
         
-        $result = db_query($summarySql);
+        $result = \db_query($summarySql);
         $summary = [];
         if ($result !== false) {
-            $row = db_fetch_assoc($result);
+            $row = \db_fetch_assoc($result);
             $summary = [
                 'total_items' => (int)($row['total_items'] ?? 0),
                 'total_quantity' => (int)($row['total_quantity'] ?? 0),
@@ -71,11 +73,11 @@ class InventoryAnalyticsService
             GROUP BY category
             ORDER BY total_value DESC";
         
-        $result = db_query($categorySql);
+        $result = \db_query($categorySql);
         $byCategory = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $byCategory[] = [
                         'category' => $row['category'],
@@ -135,11 +137,11 @@ class InventoryAnalyticsService
             WHERE {$dateCondition}
             ORDER BY turnover_ratio DESC NULLS LAST";
         
-        $result = db_query($turnoverSql);
+        $result = \db_query($turnoverSql);
         $turnover = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $turnover[] = [
                         'category' => $row['category'],
@@ -182,10 +184,10 @@ class InventoryAnalyticsService
             FROM {$tableName} 
             WHERE {$dateCondition} AND variance IS NOT NULL";
         
-        $result = db_query($cycleCountSql);
+        $result = \db_query($cycleCountSql);
         $accuracy = [];
         if ($result !== false) {
-            $row = db_fetch_assoc($result);
+            $row = \db_fetch_assoc($result);
             $accuracy = [
                 'total_counts' => (int)($row['total_counts'] ?? 0),
                 'perfect_counts' => (int)($row['perfect_counts'] ?? 0),
@@ -249,11 +251,11 @@ class InventoryAnalyticsService
             ORDER BY days_since_last_sold DESC
             LIMIT 50";
         
-        $result = db_query($slowSql);
+        $result = \db_query($slowSql);
         $slowItems = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $slowItems[] = [
                         'category' => $row['category'],
@@ -302,11 +304,11 @@ class InventoryAnalyticsService
             GROUP BY alert_severity
             ORDER BY alert_severity";
         
-        $result = db_query($alertsSql);
+        $result = \db_query($alertsSql);
         $alerts = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $alerts[] = [
                         'severity' => $row['alert_severity'],
@@ -336,11 +338,11 @@ class InventoryAnalyticsService
             ORDER BY alert_severity, reorder_value DESC
             LIMIT 20";
         
-        $result = db_query($specificAlertsSql);
+        $result = \db_query($specificAlertsSql);
         $specificAlerts = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $specificAlerts[] = [
                         'item_code' => $row['item_code'],
@@ -394,10 +396,10 @@ class InventoryAnalyticsService
                     GROUP BY item_code
             ) s ON i.item_code = s.item_code";
         
-        $result = db_query($turnoverSql);
+        $result = \db_query($turnoverSql);
         $efficiency = [];
         if ($result !== false) {
-            $row = db_fetch_assoc($result);
+            $row = \db_fetch_assoc($result);
             $efficiency = [
                 'average_turnover' => (float)($row['average_turnover'] ?? 0),
                 'total_items' => (int)($row['total_items'] ?? 0),
@@ -432,11 +434,11 @@ class InventoryAnalyticsService
             GROUP BY category
             ORDER BY average_days_inventory DESC";
         
-        $result = db_query($daysSql);
+        $result = \db_query($daysSql);
         $byCategory = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $byCategory[] = [
                         'category' => $row['category'],

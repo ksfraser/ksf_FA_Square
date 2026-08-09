@@ -31,10 +31,10 @@ class StockMovesDAO
      */
     public function getLastModified(string $stockId): ?string
     {
-        $sql = "SELECT modified_date FROM {$this->tablePrefix}stock_moves WHERE stock_id = " . db_escape($stockId) . " ORDER BY tran_date DESC LIMIT 1";
-        $result = db_query($sql);
-        if ($result !== false && db_num_rows($result) > 0) {
-            $row = db_fetch_assoc($result);
+        $sql = "SELECT modified_date FROM {$this->tablePrefix}stock_moves WHERE stock_id = " . \db_escape($stockId) . " ORDER BY tran_date DESC LIMIT 1";
+        $result = \db_query($sql);
+        if ($result !== false && \db_num_rows($result) > 0) {
+            $row = \db_fetch_assoc($result);
             if ($row !== false) {
                 return $row['modified_date'];
             }

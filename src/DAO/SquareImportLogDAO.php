@@ -63,10 +63,10 @@ class SquareImportLogDAO
 
         foreach ($newColumns as $colDef) {
             $colName = explode(' ', $colDef)[0];
-            $check = @db_query("SELECT {$colName} FROM {$tableName} LIMIT 1");
+            $check = @\db_query("SELECT {$colName} FROM {$tableName} LIMIT 1");
             if ($check === false) {
                 $alterSql = "ALTER TABLE {$tableName} ADD COLUMN {$colDef}";
-                @db_query($alterSql);
+                @\db_query($alterSql);
             }
         }
     }
@@ -80,10 +80,10 @@ class SquareImportLogDAO
     public function getRecentLogs(int $limit = 10): array
     {
         $sql = "SELECT * FROM {$this->getTableName()} ORDER BY run_date DESC LIMIT " . (int)$limit;
-        $result = db_query($sql);
+        $result = \db_query($sql);
         $logs = [];
-        if ($result !== false && db_num_rows($result) > 0) {
-            while ($row = db_fetch_assoc($result)) {
+        if ($result !== false && \db_num_rows($result) > 0) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row === false) {
                     break;
                 }
@@ -103,11 +103,11 @@ class SquareImportLogDAO
     public function getLogsByEnvironment(string $environment, int $limit = 10): array
     {
         $tableName = $this->getTableName();
-        $sql = "SELECT * FROM {$tableName} WHERE environment = '" . db_escape($environment) . "' ORDER BY run_date DESC LIMIT " . (int)$limit;
-        $result = db_query($sql);
+        $sql = "SELECT * FROM {$tableName} WHERE environment = '" . \db_escape($environment) . "' ORDER BY run_date DESC LIMIT " . (int)$limit;
+        $result = \db_query($sql);
         $logs = [];
-        if ($result !== false && db_num_rows($result) > 0) {
-            while ($row = db_fetch_assoc($result)) {
+        if ($result !== false && \db_num_rows($result) > 0) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row === false) {
                     break;
                 }
@@ -130,17 +130,17 @@ class SquareImportLogDAO
         $gaps = [];
 
         $sql = "SELECT DISTINCT from_date, to_date FROM {$tableName}
-                WHERE environment = '" . db_escape($environment) . "'
+                WHERE environment = '" . \db_escape($environment) . "'
                 AND from_date IS NOT NULL AND to_date IS NOT NULL
                 ORDER BY from_date ASC";
 
-        $result = db_query($sql);
-        if ($result === false || db_num_rows($result) === 0) {
+        $result = \db_query($sql);
+        if ($result === false || \db_num_rows($result) === 0) {
             return $gaps;
         }
 
         $ranges = [];
-        while ($row = db_fetch_assoc($result)) {
+        while ($row = \db_fetch_assoc($result)) {
             if ($row !== false) {
                 $ranges[] = $row;
             }
@@ -172,13 +172,13 @@ class SquareImportLogDAO
     {
         $tableName = $this->getTableName();
         $sql = "SELECT MAX(to_date) as last_date FROM {$tableName}
-                WHERE environment = '" . db_escape($environment) . "'
+                WHERE environment = '" . \db_escape($environment) . "'
                 AND to_date IS NOT NULL
                 AND status = 'completed'";
 
-        $result = db_query($sql);
-        if ($result !== false && db_num_rows($result) > 0) {
-            $row = db_fetch_assoc($result);
+        $result = \db_query($sql);
+        if ($result !== false && \db_num_rows($result) > 0) {
+            $row = \db_fetch_assoc($result);
             if ($row !== false && !empty($row['last_date'])) {
                 return $row['last_date'];
             }
@@ -194,9 +194,9 @@ class SquareImportLogDAO
     public function hasLogs(): bool
     {
         $sql = "SELECT COUNT(*) AS cnt FROM {$this->getTableName()}";
-        $result = db_query($sql);
-        if ($result !== false && db_num_rows($result) > 0) {
-            $row = db_fetch_assoc($result);
+        $result = \db_query($sql);
+        if ($result !== false && \db_num_rows($result) > 0) {
+            $row = \db_fetch_assoc($result);
             if ($row !== false && (int)$row['cnt'] > 0) {
                 return true;
             }
@@ -237,31 +237,31 @@ class SquareImportLogDAO
         $fields = ['run_date', 'source', 'orders_imported', 'orders_skipped', 'orders_failed', 'status'];
         $values = [
             "'" . date('Y-m-d H:i:s') . "'",
-            db_escape($source),
+            \db_escape($source),
             $imported,
             $skipped,
             $failed,
-            db_escape($status),
+            \db_escape($status),
         ];
 
         if ($fromDate !== null) {
             $fields[] = 'from_date';
-            $values[] = "'" . db_escape($fromDate) . "'";
+            $values[] = "'" . \db_escape($fromDate) . "'";
         }
         if ($toDate !== null) {
             $fields[] = 'to_date';
-            $values[] = "'" . db_escape($toDate) . "'";
+            $values[] = "'" . \db_escape($toDate) . "'";
         }
 
         $fields[] = 'environment';
-        $values[] = "'" . db_escape($environment) . "'";
+        $values[] = "'" . \db_escape($environment) . "'";
 
         $fields[] = 'operation_type';
-        $values[] = "'" . db_escape($operationType) . "'";
+        $values[] = "'" . \db_escape($operationType) . "'";
 
         if ($locationFilter !== null) {
             $fields[] = 'location_filter';
-            $values[] = "'" . db_escape($locationFilter) . "'";
+            $values[] = "'" . \db_escape($locationFilter) . "'";
         }
 
         $fieldsStr = implode(', ', $fields);
@@ -269,7 +269,7 @@ class SquareImportLogDAO
 
         $sql = "INSERT INTO {$tableName} ({$fieldsStr}) VALUES ({$valuesStr})";
 
-        if (!db_query($sql)) {
+        if (!\db_query($sql)) {
             throw new Exception(_("Failed to insert import log: ") . db_error());
         }
     }

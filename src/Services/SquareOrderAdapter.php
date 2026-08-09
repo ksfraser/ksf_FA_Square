@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+namespace Ksfraser\Frontaccounting\SquareUp\Services;
+
 /**
  * Square Order Adapter
  * 
@@ -16,6 +18,25 @@ class SquareOrderAdapter
     public function __construct(TaxService $taxService)
     {
         $this->taxService = $taxService;
+    }
+
+    /**
+     * Converts a Square order to FA sales order format.
+     * 
+     * @param array $squareOrder Square order data
+     * @return array FA sales order data
+     */
+    public function convertToFASalesOrder(array $squareOrder): array
+    {
+        $customer = $squareOrder['customer'] ?? [];
+        $taxData = [
+            'tax_included' => false,
+            'total' => isset($squareOrder['total_money']['amount'])
+                ? $squareOrder['total_money']['amount'] / 100
+                : 0
+        ];
+
+        return $this->convertToFAOrder($squareOrder, $customer, $taxData);
     }
 
     /**

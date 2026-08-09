@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+namespace Ksfraser\Frontaccounting\SquareUp\DAO;
+
 /**
  * Payments DAO
  * 
@@ -29,9 +31,9 @@ class PaymentsDAO
         $tableName = $this->getPaymentsTableName();
         $sql = "SELECT * FROM {$tableName} WHERE payment_id = {$paymentId}";
         
-        $result = db_query($sql);
-        if ($result !== false && db_num_rows($result) > 0) {
-            $row = db_fetch_assoc($result);
+        $result = \db_query($sql);
+        if ($result !== false && \db_num_rows($result) > 0) {
+            $row = \db_fetch_assoc($result);
             return $row !== false ? $row : null;
         }
 
@@ -47,11 +49,11 @@ class PaymentsDAO
     public function getPaymentByReference(string $reference): ?array
     {
         $tableName = $this->getPaymentsTableName();
-        $sql = "SELECT * FROM {$tableName} WHERE ref = '" . db_escape($reference) . "'";
+        $sql = "SELECT * FROM {$tableName} WHERE ref = '" . \db_escape($reference) . "'";
         
-        $result = db_query($sql);
-        if ($result !== false && db_num_rows($result) > 0) {
-            $row = db_fetch_assoc($result);
+        $result = \db_query($sql);
+        if ($result !== false && \db_num_rows($result) > 0) {
+            $row = \db_fetch_assoc($result);
             return $row !== false ? $row : null;
         }
 
@@ -69,11 +71,11 @@ class PaymentsDAO
         $tableName = $this->getPaymentsTableName();
         $sql = "SELECT * FROM {$tableName} WHERE debtor_no = {$debtorNo} ORDER BY date_1 DESC";
 
-        $result = db_query($sql);
+        $result = \db_query($sql);
         $payments = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $payments[] = $row;
                 }
@@ -97,11 +99,11 @@ class PaymentsDAO
                 WHERE date_1 BETWEEN '{$startDate}' AND '{$endDate}' 
                 ORDER BY date_1 DESC";
 
-        $result = db_query($sql);
+        $result = \db_query($sql);
         $payments = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $payments[] = $row;
                 }
@@ -130,15 +132,15 @@ class PaymentsDAO
             if (is_numeric($value)) {
                 $values[] = $value;
             } else {
-                $values[] = "'" . db_escape($value) . "'";
+                $values[] = "'" . \db_escape($value) . "'";
             }
         }
         
         $sql = "INSERT INTO {$tableName} (" . implode(', ', $fields) . ") 
                 VALUES (" . implode(', ', $values) . ")";
 
-        db_query($sql);
-        return db_insert_id($tableName);
+        \db_query($sql);
+        return \db_insert_id($tableName);
     }
 
     /**
@@ -160,15 +162,15 @@ class PaymentsDAO
             if (is_numeric($value)) {
                 $values[] = $value;
             } else {
-                $values[] = "'" . db_escape($value) . "'";
+                $values[] = "'" . \db_escape($value) . "'";
             }
         }
         
         $sql = "INSERT INTO {$tableName} (" . implode(', ', $fields) . ") 
                 VALUES (" . implode(', ', $values) . ")";
 
-        db_query($sql);
-        return db_insert_id($tableName);
+        \db_query($sql);
+        return \db_insert_id($tableName);
     }
 
     /**
@@ -187,14 +189,14 @@ class PaymentsDAO
             if ($key === 'updated_at') {
                 $updates[] = "{$key} = '{$value}'";
             } else {
-                $updates[] = "{$key} = " . (is_numeric($value) ? $value : "'" . db_escape($value) . "'");
+                $updates[] = "{$key} = " . (is_numeric($value) ? $value : "'" . \db_escape($value) . "'");
             }
         }
         
         $sql = "UPDATE {$tableName} SET " . implode(', ', $updates) . " 
                 WHERE payment_id = {$paymentId}";
         
-        return db_query($sql) !== false;
+        return \db_query($sql) !== false;
     }
 
     /**
@@ -208,7 +210,7 @@ class PaymentsDAO
         $tableName = $this->getPaymentsTableName();
         $sql = "DELETE FROM {$tableName} WHERE payment_id = {$paymentId}";
         
-        return db_query($sql) !== false;
+        return \db_query($sql) !== false;
     }
 
     /**
@@ -221,14 +223,14 @@ class PaymentsDAO
     {
         $tableName = $this->getPaymentsTableName();
         $sql = "SELECT * FROM {$tableName} 
-                WHERE payment_method = '" . db_escape($paymentMethod) . "' 
+                WHERE payment_method = '" . \db_escape($paymentMethod) . "' 
                 ORDER BY date_1 DESC";
 
-        $result = db_query($sql);
+        $result = \db_query($sql);
         $payments = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $payments[] = $row;
                 }
@@ -248,14 +250,14 @@ class PaymentsDAO
     {
         $tableName = $this->getPaymentsTableName();
         $sql = "SELECT * FROM {$tableName} 
-                WHERE status = '" . db_escape($status) . "' 
+                WHERE status = '" . \db_escape($status) . "' 
                 ORDER BY date_1 DESC";
 
-        $result = db_query($sql);
+        $result = \db_query($sql);
         $payments = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $payments[] = $row;
                 }
@@ -276,20 +278,20 @@ class PaymentsDAO
         
         // Total payments
         $totalSql = "SELECT COUNT(*) as total FROM {$tableName}";
-        $totalResult = db_query($totalSql);
+        $totalResult = \db_query($totalSql);
         $total = 0;
         if ($totalResult !== false) {
-            $row = db_fetch_assoc($totalResult);
+            $row = \db_fetch_assoc($totalResult);
             $total = (int)($row['total'] ?? 0);
         }
         
         // Recent payments
         $recentSql = "SELECT COUNT(*) as recent FROM {$tableName} 
                      WHERE created_at > DATE_SUB(NOW(), INTERVAL 24 HOUR)";
-        $recentResult = db_query($recentSql);
+        $recentResult = \db_query($recentSql);
         $recent = 0;
         if ($recentResult !== false) {
-            $row = db_fetch_assoc($recentResult);
+            $row = \db_fetch_assoc($recentResult);
             $recent = (int)($row['recent'] ?? 0);
         }
         
@@ -300,14 +302,14 @@ class PaymentsDAO
             AVG(amount) as average_amount
             FROM {$tableName} 
             WHERE created_at > DATE_SUB(NOW(), INTERVAL 30 DAY)";
-        $amountResult = db_query($amountSql);
+        $amountResult = \db_query($amountSql);
         $amounts = [
             'total_amount' => 0,
             'total_payments' => 0,
             'average_amount' => 0
         ];
         if ($amountResult !== false) {
-            $row = db_fetch_assoc($amountResult);
+            $row = \db_fetch_assoc($amountResult);
             $amounts = [
                 'total_amount' => (float)($row['total_amount'] ?? 0),
                 'total_payments' => (int)($row['total_payments'] ?? 0),
@@ -318,10 +320,10 @@ class PaymentsDAO
         // Payment methods distribution
         $methodSql = "SELECT payment_method, COUNT(*) as count FROM {$tableName} 
                      GROUP BY payment_method ORDER BY count DESC";
-        $methodResult = db_query($methodSql);
+        $methodResult = \db_query($methodSql);
         $byMethod = [];
         if ($methodResult !== false) {
-            while ($row = db_fetch_assoc($methodResult)) {
+            while ($row = \db_fetch_assoc($methodResult)) {
                 if ($row !== false) {
                     $byMethod[$row['payment_method']] = (int)$row['count'];
                 }
@@ -331,10 +333,10 @@ class PaymentsDAO
         // Status distribution
         $statusSql = "SELECT status, COUNT(*) as count FROM {$tableName} 
                      GROUP BY status ORDER BY count DESC";
-        $statusResult = db_query($statusSql);
+        $statusResult = \db_query($statusSql);
         $byStatus = [];
         if ($statusResult !== false) {
-            while ($row = db_fetch_assoc($statusResult)) {
+            while ($row = \db_fetch_assoc($statusResult)) {
                 if ($row !== false) {
                     $byStatus[$row['status']] = (int)$row['count'];
                 }
@@ -359,24 +361,26 @@ class PaymentsDAO
     public function logPaymentEvent(array $eventData): int
     {
         $tableName = $this->getEventLogTableName();
+        $faPaymentId = $eventData['fa_payment_id'] ?? 'NULL';
+        $eventCurrency = $eventData['currency'] ?? 'USD';
         
         $sql = "INSERT INTO {$tableName} (
             fa_payment_id, square_payment_id, square_refund_id, 
             original_fa_payment_id, event_type, amount, 
             currency, timestamp
         ) VALUES (
-            {$eventData['fa_payment_id'] ?? 'NULL'},
-            " . (isset($eventData['square_payment_id']) ? "'" . db_escape($eventData['square_payment_id']) . "'" : 'NULL') . ",
-            " . (isset($eventData['square_refund_id']) ? "'" . db_escape($eventData['square_refund_id']) . "'" : 'NULL') . ",
+            {$faPaymentId},
+            " . (isset($eventData['square_payment_id']) ? "'" . \db_escape($eventData['square_payment_id']) . "'" : 'NULL') . ",
+            " . (isset($eventData['square_refund_id']) ? "'" . \db_escape($eventData['square_refund_id']) . "'" : 'NULL') . ",
             " . (isset($eventData['original_fa_payment_id']) ? (int)$eventData['original_fa_payment_id'] : 'NULL') . ",
             '{$eventData['event_type']}',
             {$eventData['amount']},
-            '{$eventData['currency'] ?? 'USD'}',
+            '{$eventCurrency}',
             '{$eventData['timestamp']}'
         )";
 
-        db_query($sql);
-        return db_insert_id($tableName);
+        \db_query($sql);
+        return \db_insert_id($tableName);
     }
 
     /**
@@ -397,9 +401,9 @@ class PaymentsDAO
         
         // Check if table exists
         $checkSql = "SHOW TABLES LIKE '{$tableName}'";
-        $result = db_query($checkSql);
+        $result = \db_query($checkSql);
         
-        if ($result !== false && db_num_rows($result) === 0) {
+        if ($result !== false && \db_num_rows($result) === 0) {
             // Create table
             $createSql = "CREATE TABLE {$tableName} (
                 payment_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -425,7 +429,7 @@ class PaymentsDAO
                 INDEX idx_status (status)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
             
-            db_query($createSql);
+            \db_query($createSql);
         }
     }
 
@@ -438,9 +442,9 @@ class PaymentsDAO
         
         // Check if table exists
         $checkSql = "SHOW TABLES LIKE '{$tableName}'";
-        $result = db_query($checkSql);
+        $result = \db_query($checkSql);
         
-        if ($result !== false && db_num_rows($result) === 0) {
+        if ($result !== false && \db_num_rows($result) === 0) {
             // Create table
             $createSql = "CREATE TABLE {$tableName} (
                 event_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -460,7 +464,7 @@ class PaymentsDAO
                 INDEX idx_timestamp (timestamp)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
             
-            db_query($createSql);
+            \db_query($createSql);
         }
     }
 

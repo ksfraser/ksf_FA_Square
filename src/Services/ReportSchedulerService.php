@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+namespace Ksfraser\Frontaccounting\SquareUp\Services;
+
 /**
  * Report Scheduler Service
  * 
@@ -128,9 +130,9 @@ class ReportSchedulerService
         $tableName = $this->getScheduleTableName();
         $sql = "SELECT * FROM {$tableName} WHERE schedule_id = {$scheduleId}";
         
-        $result = db_query($sql);
-        if ($result !== false && db_num_rows($result) > 0) {
-            $row = db_fetch_assoc($result);
+        $result = \db_query($sql);
+        if ($result !== false && \db_num_rows($result) > 0) {
+            $row = \db_fetch_assoc($result);
             return $row !== false ? $row : null;
         }
 
@@ -168,11 +170,11 @@ class ReportSchedulerService
         
         $sql = "SELECT * FROM {$tableName} WHERE " . implode(' AND ', $conditions) . " ORDER BY next_run ASC";
         
-        $result = db_query($sql);
+        $result = \db_query($sql);
         $schedules = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $schedules[] = $row;
                 }
@@ -359,11 +361,11 @@ class ReportSchedulerService
                 WHERE is_active = 1 AND next_run <= NOW() 
                 ORDER BY next_run ASC";
         
-        $result = db_query($sql);
+        $result = \db_query($sql);
         $schedules = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $schedules[] = $row;
                 }
@@ -389,7 +391,7 @@ class ReportSchedulerService
                 updated_at = NOW()
                 WHERE schedule_id = {$scheduleId}";
         
-        return db_query($sql) !== false;
+        return \db_query($sql) !== false;
     }
 
     /**
@@ -411,15 +413,15 @@ class ReportSchedulerService
             if (is_numeric($value)) {
                 $values[] = $value;
             } else {
-                $values[] = "'" . db_escape($value) . "'";
+                $values[] = "'" . \db_escape($value) . "'";
             }
         }
         
         $sql = "INSERT INTO {$tableName} (" . implode(', ', $fields) . ") 
                 VALUES (" . implode(', ', $values) . ")";
 
-        db_query($sql);
-        return db_insert_id($tableName);
+        \db_query($sql);
+        return \db_insert_id($tableName);
     }
 
     /**
@@ -438,14 +440,14 @@ class ReportSchedulerService
             if ($key === 'updated_at') {
                 $updates[] = "{$key} = '{$value}'";
             } else {
-                $updates[] = "{$key} = " . (is_numeric($value) ? $value : "'" . db_escape($value) . "'");
+                $updates[] = "{$key} = " . (is_numeric($value) ? $value : "'" . \db_escape($value) . "'");
             }
         }
         
         $sql = "UPDATE {$tableName} SET " . implode(', ', $updates) . " 
                 WHERE schedule_id = {$scheduleId}";
         
-        return db_query($sql) !== false;
+        return \db_query($sql) !== false;
     }
 
     /**
@@ -459,7 +461,7 @@ class ReportSchedulerService
         $tableName = $this->getScheduleTableName();
         $sql = "DELETE FROM {$tableName} WHERE schedule_id = {$scheduleId}";
         
-        return db_query($sql) !== false;
+        return \db_query($sql) !== false;
     }
 
     /**
@@ -527,9 +529,9 @@ class ReportSchedulerService
         
         // Check if table exists
         $checkSql = "SHOW TABLES LIKE '{$tableName}'";
-        $result = db_query($checkSql);
+        $result = \db_query($checkSql);
         
-        if ($result !== false && db_num_rows($result) === 0) {
+        if ($result !== false && \db_num_rows($result) === 0) {
             // Create table
             $createSql = "CREATE TABLE {$tableName} (
                 schedule_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -550,7 +552,7 @@ class ReportSchedulerService
                 FOREIGN KEY (template_id) REFERENCES {$this->getTemplateTableName()}(template_id)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
             
-            db_query($createSql);
+            \db_query($createSql);
         }
     }
 }

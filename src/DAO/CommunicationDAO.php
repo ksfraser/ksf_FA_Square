@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+namespace Ksfraser\Frontaccounting\SquareUp\DAO;
+
 /**
  * Communication DAO
  * 
@@ -33,13 +35,13 @@ class CommunicationDAO
         ) VALUES (
             {$communicationData['debtor_no']},
             '{$communicationData['type']}',
-            '" . db_escape($communicationData['message']) . "',
+            '" . \db_escape($communicationData['message']) . "',
             '{$communicationData['timestamp']}',
             '{$communicationData['timestamp']}'
         )";
 
-        db_query($sql);
-        return db_insert_id($tableName);
+        \db_query($sql);
+        return \db_insert_id($tableName);
     }
 
     /**
@@ -57,11 +59,11 @@ class CommunicationDAO
                 ORDER BY timestamp DESC 
                 LIMIT {$limit}";
 
-        $result = db_query($sql);
+        $result = \db_query($sql);
         $communications = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $communications[] = $row;
                 }
@@ -86,11 +88,11 @@ class CommunicationDAO
                 ORDER BY timestamp DESC 
                 LIMIT {$limit}";
 
-        $result = db_query($sql);
+        $result = \db_query($sql);
         $communications = [];
         
         if ($result !== false) {
-            while ($row = db_fetch_assoc($result)) {
+            while ($row = \db_fetch_assoc($result)) {
                 if ($row !== false) {
                     $communications[] = $row;
                 }
@@ -111,20 +113,20 @@ class CommunicationDAO
         
         // Total communications
         $totalSql = "SELECT COUNT(*) as total FROM {$tableName}";
-        $totalResult = db_query($totalSql);
+        $totalResult = \db_query($totalSql);
         $total = 0;
         if ($totalResult !== false) {
-            $row = db_fetch_assoc($totalResult);
+            $row = \db_fetch_assoc($totalResult);
             $total = (int)($row['total'] ?? 0);
         }
         
         // Communications by type
         $typeSql = "SELECT type, COUNT(*) as count FROM {$tableName} 
                    GROUP BY type ORDER BY count DESC";
-        $typeResult = db_query($typeSql);
+        $typeResult = \db_query($typeSql);
         $byType = [];
         if ($typeResult !== false) {
-            while ($row = db_fetch_assoc($typeResult)) {
+            while ($row = \db_fetch_assoc($typeResult)) {
                 if ($row !== false) {
                     $byType[$row['type']] = (int)$row['count'];
                 }
@@ -134,10 +136,10 @@ class CommunicationDAO
         // Recent communications
         $recentSql = "SELECT COUNT(*) as recent FROM {$tableName} 
                      WHERE timestamp > DATE_SUB(NOW(), INTERVAL 24 HOUR)";
-        $recentResult = db_query($recentSql);
+        $recentResult = \db_query($recentSql);
         $recent = 0;
         if ($recentResult !== false) {
-            $row = db_fetch_assoc($recentResult);
+            $row = \db_fetch_assoc($recentResult);
             $recent = (int)($row['recent'] ?? 0);
         }
         
@@ -157,9 +159,9 @@ class CommunicationDAO
         
         // Check if table exists
         $checkSql = "SHOW TABLES LIKE '{$tableName}'";
-        $result = db_query($checkSql);
+        $result = \db_query($checkSql);
         
-        if ($result !== false && db_num_rows($result) === 0) {
+        if ($result !== false && \db_num_rows($result) === 0) {
             // Create table
             $createSql = "CREATE TABLE {$tableName} (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -173,7 +175,7 @@ class CommunicationDAO
                 INDEX idx_timestamp (timestamp)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
             
-            db_query($createSql);
+            \db_query($createSql);
         }
     }
 

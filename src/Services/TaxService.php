@@ -1,6 +1,12 @@
 <?php
 declare(strict_types=1);
 
+namespace Ksfraser\Frontaccounting\SquareUp\Services;
+
+use Ksfraser\Frontaccounting\SquareUp\Contracts\TaxServiceInterface;
+
+use Ksfraser\Frontaccounting\SquareUp\DAO\TaxMappingDAO;
+use Ksfraser\Frontaccounting\SquareUp\DAO\TaxRatesDAO;
 /**
  * Tax Service
  * 
@@ -25,6 +31,46 @@ class TaxService implements TaxServiceInterface
         $this->taxMappingDao = $taxMappingDao;
         $this->taxAdapter = $taxAdapter;
         $this->tablePrefix = get_company_pref('table_prefix');
+    }
+
+    /**
+     * Calculates taxes for Square order data.
+     * 
+     * Wraps calculateSquareTaxes and returns tax summary data.
+     * 
+     * @param array $orderData Square order data
+     * @return array Tax summary
+     * @throws TaxCalculationException on calculation failure
+     */
+    public function calculateTax(array $orderData): array
+    {
+        $result = $this->calculateSquareTaxes($orderData);
+
+        $totalTax = 0.0;
+        foreach (($result['tax_calculations'] ?? []) as $calc) {
+            $totalTax += (float)($calc['amount'] ?? 0);
+        }
+
+        return [
+            'tax_amount' => $totalTax,
+            'tax_rate' => $this->getEffectiveTaxRate($result['tax_details'] ?? [])
+        ];
+    }
+
+    /**
+     * Gets the effective tax rate from tax detail data.
+     * 
+     * @param array $taxDetails Tax detail entries
+     * @return float Effective tax rate
+     */
+    private function getEffectiveTaxRate(array $taxDetails): float
+    {
+        $rate = 0.0;
+        foreach ($taxDetails as $detail) {
+            $rate += (float)($detail['percentage'] ?? 0);
+        }
+
+        return $rate;
     }
 
     /**
@@ -216,20 +262,20 @@ class TaxService implements TaxServiceInterface
     {
         // Total tax calculations
         $totalSql = "SELECT COUNT(*) as total FROM {$this->getTaxCalculationsTableName()}";
-        $totalResult = db_query($totalSql);
+        $totalResult = \db_query($totalSql);
         $total = 0;
         if ($totalResult !== false) {
-            $row = db_fetch_assoc($totalResult);
+            $row = \db_fetch_assoc($totalResult);
             $total = (int)($row['total'] ?? 0);
         }
         
         // Tax calculations by type
         $typeSql = "SELECT type, COUNT(*) as count FROM {$this->getTaxCalculationsTableName()} 
                    GROUP BY type ORDER BY count DESC";
-        $typeResult = db_query($typeSql);
+        $typeResult = \db_query($typeSql);
         $byType = [];
         if ($typeResult !== false) {
-            while ($row = db_fetch_assoc($typeResult)) {
+            while ($row = \db_fetch_assoc($typeResult)) {
                 if ($row !== false) {
                     $byType[$row['type']] = (int)$row['count'];
                 }
@@ -239,19 +285,19 @@ class TaxService implements TaxServiceInterface
         // Recent tax calculations
         $recentSql = "SELECT COUNT(*) as recent FROM {$this->getTaxCalculationsTableName()} 
                      WHERE timestamp > DATE_SUB(NOW(), INTERVAL 24 HOUR)";
-        $recentResult = db_query($recentSql);
+        $recentResult = \db_query($recentSql);
         $recent = 0;
         if ($recentResult !== false) {
-            $row = db_fetch_assoc($recentResult);
+            $row = \db_fetch_assoc($recentResult);
             $recent = (int)($row['recent'] ?? 0);
         }
         
         // Mapping statistics
         $mappingSql = "SELECT COUNT(*) as mappings FROM {$this->getTaxMappingsTableName()}";
-        $mappingResult = db_query($mappingSql);
+        $mappingResult = \db_query($mappingSql);
         $mappings = 0;
         if ($mappingResult !== false) {
-            $row = db_fetch_assoc($mappingResult);
+            $row = \db_fetch_assoc($mappingResult);
             $mappings = (int)($row['mappings'] ?? 0);
         }
         
