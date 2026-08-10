@@ -6,13 +6,19 @@ namespace Ksfraser\Frontaccounting\SquareUp\Push;
 use Ksfraser\Frontaccounting\SquareUp\Contracts\CatalogExporterInterface;
 use Ksfraser\Frontaccounting\SquareUp\Contracts\SettingsInterface;
 use Ksfraser\Frontaccounting\SquareUp\Exceptions\SquareException;
+use Ksfraser\Frontaccounting\SquareUp\ValueObjects\SquarePrice;
 use Square\SquareClient;
 use Square\Exceptions\ApiException;
 use Square\Models\CatalogObject;
 use Square\Models\CatalogItem;
 use Square\Models\CatalogItemVariation;
 use Square\Models\CatalogCategory;
+use Square\Models\CatalogObjectCategory;
 use Square\Models\CatalogTax;
+use Square\Models\CatalogModifier;
+use Square\Models\CatalogModifierList;
+use Square\Models\CatalogItemModifierListInfo;
+use Square\Models\CatalogCustomAttributeValue;
 use Square\Models\Money;
 use Square\Models\UpsertCatalogObjectRequest;
 use Square\Models\BatchUpsertCatalogObjectsRequest;
@@ -51,7 +57,8 @@ class CatalogExporter implements CatalogExporterInterface
         string $currency = 'CAD',
         string $taxName = '',
         float $taxRate = 0.0,
-        ?CatalogObject $existingItem = null
+        ?CatalogObject $existingItem = null,
+        ?array $attributes = null
     ): CatalogObject {
         $maxRetries = 5;
         $retryDelay = 1000000;
@@ -76,7 +83,7 @@ class CatalogExporter implements CatalogExporterInterface
                     }
                 }
 
-                $body = $this->buildCatalogObject($sku, $name, $description, $categoryName, $priceCents, $currency, $taxName, $taxRate, $existingItemId, $existingVariationId, $existingItemVersion, $existingVariationVersion);
+                $body = $this->buildCatalogObject($sku, $name, $description, $categoryName, $priceCents, $currency, $taxName, $taxRate, $existingItemId, $existingVariationId, $existingItemVersion, $existingVariationVersion, $attributes);
 
                 $request = new UpsertCatalogObjectRequest(uniqid('', true), $body);
 
@@ -152,7 +159,7 @@ class CatalogExporter implements CatalogExporterInterface
             $existingItemId = $product['existing_item_id'] ?? null;
             $existingVariationId = $product['existing_variation_id'] ?? null;
 
-            $body = $this->buildCatalogObject($sku, $name, $description, $categoryName, $priceCents, $currency, $taxName, $taxRate, $existingItemId, $existingVariationId);
+            $body = $this->buildCatalogObject($sku, $name, $description, $categoryName, $priceCents, $currency, $taxName, $taxRate, $existingItemId, $existingVariationId, null, null, $product['attributes'] ?? null);
             $objects[] = $body;
         }
 
@@ -417,14 +424,19 @@ class CatalogExporter implements CatalogExporterInterface
         ?string $existingItemId = null,
         ?string $existingVariationId = null,
         $existingItemVersion = null,
-        $existingVariationVersion = null
+        $existingVariationVersion = null,
+        ?array $attributes = null
     ): CatalogObject {
         $sku = $this->sanitizeUtf8($sku);
         $name = $this->sanitizeUtf8($name);
         $description = $this->sanitizeUtf8($description);
         $categoryId = null;
+        $parentCategoryName = isset($attributes['category_parent_name']) ? (string)$attributes['category_parent_name'] : '';
         if ($categoryName !== null && $categoryName !== '') {
-            $categoryId = $this->resolveCategory($this->sanitizeUtf8($categoryName));
+            $categoryId = $this->resolveCategory(
+                $this->sanitizeUtf8($categoryName),
+                $parentCategoryName !== '' ? $this->sanitizeUtf8($parentCategoryName) : null
+            );
         }
         $taxName = $this->sanitizeUtf8($taxName);
 
@@ -436,6 +448,11 @@ class CatalogExporter implements CatalogExporterInterface
         $variationData->getPriceMoney()->setAmount($priceCents);
         $variationData->getPriceMoney()->setCurrency($currency);
         $variationData->setTrackInventory(true);
+
+        $measurementUnitId = isset($attributes['measurement_unit_id']) ? (string)$attributes['measurement_unit_id'] : '';
+        if ($measurementUnitId !== '') {
+            $variationData->setMeasurementUnitId($measurementUnitId);
+        }
 
         $variationObject = new CatalogObject('ITEM_VARIATION', $existingVariationId ?? ('#' . $sku . '_var'));
         $variationObject->setItemVariationData($variationData);
@@ -451,6 +468,25 @@ class CatalogExporter implements CatalogExporterInterface
         }
         $item->setVariations([$variationObject]);
 
+        $modifierLists = isset($attributes['modifier_lists']) && is_array($attributes['modifier_lists']) ? $attributes['modifier_lists'] : [];
+        if (count($modifierLists) > 0) {
+            $infoList = [];
+            foreach ($modifierLists as $modifierList) {
+                $listId = $this->resolveModifierList($modifierList, $currency);
+                $info = new CatalogItemModifierListInfo($listId);
+                if (!empty($modifierList['min_selected_modifiers'])) {
+                    $info->setMinSelectedModifiers((int)$modifierList['min_selected_modifiers']);
+                }
+                if (!empty($modifierList['max_selected_modifiers'])) {
+                    $info->setMaxSelectedModifiers((int)$modifierList['max_selected_modifiers']);
+                }
+                $info->setEnabled(true);
+                $info->setOrdinal((int)($modifierList['ordinal'] ?? 0));
+                $infoList[] = $info;
+            }
+            $item->setModifierListInfo($infoList);
+        }
+
         if ($taxName !== '') {
             $taxId = $this->resolveTax($taxName, $taxRate);
             $item->setTaxIds([$taxId]);
@@ -462,10 +498,95 @@ class CatalogExporter implements CatalogExporterInterface
             $body->setVersion($existingItemVersion);
         }
 
+        $customAttributes = isset($attributes['custom_attributes']) && is_array($attributes['custom_attributes']) ? $attributes['custom_attributes'] : [];
+        if (count($customAttributes) > 0) {
+            $valueMap = [];
+            foreach ($customAttributes as $attribute) {
+                $key = (string)($attribute['attr_key'] ?? '');
+                if ($key === '') {
+                    continue;
+                }
+                $value = new CatalogCustomAttributeValue();
+                $value->setKey($key);
+                $value->setStringValue((string)($attribute['attr_value'] ?? ''));
+                $valueMap[$key] = $value;
+            }
+            if (count($valueMap) > 0) {
+                $body->setCustomAttributeValues($valueMap);
+            }
+        }
+
         return $body;
     }
 
-    private function resolveCategory(string $categoryName): ?string
+    /**
+     * Upserts a modifier list as a MODIFIER_LIST catalog object with nested
+     * MODIFIER children and returns the catalog object id to attach to the
+     * item's modifier_list_info.
+     *
+     * @param array<string, mixed> $modifierList Normalized modifier list
+     * @param string               $currency     Price currency code
+     * @return string Catalog object id of the modifier list
+     * @throws SquareException when the upsert fails
+     */
+    private function resolveModifierList(array $modifierList, string $currency): string
+    {
+        $listData = new CatalogModifierList();
+        $listData->setName((string)($modifierList['name'] ?? ''));
+
+        $selectionType = (string)($modifierList['selection_type'] ?? 'SINGLE');
+        if ($selectionType === 'SINGLE' || $selectionType === 'MULTIPLE') {
+            $listData->setSelectionType($selectionType);
+        }
+
+        $modifierObjects = [];
+        foreach ((isset($modifierList['modifiers']) && is_array($modifierList['modifiers']) ? $modifierList['modifiers'] : []) as $modifier) {
+            $modifierData = new CatalogModifier();
+            $modifierData->setName((string)($modifier['name'] ?? ''));
+            $price = isset($modifier['price']) && $modifier['price'] !== null && $modifier['price'] !== ''
+                ? (string)$modifier['price']
+                : '';
+            if ($price !== '' && (float)$price > 0) {
+                $money = new Money();
+                $money->setAmount(SquarePrice::fromDollars((float)$price)->getCents());
+                $money->setCurrency($currency);
+                $modifierData->setPriceMoney($money);
+            }
+            if (isset($modifier['ordinal'])) {
+                $modifierData->setOrdinal((int)$modifier['ordinal']);
+            }
+
+            $modifierObject = new CatalogObject('MODIFIER', '#' . preg_replace('/[^a-zA-Z0-9_]/', '_', (string)($modifier['name'] ?? '')));
+            $modifierObject->setModifierData($modifierData);
+            $modifierObjects[] = $modifierObject;
+        }
+        if (count($modifierObjects) > 0) {
+            $listData->setModifiers($modifierObjects);
+        }
+
+        $listObject = new CatalogObject('MODIFIER_LIST', '#modlist_' . (int)($modifierList['id'] ?? 0));
+        $listObject->setModifierListData($listData);
+
+        try {
+            $request = new UpsertCatalogObjectRequest(uniqid('', true), $listObject);
+            $response = $this->client->getCatalogApi()->upsertCatalogObject($request);
+
+            if (!$response->isSuccess()) {
+                throw SquareException::apiError(
+                    'upsertCatalogObject',
+                    'Failed to upsert modifier list',
+                    $response->getErrors()
+                );
+            }
+
+            $resultObject = $response->getResult()->getCatalogObject();
+            return $resultObject->getId() ?? $listObject->getId();
+        } catch (ApiException $e) {
+            throw SquareException::apiError('upsertCatalogObject', $e->getMessage());
+        }
+    }
+
+    private function resolveCategory(string $categoryName, ?string $parentCategoryName = null): ?string
     {
         try {
             $searchRequest = new \Square\Models\SearchCatalogObjectsRequest();
@@ -482,6 +603,15 @@ class CatalogExporter implements CatalogExporterInterface
 
             $category = new CatalogCategory();
             $category->setName($categoryName);
+
+            if ($parentCategoryName !== null && $parentCategoryName !== '' && $parentCategoryName !== $categoryName) {
+                $parentId = $this->resolveCategory($parentCategoryName);
+                if ($parentId !== null) {
+                    $parent = new CatalogObjectCategory();
+                    $parent->setId($parentId);
+                    $category->setParentCategory($parent);
+                }
+            }
 
             $body = new CatalogObject('CATEGORY', '#' . preg_replace('/[^a-zA-Z0-9_]/', '_', $categoryName));
             $body->setCategoryData($category);

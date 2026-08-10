@@ -335,7 +335,9 @@ class hooks_ksf_FA_Square extends hooks {
               new \Ksfraser\Frontaccounting\SquareUp\DAO\StockMasterDAO($tablePrefix),
               new \Ksfraser\Frontaccounting\SquareUp\DAO\SquareTokenDAO($tablePrefix, $settings->getEnvironment()),
               $currency,
-              0
+              0,
+              null,
+              new \Ksfraser\Frontaccounting\SquareUp\DAO\ProductAttributesDAO($tablePrefix)
           );
       } catch (\Throwable $e) {
           error_log('ksf_FA_Square: item event sync unavailable: ' . $e->getMessage());

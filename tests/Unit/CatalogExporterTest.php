@@ -270,4 +270,165 @@ class CatalogExporterTest extends TestCase
 
         $this->assertFalse($result);
     }
+
+    /**
+     * Stubs searchCatalogObjects to always return no existing objects so the
+     * exporter takes the create path for categories.
+     */
+    private function stubEmptyCategorySearch(): void
+    {
+        $mockSearchResponse = $this->createMock(\Square\Http\ApiResponse::class);
+        $mockSearchResult = $this->createMock(\Square\Models\SearchCatalogObjectsResponse::class);
+        $mockSearchResponse->method('isSuccess')->willReturn(true);
+        $mockSearchResponse->method('getResult')->willReturn($mockSearchResult);
+        $mockSearchResult->method('getObjects')->willReturn([]);
+        $this->mockCatalogApi->method('searchCatalogObjects')->willReturn($mockSearchResponse);
+    }
+
+    /**
+     * Mocks upsertCatalogObject to return success, capturing every request and
+     * mapping the response object by the client-assigned id.
+     *
+     * @param array<string, CatalogObject> $objectsById Client id -> response object
+     * @param array|null                   $captured   Requests captured by reference
+     */
+    private function mockSuccessUpserts(array $objectsById = [], ?array &$captured = null): void
+    {
+        $this->mockCatalogApi->method('upsertCatalogObject')->willReturnCallback(function ($request) use (&$captured, $objectsById) {
+            if ($captured !== null) {
+                $captured[] = $request;
+            }
+            $obj = $request->getObject();
+            $mockResponse = $this->createMock(\Square\Http\ApiResponse::class);
+            $mockResult = $this->createMock(\Square\Models\UpsertCatalogObjectResponse::class);
+            $mockResponse->method('isSuccess')->willReturn(true);
+            $mockResponse->method('getResult')->willReturn($mockResult);
+            $mockResult->method('getCatalogObject')->willReturn($objectsById[$obj->getId()] ?? $obj);
+            return $mockResponse;
+        });
+    }
+
+    private function capturedItemRequest(array $captured): ?\Square\Models\UpsertCatalogObjectRequest
+    {
+        foreach ($captured as $request) {
+            if ($request->getObject()->getType() === 'ITEM') {
+                return $request;
+            }
+        }
+        return null;
+    }
+
+    public function testUpsertProductSetsMeasurementUnitIdFromAttributes(): void
+    {
+        $this->stubEmptyCategorySearch();
+        $captured = [];
+        $this->mockSuccessUpserts([], $captured);
+
+        $this->exporter->upsertProduct('TEST-SKU', 'Test Item', 'Test Description', 'General', 1000, 'CAD', '', 0.0, null, [
+            'measurement_unit_id' => 'g:Weight',
+        ]);
+
+        $itemRequest = $this->capturedItemRequest($captured);
+        $this->assertNotNull($itemRequest);
+        $variation = $itemRequest->getObject()->getItemData()->getVariations()[0];
+        $this->assertSame('g:Weight', $variation->getItemVariationData()->getMeasurementUnitId());
+    }
+
+    public function testUpsertProductSetsCustomAttributeValuesFromAttributes(): void
+    {
+        $this->stubEmptyCategorySearch();
+        $captured = [];
+        $this->mockSuccessUpserts([], $captured);
+
+        $this->exporter->upsertProduct('TEST-SKU', 'Test Item', 'Test Description', 'General', 1000, 'CAD', '', 0.0, null, [
+            'custom_attributes' => [
+                ['attr_key' => 'brand', 'attr_value' => 'Acme'],
+                ['attr_key' => 'origin', 'attr_value' => 'CA'],
+            ],
+        ]);
+
+        $itemRequest = $this->capturedItemRequest($captured);
+        $this->assertNotNull($itemRequest);
+        $values = $itemRequest->getObject()->getCustomAttributeValues();
+        $this->assertArrayHasKey('brand', $values);
+        $this->assertSame('Acme', $values['brand']->getStringValue());
+        $this->assertArrayHasKey('origin', $values);
+        $this->assertSame('CA', $values['origin']->getStringValue());
+    }
+
+    public function testUpsertProductAddsModifierListInfoFromAttributes(): void
+    {
+        $this->stubEmptyCategorySearch();
+        $captured = [];
+        $this->mockSuccessUpserts([
+            '#modlist_1' => new CatalogObject('MODIFIER_LIST', 'MODLIST-1'),
+        ], $captured);
+
+        $this->exporter->upsertProduct('TEST-SKU', 'Test Item', 'Test Description', 'General', 1000, 'CAD', '', 0.0, null, [
+            'modifier_lists' => [
+                [
+                    'id' => 1,
+                    'name' => 'Size',
+                    'selection_type' => 'SINGLE',
+                    'modifier_type' => 'NON_ALCOHOL',
+                    'min_selected_modifiers' => 1,
+                    'max_selected_modifiers' => 1,
+                    'ordinal' => 0,
+                    'modifiers' => [
+                        ['id' => 10, 'name' => 'Small', 'price' => '0.00', 'on_by_default' => 0, 'ordinal' => 0, 'hidden_online' => 0],
+                        ['id' => 11, 'name' => 'Large', 'price' => '2.50', 'on_by_default' => 1, 'ordinal' => 1, 'hidden_online' => 0],
+                    ],
+                ],
+            ],
+        ]);
+
+        $modListRequest = null;
+        foreach ($captured as $request) {
+            if ($request->getObject()->getType() === 'MODIFIER_LIST') {
+                $modListRequest = $request;
+            }
+        }
+        $this->assertNotNull($modListRequest);
+        $listData = $modListRequest->getObject()->getModifierListData();
+        $this->assertSame('Size', $listData->getName());
+        $this->assertSame('SINGLE', $listData->getSelectionType());
+        $modifiers = $listData->getModifiers();
+        $this->assertCount(2, $modifiers);
+        $this->assertSame('Small', $modifiers[0]->getModifierData()->getName());
+        $this->assertNull($modifiers[0]->getModifierData()->getPriceMoney());
+        $this->assertSame('Large', $modifiers[1]->getModifierData()->getName());
+        $this->assertSame(250, $modifiers[1]->getModifierData()->getPriceMoney()->getAmount());
+        $this->assertSame('CAD', $modifiers[1]->getModifierData()->getPriceMoney()->getCurrency());
+
+        $itemRequest = $this->capturedItemRequest($captured);
+        $this->assertNotNull($itemRequest);
+        $infos = $itemRequest->getObject()->getItemData()->getModifierListInfo();
+        $this->assertCount(1, $infos);
+        $this->assertSame('MODLIST-1', $infos[0]->getModifierListId());
+        $this->assertSame(1, $infos[0]->getMinSelectedModifiers());
+        $this->assertSame(1, $infos[0]->getMaxSelectedModifiers());
+    }
+
+    public function testUpsertProductSetsCategoryParentOnNewCategory(): void
+    {
+        $this->stubEmptyCategorySearch();
+        $captured = [];
+        $this->mockSuccessUpserts([
+            '#Parent' => new CatalogObject('CATEGORY', 'PARENT-CAT-1'),
+        ], $captured);
+
+        $this->exporter->upsertProduct('TEST-SKU', 'Test Item', 'Test Description', 'Child', 1000, 'CAD', '', 0.0, null, [
+            'category_parent_name' => 'Parent',
+        ]);
+
+        $childRequest = null;
+        foreach ($captured as $request) {
+            $obj = $request->getObject();
+            if ($obj->getType() === 'CATEGORY' && $obj->getCategoryData()->getName() === 'Child') {
+                $childRequest = $request;
+            }
+        }
+        $this->assertNotNull($childRequest);
+        $this->assertSame('PARENT-CAT-1', $childRequest->getObject()->getCategoryData()->getParentCategory()->getId());
+    }
 }

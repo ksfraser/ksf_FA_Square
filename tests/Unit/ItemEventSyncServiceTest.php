@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Ksfraser\Frontaccounting\SquareUp\Tests\Unit;
 
 use Ksfraser\Frontaccounting\SquareUp\Contracts\SettingsInterface;
+use Ksfraser\Frontaccounting\SquareUp\DAO\ProductAttributesDAO;
 use Ksfraser\Frontaccounting\SquareUp\DAO\SquareTokenDAO;
 use Ksfraser\Frontaccounting\SquareUp\DAO\StockMasterDAO;
 use Ksfraser\Frontaccounting\SquareUp\Exceptions\SquareException;
@@ -23,6 +24,7 @@ class ItemEventSyncServiceTest extends TestCase
     private $mockExporter;
     private $mockStockDao;
     private $mockTokenDao;
+    private $mockAttrDao;
 
     protected function setUp(): void
     {
@@ -30,6 +32,7 @@ class ItemEventSyncServiceTest extends TestCase
         $this->mockExporter = $this->createMock(CatalogExporter::class);
         $this->mockStockDao = $this->createMock(StockMasterDAO::class);
         $this->mockTokenDao = $this->createMock(SquareTokenDAO::class);
+        $this->mockAttrDao = $this->createMock(ProductAttributesDAO::class);
     }
 
     private function defaultItemRow(): array
@@ -39,6 +42,7 @@ class ItemEventSyncServiceTest extends TestCase
             'description'    => 'Test Widget',
             'units'          => 'each',
             'inactive'       => '0',
+            'category_id'    => '1',
             'cat_description' => 'General',
             'tax_name'       => 'GST',
             'exempt'         => '0',
@@ -56,6 +60,24 @@ class ItemEventSyncServiceTest extends TestCase
         $this->mockStockDao->method('getItemForSync')->willReturn($this->defaultItemRow());
         $this->mockStockDao->method('getItemSku')->willReturn(null);
         $this->mockStockDao->method('getItemPrice')->willReturn(12.34);
+        $this->mockAttrDao->method('getMeasurementUnitId')->willReturn(null);
+        $this->mockAttrDao->method('getCustomAttributes')->willReturn([]);
+        $this->mockAttrDao->method('getModifierLists')->willReturn([]);
+        $this->mockAttrDao->method('getCategoryParent')->willReturn(null);
+    }
+
+    /**
+     * The normalized attributes bag the service passes to the exporter when
+     * no Stage 3 data is present.
+     */
+    private function defaultAttributes(): array
+    {
+        return [
+            'measurement_unit_id'  => null,
+            'custom_attributes'    => [],
+            'modifier_lists'       => [],
+            'category_parent_name' => null,
+        ];
     }
 
     private function buildService(string $currency = 'CAD', int $salesType = 1, ?TaxRateResolver $resolver = null): ItemEventSyncService
@@ -67,7 +89,8 @@ class ItemEventSyncServiceTest extends TestCase
             $this->mockTokenDao,
             $currency,
             $salesType,
-            $resolver ?? new TaxRateResolver()
+            $resolver ?? new TaxRateResolver(),
+            $this->mockAttrDao
         );
     }
 
@@ -135,7 +158,8 @@ class ItemEventSyncServiceTest extends TestCase
                 'CAD',
                 'GST',
                 0.0,
-                null
+                null,
+                $this->defaultAttributes()
             )
             ->willReturn($this->catalogObjectMock());
         $service = $this->buildService();
@@ -153,7 +177,7 @@ class ItemEventSyncServiceTest extends TestCase
         $this->configureDefaults();
         $this->mockExporter->expects($this->once())
             ->method('upsertProduct')
-            ->with('BARCODE-123', 'Test Widget', 'Test Widget', 'General', 1234, 'CAD', 'GST', 0.0, null)
+            ->with('BARCODE-123', 'Test Widget', 'Test Widget', 'General', 1234, 'CAD', 'GST', 0.0, null, $this->defaultAttributes())
             ->willReturn($this->catalogObjectMock());
         $service = $this->buildService();
 
@@ -167,7 +191,7 @@ class ItemEventSyncServiceTest extends TestCase
         $this->configureDefaults();
         $this->mockExporter->expects($this->once())
             ->method('upsertProduct')
-            ->with('SKU-001', 'Test Widget', 'Test Widget', 'General', 1234, 'CAD', 'GST', 0.0, null)
+            ->with('SKU-001', 'Test Widget', 'Test Widget', 'General', 1234, 'CAD', 'GST', 0.0, null, $this->defaultAttributes())
             ->willReturn($this->catalogObjectMock());
         $service = $this->buildService();
 
@@ -185,7 +209,7 @@ class ItemEventSyncServiceTest extends TestCase
         $this->configureDefaults();
         $this->mockExporter->expects($this->once())
             ->method('upsertProduct')
-            ->with('SKU-001', 'Test Widget', 'Test Widget', 'General', 1234, 'CAD', 'GST', 13.0, null)
+            ->with('SKU-001', 'Test Widget', 'Test Widget', 'General', 1234, 'CAD', 'GST', 13.0, null, $this->defaultAttributes())
             ->willReturn($this->catalogObjectMock());
         $service = $this->buildService('CAD', 1, $resolver);
 
@@ -198,7 +222,7 @@ class ItemEventSyncServiceTest extends TestCase
         $this->configureDefaults();
         $this->mockExporter->expects($this->once())
             ->method('upsertProduct')
-            ->with('SKU-001', 'Test Widget', 'Test Widget', 'General', 999, 'CAD', 'GST', 0.0, null)
+            ->with('SKU-001', 'Test Widget', 'Test Widget', 'General', 999, 'CAD', 'GST', 0.0, null, $this->defaultAttributes())
             ->willReturn($this->catalogObjectMock());
         $service = $this->buildService();
 
@@ -211,7 +235,7 @@ class ItemEventSyncServiceTest extends TestCase
         $this->configureDefaults();
         $this->mockExporter->expects($this->once())
             ->method('upsertProduct')
-            ->with('SKU-001', 'Test Widget', 'Test Widget', 'General', 1234, 'CAD', 'GST', 0.0, null)
+            ->with('SKU-001', 'Test Widget', 'Test Widget', 'General', 1234, 'CAD', 'GST', 0.0, null, $this->defaultAttributes())
             ->willReturn($this->catalogObjectMock());
         $service = $this->buildService('');
 
@@ -272,5 +296,114 @@ class ItemEventSyncServiceTest extends TestCase
         $result = $service->sync('SKU-001', 'created');
 
         $this->assertSame('failed', $result['status']);
+    }
+
+    /**
+     * Expected attributes bag for the given overrides.
+     */
+    private function expectedAttributes(array $overrides = []): array
+    {
+        return array_merge($this->defaultAttributes(), $overrides);
+    }
+
+    public function testSyncPassesMeasurementUnitToExporter(): void
+    {
+        $this->mockAttrDao->method('getMeasurementUnitId')->willReturn('g:Weight');
+        $this->configureDefaults();
+        $this->mockExporter->expects($this->once())
+            ->method('upsertProduct')
+            ->with('SKU-001', 'Test Widget', 'Test Widget', 'General', 1234, 'CAD', 'GST', 0.0, null, $this->expectedAttributes(['measurement_unit_id' => 'g:Weight']))
+            ->willReturn($this->catalogObjectMock());
+        $service = $this->buildService();
+
+        $service->sync('SKU-001', 'created');
+    }
+
+    public function testSyncPassesCustomAttributesToExporter(): void
+    {
+        $customAttributes = [
+            ['stock_id' => 'SKU-001', 'attr_key' => 'ABV', 'attr_value' => '12'],
+        ];
+        $this->mockAttrDao->method('getCustomAttributes')->willReturn($customAttributes);
+        $this->configureDefaults();
+        $this->mockExporter->expects($this->once())
+            ->method('upsertProduct')
+            ->with('SKU-001', 'Test Widget', 'Test Widget', 'General', 1234, 'CAD', 'GST', 0.0, null, $this->expectedAttributes(['custom_attributes' => $customAttributes]))
+            ->willReturn($this->catalogObjectMock());
+        $service = $this->buildService();
+
+        $service->sync('SKU-001', 'created');
+    }
+
+    public function testSyncPassesModifierListsToExporter(): void
+    {
+        $modifierLists = [
+            [
+                'id'          => '7',
+                'name'        => 'Size',
+                'selection_type' => 'SINGLE',
+                'min_selected_modifiers' => null,
+                'max_selected_modifiers' => null,
+                'allow_quantities' => '0',
+                'hidden_from_customer' => '0',
+                'ordinal'     => '1',
+                'modifiers'   => [
+                    ['id' => '71', 'name' => 'Large', 'price' => '2.50', 'ordinal' => '1'],
+                ],
+            ],
+        ];
+        $this->mockAttrDao->method('getModifierLists')->willReturn($modifierLists);
+        $this->configureDefaults();
+        $this->mockExporter->expects($this->once())
+            ->method('upsertProduct')
+            ->with('SKU-001', 'Test Widget', 'Test Widget', 'General', 1234, 'CAD', 'GST', 0.0, null, $this->expectedAttributes(['modifier_lists' => $modifierLists]))
+            ->willReturn($this->catalogObjectMock());
+        $service = $this->buildService();
+
+        $service->sync('SKU-001', 'created');
+    }
+
+    public function testSyncResolvesCategoryParentName(): void
+    {
+        $this->mockAttrDao->method('getCategoryParent')->willReturn(5);
+        $this->mockStockDao->method('getCategoryName')->willReturn('Beverages');
+        $this->configureDefaults();
+        $this->mockExporter->expects($this->once())
+            ->method('upsertProduct')
+            ->with('SKU-001', 'Test Widget', 'Test Widget', 'General', 1234, 'CAD', 'GST', 0.0, null, $this->expectedAttributes(['category_parent_name' => 'Beverages']))
+            ->willReturn($this->catalogObjectMock());
+        $service = $this->buildService();
+
+        $service->sync('SKU-001', 'created');
+    }
+
+    public function testSyncSkipsCategoryParentResolutionWithoutCategory(): void
+    {
+        $row = $this->defaultItemRow();
+        unset($row['category_id']);
+        $this->mockStockDao->method('getItemForSync')->willReturn($row);
+        $this->configureDefaults();
+        $this->mockAttrDao->expects($this->never())->method('getCategoryParent');
+        $this->mockStockDao->expects($this->never())->method('getCategoryName');
+        $this->mockExporter->expects($this->once())
+            ->method('upsertProduct')
+            ->with('SKU-001', 'Test Widget', 'Test Widget', 'General', 1234, 'CAD', 'GST', 0.0, null, $this->defaultAttributes())
+            ->willReturn($this->catalogObjectMock());
+        $service = $this->buildService();
+
+        $service->sync('SKU-001', 'created');
+    }
+
+    public function testSyncSkipsCategoryNameLookupWhenNoParentRow(): void
+    {
+        $this->configureDefaults();
+        $this->mockStockDao->expects($this->never())->method('getCategoryName');
+        $this->mockExporter->expects($this->once())
+            ->method('upsertProduct')
+            ->with('SKU-001', 'Test Widget', 'Test Widget', 'General', 1234, 'CAD', 'GST', 0.0, null, $this->defaultAttributes())
+            ->willReturn($this->catalogObjectMock());
+        $service = $this->buildService();
+
+        $service->sync('SKU-001', 'created');
     }
 }

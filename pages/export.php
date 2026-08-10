@@ -21,6 +21,7 @@ use Ksfraser\Frontaccounting\SquareUp\Infrastructure\SquareClientFactory;
 use Ksfraser\Frontaccounting\SquareUp\Push\CatalogExporter;
 use Ksfraser\Frontaccounting\SquareUp\DAO\SquareTokenDAO;
 use Ksfraser\Frontaccounting\SquareUp\DAO\StockMasterDAO;
+use Ksfraser\Frontaccounting\SquareUp\DAO\ProductAttributesDAO;
 use Ksfraser\Frontaccounting\SquareUp\DAO\LocationMappingDAO;
 use Ksfraser\Frontaccounting\SquareUp\Services\TaxRateResolver;
 use Ksfraser\Frontaccounting\SquareUp\ValueObjects\SquarePrice;
@@ -311,6 +312,7 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
         }
 
         $stockMasterDao = new StockMasterDAO($tablePrefix);
+        $attributesDao = new ProductAttributesDAO($tablePrefix);
         $itemsResult = $stockMasterDao->getItemsForExport(
             $exportRequest->getCategoryId(),
             $exportRequest->getStockLike(),
@@ -361,6 +363,28 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
             $taxName = $item['tax_name'] ?? '';
             $taxRate = $taxResolver->resolveForItem(!empty($item['exempt']), $settings->getDefaultTaxGroup());
 
+            $measurementUnitId = $attributesDao->getMeasurementUnitId($stockId);
+            $customAttributes = $attributesDao->getCustomAttributes($stockId);
+            $modifierLists = $attributesDao->getModifierLists($stockId);
+
+            $attributes = [
+                'measurement_unit_id'  => $measurementUnitId !== null ? (string)$measurementUnitId : null,
+                'custom_attributes'    => is_array($customAttributes) ? $customAttributes : [],
+                'modifier_lists'       => is_array($modifierLists) ? $modifierLists : [],
+                'category_parent_name' => null,
+            ];
+
+            $categoryId = isset($item['category_id']) ? (int)$item['category_id'] : 0;
+            if ($categoryId > 0) {
+                $parentCategoryId = $attributesDao->getCategoryParent($categoryId);
+                if ($parentCategoryId !== null) {
+                    $parentName = $stockMasterDao->getCategoryName((int)$parentCategoryId);
+                    if ($parentName !== null && $parentName !== '') {
+                        $attributes['category_parent_name'] = $parentName;
+                    }
+                }
+            }
+
             $existingItem = $existingSquareItems[$sku] ?? $existingSquareItems[$stockId] ?? null;
 
             if ($existingItem !== null) {
@@ -410,7 +434,8 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
                     $exportRequest->getCurrency(),
                     $taxName,
                     $taxRate,
-                    $existingItem
+                    $existingItem,
+                    $attributes
                 );
 
                 $exported++;

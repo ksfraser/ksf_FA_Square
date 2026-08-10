@@ -43,7 +43,7 @@ class StockMasterDAO
         ?array $ksfGenPrefs = null,
         bool $ksfGenCatalogueInstalled = false
     ) {
-        $sql = "SELECT item.stock_id, item.description, item.units, item.inactive, "
+        $sql = "SELECT item.stock_id, item.description, item.units, item.inactive, item.category_id, "
             . "cat.description AS cat_description, tt.name AS tax_name, tt.exempt "
             . "FROM {$this->tablePrefix}stock_master item "
             . "LEFT JOIN {$this->tablePrefix}stock_category cat ON item.category_id = cat.category_id "
@@ -146,7 +146,7 @@ class StockMasterDAO
      */
     public function getItemForSync(string $stockId): ?array
     {
-        $sql = "SELECT item.stock_id, item.description, item.units, item.inactive, "
+        $sql = "SELECT item.stock_id, item.description, item.units, item.inactive, item.category_id, "
             . "cat.description AS cat_description, tt.name AS tax_name, tt.exempt "
             . "FROM {$this->tablePrefix}stock_master item "
             . "LEFT JOIN {$this->tablePrefix}stock_category cat ON item.category_id = cat.category_id "
@@ -178,5 +178,28 @@ class StockMasterDAO
             }
         }
         return 0;
+    }
+
+    /**
+     * Gets the description (name) of an FA stock category.
+     *
+     * @param int $categoryId FA stock category ID
+     * @return string|null Category description or null when not found
+     */
+    public function getCategoryName(int $categoryId): ?string
+    {
+        $sql = "SELECT description FROM {$this->tablePrefix}stock_category "
+            . "WHERE category_id = " . (int)$categoryId . " LIMIT 1";
+
+        $result = \db_query($sql);
+        if ($result === false) {
+            return null;
+        }
+        $row = \db_fetch_assoc($result);
+        if ($row === false || $row === null) {
+            return null;
+        }
+        $value = $row['description'] ?? '';
+        return $value !== '' ? (string)$value : null;
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Ksfraser\Frontaccounting\SquareUp\Push;
 
 use Ksfraser\Frontaccounting\SquareUp\Contracts\SettingsInterface;
+use Ksfraser\Frontaccounting\SquareUp\DAO\ProductAttributesDAO;
 use Ksfraser\Frontaccounting\SquareUp\DAO\SquareTokenDAO;
 use Ksfraser\Frontaccounting\SquareUp\DAO\StockMasterDAO;
 use Ksfraser\Frontaccounting\SquareUp\Exceptions\SquareException;
@@ -42,6 +43,9 @@ class ItemEventSyncService
     /** @var SquareTokenDAO */
     private $tokenDao;
 
+    /** @var ProductAttributesDAO */
+    private $attributesDao;
+
     /** @var string */
     private $currency;
 
@@ -52,13 +56,14 @@ class ItemEventSyncService
     private $taxResolver;
 
     /**
-     * @param SettingsInterface $settings       Square configuration
-     * @param CatalogExporter   $exporter       Catalog push engine
-     * @param StockMasterDAO    $stockMasterDao FA stock item access
-     * @param SquareTokenDAO    $tokenDao       Square<->FA mapping store
-     * @param string            $currency       Price currency code (e.g. 'CAD')
-     * @param int               $salesType      FA sales type for pricing
-     * @param TaxRateResolver   $taxResolver    Resolves the catalog tax rate
+     * @param SettingsInterface    $settings       Square configuration
+     * @param CatalogExporter      $exporter       Catalog push engine
+     * @param StockMasterDAO       $stockMasterDao FA stock item access
+     * @param SquareTokenDAO       $tokenDao       Square<->FA mapping store
+     * @param string               $currency       Price currency code (e.g. 'CAD')
+     * @param int                  $salesType      FA sales type for pricing
+     * @param TaxRateResolver      $taxResolver    Resolves the catalog tax rate
+     * @param ProductAttributesDAO $attributesDao  Stage 3 product attributes access
      *
      * @since 2.4.4
      */
@@ -69,7 +74,8 @@ class ItemEventSyncService
         SquareTokenDAO $tokenDao,
         string $currency = '',
         int $salesType = 0,
-        TaxRateResolver $taxResolver = null
+        TaxRateResolver $taxResolver = null,
+        ProductAttributesDAO $attributesDao = null
     ) {
         $this->settings = $settings;
         $this->exporter = $exporter;
@@ -78,6 +84,9 @@ class ItemEventSyncService
         $this->currency = $currency;
         $this->salesType = $salesType;
         $this->taxResolver = $taxResolver !== null ? $taxResolver : new TaxRateResolver();
+        $this->attributesDao = $attributesDao !== null
+            ? $attributesDao
+            : new ProductAttributesDAO(defined('TB_PREF') ? TB_PREF : '0_');
     }
 
     /**
@@ -120,6 +129,8 @@ class ItemEventSyncService
         );
         $currency = $this->currency !== '' ? $this->currency : 'CAD';
 
+        $attributes = $this->buildAttributesBag($stockId, $item);
+
         try {
             $catalogObject = $this->exporter->upsertProduct(
                 $sku,
@@ -129,7 +140,9 @@ class ItemEventSyncService
                 $priceCents,
                 $currency,
                 $taxName,
-                $taxRate
+                $taxRate,
+                null,
+                $attributes
             );
         } catch (SquareException $e) {
             return ['status' => 'failed', 'event' => $event, 'reason' => $e->getMessage()];
@@ -152,6 +165,47 @@ class ItemEventSyncService
             'event'     => $event,
             'square_id' => $catalogObject->getId(),
         ];
+    }
+
+    /**
+     * Assemble the Stage 3 product attributes bag for the exporter.
+     *
+     * Attribute sources that are absent (Stage 3 module not installed, no
+     * records, or a missing hierarchy row) degrade to empty values so the
+     * export still succeeds.
+     *
+     * @param string $stockId FA stock_id
+     * @param array  $item    Item row from StockMasterDAO::getItemForSync()
+     *
+     * @return array{measurement_unit_id: string|null, custom_attributes: array, modifier_lists: array, category_parent_name: string|null}
+     *
+     * @since 2.4.4
+     */
+    private function buildAttributesBag(string $stockId, array $item): array
+    {
+        $measurementUnitId = $this->attributesDao->getMeasurementUnitId($stockId);
+        $customAttributes = $this->attributesDao->getCustomAttributes($stockId);
+        $modifierLists = $this->attributesDao->getModifierLists($stockId);
+
+        $attributes = [
+            'measurement_unit_id'  => $measurementUnitId !== null ? (string)$measurementUnitId : null,
+            'custom_attributes'    => is_array($customAttributes) ? $customAttributes : [],
+            'modifier_lists'       => is_array($modifierLists) ? $modifierLists : [],
+            'category_parent_name' => null,
+        ];
+
+        $categoryId = isset($item['category_id']) ? (int)$item['category_id'] : 0;
+        if ($categoryId > 0) {
+            $parentCategoryId = $this->attributesDao->getCategoryParent($categoryId);
+            if ($parentCategoryId !== null) {
+                $parentName = $this->stockMasterDao->getCategoryName((int)$parentCategoryId);
+                if ($parentName !== null && $parentName !== '') {
+                    $attributes['category_parent_name'] = $parentName;
+                }
+            }
+        }
+
+        return $attributes;
     }
 
     /**
