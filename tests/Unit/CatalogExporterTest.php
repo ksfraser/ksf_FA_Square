@@ -431,4 +431,46 @@ class CatalogExporterTest extends TestCase
         $this->assertNotNull($childRequest);
         $this->assertSame('PARENT-CAT-1', $childRequest->getObject()->getCategoryData()->getParentCategory()->getId());
     }
+
+    public function testUpsertProductMapsServiceFulfillmentFromAttributes(): void
+    {
+        $this->stubEmptyCategorySearch();
+        $captured = [];
+        $this->mockSuccessUpserts([], $captured);
+
+        $this->exporter->upsertProduct('TEST-SKU', 'Test Item', 'Test Description', 'General', 1000, 'CAD', '', 0.0, null, [
+            'fulfillment' => [
+                'product_type'             => 'SERVICE',
+                'service_duration_minutes' => 90,
+            ],
+        ]);
+
+        $itemRequest = $this->capturedItemRequest($captured);
+        $this->assertNotNull($itemRequest);
+        $itemData = $itemRequest->getObject()->getItemData();
+        $this->assertSame('APPOINTMENTS_SERVICE', $itemData->getProductType());
+        $variation = $itemData->getVariations()[0];
+        $this->assertSame(5400, $variation->getItemVariationData()->getServiceDuration());
+    }
+
+    public function testUpsertProductMapsRegularFulfillmentWithoutDuration(): void
+    {
+        $this->stubEmptyCategorySearch();
+        $captured = [];
+        $this->mockSuccessUpserts([], $captured);
+
+        $this->exporter->upsertProduct('TEST-SKU', 'Test Item', 'Test Description', 'General', 1000, 'CAD', '', 0.0, null, [
+            'fulfillment' => [
+                'product_type'             => 'REGULAR',
+                'service_duration_minutes' => null,
+            ],
+        ]);
+
+        $itemRequest = $this->capturedItemRequest($captured);
+        $this->assertNotNull($itemRequest);
+        $itemData = $itemRequest->getObject()->getItemData();
+        $this->assertSame('REGULAR', $itemData->getProductType());
+        $variation = $itemData->getVariations()[0];
+        $this->assertNull($variation->getItemVariationData()->getServiceDuration());
+    }
 }

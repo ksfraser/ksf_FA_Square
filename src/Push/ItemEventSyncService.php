@@ -192,6 +192,7 @@ class ItemEventSyncService
             'custom_attributes'    => is_array($customAttributes) ? $customAttributes : [],
             'modifier_lists'       => is_array($modifierLists) ? $modifierLists : [],
             'category_parent_name' => null,
+            'fulfillment'          => $this->attributesDao->getFulfillment($stockId),
         ];
 
         $categoryId = isset($item['category_id']) ? (int)$item['category_id'] : 0;

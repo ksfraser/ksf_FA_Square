@@ -164,6 +164,36 @@ class ProductAttributesDAO
     }
 
     /**
+     * Fulfillment profile for a stock item (product type and service
+     * duration), if the Stage 3 module defines one.
+     *
+     * @param string $stockId Stock ID
+     * @return array{product_type: string, service_duration_minutes: int|null}|null Fulfillment profile or null
+     */
+    public function getFulfillment(string $stockId): ?array
+    {
+        if (!$this->tableExists('product_fulfillment')) {
+            return null;
+        }
+
+        $sql = "SELECT product_type, service_duration_minutes FROM {$this->tablePrefix}product_fulfillment "
+            . "WHERE stock_id = " . \db_escape($stockId) . " LIMIT 1";
+
+        $result = \db_query($sql);
+        $row = \db_fetch_assoc($result);
+        if ($row === false || $row === null) {
+            return null;
+        }
+
+        return [
+            'product_type'             => (string)($row['product_type'] ?? 'REGULAR'),
+            'service_duration_minutes' => ($row['service_duration_minutes'] ?? null) !== null && $row['service_duration_minutes'] !== ''
+                ? (int)$row['service_duration_minutes']
+                : null,
+        ];
+    }
+
+    /**
      * Maps a modifier list row to the normalized bag shape.
      *
      * @param array $row Raw database row

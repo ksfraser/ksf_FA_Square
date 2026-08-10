@@ -247,4 +247,63 @@ class ProductAttributesDAOTest extends TestCase
 
         $this->assertNull($result);
     }
+
+    public function testGetFulfillmentReturnsNullWhenTableMissing(): void
+    {
+        $result = $this->dao->getFulfillment('SKU-001');
+
+        $this->assertNull($result);
+    }
+
+    public function testGetFulfillmentReturnsNullWhenNoRow(): void
+    {
+        $this->seedTable('product_fulfillment');
+        $this->seedRows([]);
+
+        $result = $this->dao->getFulfillment('SKU-001');
+
+        $this->assertNull($result);
+    }
+
+    public function testGetFulfillmentReturnsServiceRow(): void
+    {
+        $this->seedTable('product_fulfillment');
+        $this->seedRows([
+            [
+                'pref_name'               => 'SKU-001',
+                'product_type'            => 'SERVICE',
+                'service_duration_minutes' => '90',
+                'available_for_booking'   => '1',
+                'sellable'                => '1',
+                'stockable'               => '0',
+            ],
+        ]);
+
+        $result = $this->dao->getFulfillment('SKU-001');
+
+        $this->assertNotNull($result);
+        $this->assertSame('SERVICE', $result['product_type']);
+        $this->assertSame(90, $result['service_duration_minutes']);
+    }
+
+    public function testGetFulfillmentNormalizesRegularRow(): void
+    {
+        $this->seedTable('product_fulfillment');
+        $this->seedRows([
+            [
+                'pref_name'               => 'SKU-001',
+                'product_type'            => 'REGULAR',
+                'service_duration_minutes' => '',
+                'available_for_booking'   => '0',
+                'sellable'                => '1',
+                'stockable'               => '1',
+            ],
+        ]);
+
+        $result = $this->dao->getFulfillment('SKU-001');
+
+        $this->assertNotNull($result);
+        $this->assertSame('REGULAR', $result['product_type']);
+        $this->assertNull($result['service_duration_minutes']);
+    }
 }

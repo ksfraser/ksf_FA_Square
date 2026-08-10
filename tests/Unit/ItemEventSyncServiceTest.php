@@ -77,6 +77,7 @@ class ItemEventSyncServiceTest extends TestCase
             'custom_attributes'    => [],
             'modifier_lists'       => [],
             'category_parent_name' => null,
+            'fulfillment'          => null,
         ];
     }
 
@@ -401,6 +402,23 @@ class ItemEventSyncServiceTest extends TestCase
         $this->mockExporter->expects($this->once())
             ->method('upsertProduct')
             ->with('SKU-001', 'Test Widget', 'Test Widget', 'General', 1234, 'CAD', 'GST', 0.0, null, $this->defaultAttributes())
+            ->willReturn($this->catalogObjectMock());
+        $service = $this->buildService();
+
+        $service->sync('SKU-001', 'created');
+    }
+
+    public function testSyncPassesFulfillmentToExporter(): void
+    {
+        $fulfillment = [
+            'product_type'             => 'SERVICE',
+            'service_duration_minutes' => 90,
+        ];
+        $this->mockAttrDao->method('getFulfillment')->willReturn($fulfillment);
+        $this->configureDefaults();
+        $this->mockExporter->expects($this->once())
+            ->method('upsertProduct')
+            ->with('SKU-001', 'Test Widget', 'Test Widget', 'General', 1234, 'CAD', 'GST', 0.0, null, $this->expectedAttributes(['fulfillment' => $fulfillment]))
             ->willReturn($this->catalogObjectMock());
         $service = $this->buildService();
 

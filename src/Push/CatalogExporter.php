@@ -466,6 +466,17 @@ class CatalogExporter implements CatalogExporterInterface
         if ($categoryId !== null) {
             $item->setCategoryId($categoryId);
         }
+
+        $fulfillment = isset($attributes['fulfillment']) && is_array($attributes['fulfillment']) ? $attributes['fulfillment'] : [];
+        if (count($fulfillment) > 0) {
+            $productType = (string)($fulfillment['product_type'] ?? 'REGULAR');
+            $isService = $productType === 'SERVICE';
+            $item->setProductType($isService ? 'APPOINTMENTS_SERVICE' : 'REGULAR');
+            if ($isService && !empty($fulfillment['service_duration_minutes'])) {
+                $variationData->setServiceDuration((int)$fulfillment['service_duration_minutes'] * 60);
+            }
+        }
+
         $item->setVariations([$variationObject]);
 
         $modifierLists = isset($attributes['modifier_lists']) && is_array($attributes['modifier_lists']) ? $attributes['modifier_lists'] : [];
