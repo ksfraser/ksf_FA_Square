@@ -184,7 +184,7 @@ class CustomerServiceTest extends TestCase
                 'name' => 'John Doe',
                 'email' => 'john@example.com',
                 'phone' => '1234567890',
-                'ref' => 'square_cus_123456',
+                'debtor_ref' => 'square_cus_123456',
             ])
             ->willReturn(123);
         

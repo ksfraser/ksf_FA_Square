@@ -5,14 +5,16 @@ declare(strict_types=1);
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         // Initialize required services
-        $client = \Ksfraser\Frontaccounting\SquareUp\Infrastructure\SquareClientFactory::create(get_current_environment());
+        $client = \Ksfraser\Frontaccounting\SquareUp\Infrastructure\SquareClientFactory::create(
+            \Ksfraser\Frontaccounting\SquareUp\Services\WebhookService::getCurrentEnvironment()
+        );
         $subscriptionDao = new \Ksfraser\Frontaccounting\SquareUp\DAO\WebhookSubscriptionDAO(get_company_pref('table_prefix'));
         $eventDao = new \Ksfraser\Frontaccounting\SquareUp\DAO\WebhookEventDAO(get_company_pref('table_prefix'));
         
         $webhookService = new \Ksfraser\Frontaccounting\SquareUp\Services\WebhookService(
             $client,
             $subscriptionDao,
-            get_current_webhook_url()
+            \Ksfraser\Frontaccounting\SquareUp\Services\WebhookService::getCurrentWebhookUrl()
         );
         
         // Get webhook data

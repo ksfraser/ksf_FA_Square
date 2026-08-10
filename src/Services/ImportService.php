@@ -769,6 +769,9 @@ class ImportService
                         }
 
                         $orderNo = $cart->write(1);
+                        if ($orderNo) {
+                            $this->salesMatchDao->insertMatch($payment->getId(), $orderNo);
+                        }
                         $importResults['errors'][] = _("Created invoice #") . $orderNo
                             . _(" for ") . $payment->getId();
                         $importResults['imported']++;

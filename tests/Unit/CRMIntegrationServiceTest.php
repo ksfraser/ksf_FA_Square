@@ -280,7 +280,10 @@ class CRMIntegrationServiceTest extends TestCase
             'given_name' => 'John',
             'family_name' => 'Doe',
             'email_address' => 'john@example.com',
-            'phone_number' => '1234567890'
+            'phone_number' => '1234567890',
+            'address_line_1' => '123 Main St',
+            'locality' => 'New York',
+            'country' => 'US'
         ];
         
         $matchedDebtor = [
@@ -300,7 +303,7 @@ class CRMIntegrationServiceTest extends TestCase
         $this->mockDebtorDao->expects($this->once())
             ->method('updateDebtor')
             ->with(123, $this->callback(function($data) {
-                return isset($data['country']) && $data['country'] === 'US';
+                return $data['address'] === '123 Main St, New York, US';
             }))
             ->willReturn(true);
         
@@ -346,13 +349,21 @@ class CRMIntegrationServiceTest extends TestCase
             'name' => 'John Doe',
             'email' => 'john@example.com',
             'phone' => '1234567890',
-            'ref' => 'square_cus_123456'
+            'debtor_ref' => 'square_cus_123456'
         ];
         
         $this->mockDebtorDao->expects($this->once())
             ->method('insertDebtor')
             ->with($this->callback(function($data) {
-                return $data['name'] === 'John Doe' && $data['email'] === 'john@example.com';
+                return $data['name'] === 'John Doe'
+                    && $data['email'] === 'john@example.com'
+                    && $data['debtor_ref'] === 'square_cus_123456'
+                    && $data['sales_type'] === 1
+                    && !isset($data['zip'])
+                    && !isset($data['category_id'])
+                    && !isset($data['ref'])
+                    && !isset($data['created_at'])
+                    && !isset($data['updated_at']);
             }))
             ->willReturn(123);
         
@@ -406,11 +417,7 @@ class CRMIntegrationServiceTest extends TestCase
             'name' => 'John Doe',
             'email' => 'john@example.com',
             'phone' => '1234567890',
-            'address1' => '123 Main St',
-            'city' => 'New York',
-            'state' => 'NY',
-            'zip' => '10001',
-            'country' => 'US'
+            'address' => '123 Main St, New York, NY, 10001, US'
         ];
         
         $squareCustomer = [

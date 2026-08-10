@@ -333,19 +333,27 @@ class TransactionHistoryService
         
         // Apply filters
         if (isset($filters['status'])) {
-            $filteredGaps = array_filter($filteredGaps, fn($g) => $g['status'] == $filters['status']);
+            $filteredGaps = array_filter($filteredGaps, function ($g) use ($filters) {
+                return $g['status'] == $filters['status'];
+            });
         }
         
         if (isset($filters['priority'])) {
-            $filteredGaps = array_filter($filteredGaps, fn($g) => $g['priority'] == $filters['priority']);
+            $filteredGaps = array_filter($filteredGaps, function ($g) use ($filters) {
+                return $g['priority'] == $filters['priority'];
+            });
         }
         
         if (isset($filters['date_from'])) {
-            $filteredGaps = array_filter($filteredGaps, fn($g) => $g['start_time'] >= $filters['date_from']);
+            $filteredGaps = array_filter($filteredGaps, function ($g) use ($filters) {
+                return $g['start_time'] >= $filters['date_from'];
+            });
         }
         
         if (isset($filters['date_to'])) {
-            $filteredGaps = array_filter($filteredGaps, fn($g) => $g['end_time'] <= $filters['date_to']);
+            $filteredGaps = array_filter($filteredGaps, function ($g) use ($filters) {
+                return $g['end_time'] <= $filters['date_to'];
+            });
         }
         
         return array_values($filteredGaps);

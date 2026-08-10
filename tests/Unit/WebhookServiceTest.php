@@ -50,6 +50,53 @@ class WebhookServiceTest extends TestCase
         parent::tearDown();
     }
 
+    public function testGetCurrentEnvironmentReadsFromSettings(): void
+    {
+        $GLOBALS['__fa_table'] = [];
+        $GLOBALS['__fa_result_set'] = [];
+        $GLOBALS['__fa_result_pos'] = [];
+        $GLOBALS['__fa_table'][] = ['name' => 'environment', 'value' => 'production'];
+
+        $this->assertSame('production', WebhookService::getCurrentEnvironment());
+    }
+
+    public function testGetCurrentEnvironmentDefaultsToSandbox(): void
+    {
+        $GLOBALS['__fa_table'] = [];
+        $GLOBALS['__fa_result_set'] = [];
+        $GLOBALS['__fa_result_pos'] = [];
+
+        $this->assertSame('sandbox', WebhookService::getCurrentEnvironment());
+    }
+
+    public function testGetCurrentWebhookUrl(): void
+    {
+        $_SERVER['HTTPS'] = 'on';
+        $_SERVER['HTTP_HOST'] = 'example.com';
+        $_SERVER['SCRIPT_NAME'] = '/modules/ksf_FA_Square/pages/webhook.php';
+
+        $this->assertSame(
+            'https://example.com/modules/ksf_FA_Square/pages/webhook.php',
+            WebhookService::getCurrentWebhookUrl()
+        );
+
+        unset($_SERVER['HTTPS'], $_SERVER['HTTP_HOST'], $_SERVER['SCRIPT_NAME']);
+    }
+
+    public function testGetCurrentWebhookUrlFallsBackToHttp(): void
+    {
+        unset($_SERVER['HTTPS']);
+        $_SERVER['HTTP_HOST'] = 'square.local';
+        $_SERVER['SCRIPT_NAME'] = '/modules/ksf_FA_Square/pages/webhook.php';
+
+        $this->assertSame(
+            'http://square.local/modules/ksf_FA_Square/pages/webhook.php',
+            WebhookService::getCurrentWebhookUrl()
+        );
+
+        unset($_SERVER['HTTP_HOST'], $_SERVER['SCRIPT_NAME']);
+    }
+
     /**
      * @test
      */

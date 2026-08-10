@@ -180,16 +180,10 @@ class CRMIntegrationService implements CRMIntegrationInterface
     private function updateDebtorFromSquare(array $debtor, array $squareCustomer): array
     {
         $updateData = [
-            'name' => $squareCustomer['given_name'] . ' ' . ($squareCustomer['family_name'] ?? ''),
+            'name' => trim(($squareCustomer['given_name'] ?? '') . ' ' . ($squareCustomer['family_name'] ?? '')),
             'email' => $squareCustomer['email_address'] ?? '',
             'phone' => $squareCustomer['phone_number'] ?? '',
-            'address1' => $squareCustomer['address_line_1'] ?? '',
-            'address2' => $squareCustomer['address_line_2'] ?? '',
-            'city' => $squareCustomer['locality'] ?? '',
-            'state' => $squareCustomer['administrative_district_level_1'] ?? '',
-            'zip' => $squareCustomer['postal_code'] ?? '',
-            'country' => $squareCustomer['country'] ?? 'US',
-            'updated_at' => date('Y-m-d H:i:s')
+            'address' => $this->buildDebtorAddress($squareCustomer)
         ];
         
         // Only update fields that have changed
@@ -216,20 +210,12 @@ class CRMIntegrationService implements CRMIntegrationInterface
     private function createDebtorFromSquare(array $squareCustomer): array
     {
         $debtorData = [
-            'name' => $squareCustomer['given_name'] . ' ' . ($squareCustomer['family_name'] ?? ''),
+            'name' => trim(($squareCustomer['given_name'] ?? '') . ' ' . ($squareCustomer['family_name'] ?? '')),
             'email' => $squareCustomer['email_address'] ?? '',
             'phone' => $squareCustomer['phone_number'] ?? '',
-            'address1' => $squareCustomer['address_line_1'] ?? '',
-            'address2' => $squareCustomer['address_line_2'] ?? '',
-            'city' => $squareCustomer['locality'] ?? '',
-            'state' => $squareCustomer['administrative_district_level_1'] ?? '',
-            'zip' => $squareCustomer['postal_code'] ?? '',
-            'country' => $squareCustomer['country'] ?? 'US',
-            'ref' => 'square_' . $squareCustomer['id'],
-            'category_id' => 1, // Default customer category
-            'sales_type' => 0, // Default sales type
-            'created_at' => date('Y-m-d H:i:s'),
-            'updated_at' => date('Y-m-d H:i:s')
+            'address' => $this->buildDebtorAddress($squareCustomer),
+            'debtor_ref' => 'square_' . $squareCustomer['id'],
+            'sales_type' => 1 // FA default sales type
         ];
         
         // Create debtor in FA
@@ -278,6 +264,30 @@ class CRMIntegrationService implements CRMIntegrationInterface
         }
         
         return $changes;
+    }
+
+    /**
+     * Builds the FA debtors_master address field from Square address parts.
+     *
+     * FA 2.4.19 stores the customer address in a single `address` column,
+     * so the Square street/city/state/zip/country parts are folded into
+     * one comma-separated string.
+     *
+     * @param array $squareCustomer Square customer data
+     * @return string Comma-separated address string
+     */
+    private function buildDebtorAddress(array $squareCustomer): string
+    {
+        $parts = array_filter([
+            $squareCustomer['address_line_1'] ?? '',
+            $squareCustomer['address_line_2'] ?? '',
+            $squareCustomer['locality'] ?? '',
+            $squareCustomer['administrative_district_level_1'] ?? '',
+            $squareCustomer['postal_code'] ?? '',
+            $squareCustomer['country'] ?? ''
+        ]);
+
+        return implode(', ', $parts);
     }
 
     /**

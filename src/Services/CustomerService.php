@@ -375,7 +375,7 @@ class CustomerService implements CustomerServiceInterface
             'name' => trim(($squareCustomer->getGivenName() ?? '') . ' ' . ($squareCustomer->getFamilyName() ?? '')),
             'email' => $squareCustomer->getEmailAddress() ?? '',
             'phone' => $squareCustomer->getPhoneNumber() ?? '',
-            'ref' => 'square_' . $squareCustomer->getId(),
+            'debtor_ref' => 'square_' . $squareCustomer->getId(),
         ];
 
         // Insert new debtor

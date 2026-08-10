@@ -43,21 +43,53 @@ class SalesOrdersDAO
     /**
      * Gets sales order by Square order ID.
      * 
+     * Resolves through the square_order_mappings table, which holds the
+     * square_order_id -> fa_order_id link.
+     * 
      * @param string $squareOrderId Square order ID
      * @return array|null Order data or null if not found
      */
     public function getBySquareId(string $squareOrderId): ?array
     {
-        $tableName = $this->getOrdersTableName();
-        $sql = "SELECT * FROM {$tableName} WHERE square_order_id = '" . \db_escape($squareOrderId) . "'";
-        
+        $mappingTable = $this->getMappingsTableName();
+        $ordersTable = $this->getOrdersTableName();
+        $sql = "SELECT o.* FROM {$mappingTable} m "
+             . "JOIN {$ordersTable} o ON o.order_id = m.fa_order_id "
+             . "WHERE m.square_order_id = '" . \db_escape($squareOrderId) . "' LIMIT 1";
+
         $result = \db_query($sql);
-        if ($result !== false && \db_num_rows($result) > 0) {
-            $row = \db_fetch_assoc($result);
-            return $row !== false ? $row : null;
+        if ($result === false) {
+            return null;
         }
 
-        return null;
+        $row = \db_fetch_assoc($result);
+        return $row !== false ? $row : null;
+    }
+
+    /**
+     * Checks whether a Square order/payment has already been imported.
+     * 
+     * The import flow records deduplication in the ksf_import_square_sales
+     * table (square_transaction_id = Square payment id) via SalesMatchDAO,
+     * so this lookup drives the skip-already-imported behaviour in both the
+     * staged and direct import paths.
+     * 
+     * @param string $squareOrderId Square order/payment ID
+     * @return bool True when the order has already been imported
+     */
+    public function orderExists(string $squareOrderId): bool
+    {
+        $tableName = $this->getSalesMatchTableName();
+        $sql = "SELECT ksf_import_square_sales_id FROM {$tableName} "
+             . "WHERE square_transaction_id = '" . \db_escape($squareOrderId) . "' LIMIT 1";
+
+        $result = \db_query($sql);
+        if ($result === false) {
+            return false;
+        }
+
+        $row = \db_fetch_assoc($result);
+        return $row !== false;
     }
 
     /**
@@ -481,6 +513,16 @@ class SalesOrdersDAO
     private function getMappingsTableName(): string
     {
         return $this->tablePrefix . 'square_order_mappings';
+    }
+
+    /**
+     * Gets sales match table name.
+     * 
+     * @return string Table name
+     */
+    private function getSalesMatchTableName(): string
+    {
+        return $this->tablePrefix . 'ksf_import_square_sales';
     }
 
     /**

@@ -52,6 +52,38 @@ class WebhookService implements WebhookServiceInterface
     }
 
     /**
+     * Gets the current Square environment from module settings.
+     *
+     * @return string 'sandbox' or 'production'
+     *
+     * @since 2.4.4
+     */
+    public static function getCurrentEnvironment(): string
+    {
+        $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
+        $settings = \Ksfraser\Frontaccounting\SquareUp\Config\Settings::fromFADatabase($tablePrefix);
+        return $settings->getEnvironment();
+    }
+
+    /**
+     * Builds the webhook endpoint URL for this install.
+     *
+     * @return string Absolute URL to pages/webhook.php
+     *
+     * @since 2.4.4
+     */
+    public static function getCurrentWebhookUrl(): string
+    {
+        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        $basePath = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/')), '/');
+        if ($basePath === '.' || $basePath === '') {
+            $basePath = '';
+        }
+        return $scheme . '://' . $host . $basePath . '/webhook.php';
+    }
+
+    /**
      * Creates a new webhook subscription in Square.
      *
      * @param string $url Webhook endpoint URL
