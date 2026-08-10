@@ -284,6 +284,9 @@ class ProductAttributesDAOTest extends TestCase
         $this->assertNotNull($result);
         $this->assertSame('SERVICE', $result['product_type']);
         $this->assertSame(90, $result['service_duration_minutes']);
+        $this->assertSame(1, $result['available_for_booking']);
+        $this->assertSame(1, $result['sellable']);
+        $this->assertSame(0, $result['stockable']);
     }
 
     public function testGetFulfillmentNormalizesRegularRow(): void
@@ -305,5 +308,37 @@ class ProductAttributesDAOTest extends TestCase
         $this->assertNotNull($result);
         $this->assertSame('REGULAR', $result['product_type']);
         $this->assertNull($result['service_duration_minutes']);
+        $this->assertSame(0, $result['available_for_booking']);
+        $this->assertSame(1, $result['sellable']);
+        $this->assertSame(1, $result['stockable']);
+    }
+
+    public function testGetUpcReturnsNullWhenTableMissing(): void
+    {
+        $result = $this->dao->getUpc('SKU-001');
+
+        $this->assertNull($result);
+    }
+
+    public function testGetUpcReturnsNullWhenNoRow(): void
+    {
+        $this->seedTable('product_identifiers');
+        $this->seedRows([]);
+
+        $result = $this->dao->getUpc('SKU-001');
+
+        $this->assertNull($result);
+    }
+
+    public function testGetUpcReturnsValue(): void
+    {
+        $this->seedTable('product_identifiers');
+        $this->seedRows([
+            ['pref_name' => 'SKU-001', 'upc' => '123456789012'],
+        ]);
+
+        $result = $this->dao->getUpc('SKU-001');
+
+        $this->assertSame('123456789012', $result);
     }
 }

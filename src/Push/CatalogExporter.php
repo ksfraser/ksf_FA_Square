@@ -454,6 +454,11 @@ class CatalogExporter implements CatalogExporterInterface
             $variationData->setMeasurementUnitId($measurementUnitId);
         }
 
+        $upc = isset($attributes['upc']) ? (string)$attributes['upc'] : '';
+        if ($upc !== '') {
+            $variationData->setUpc($upc);
+        }
+
         $variationObject = new CatalogObject('ITEM_VARIATION', $existingVariationId ?? ('#' . $sku . '_var'));
         $variationObject->setItemVariationData($variationData);
         if ($existingVariationVersion !== null) {
@@ -474,6 +479,15 @@ class CatalogExporter implements CatalogExporterInterface
             $item->setProductType($isService ? 'APPOINTMENTS_SERVICE' : 'REGULAR');
             if ($isService && !empty($fulfillment['service_duration_minutes'])) {
                 $variationData->setServiceDuration((int)$fulfillment['service_duration_minutes'] * 60);
+            }
+            if (array_key_exists('available_for_booking', $fulfillment)) {
+                $variationData->setAvailableForBooking((bool)$fulfillment['available_for_booking']);
+            }
+            if (array_key_exists('sellable', $fulfillment)) {
+                $variationData->setSellable((bool)$fulfillment['sellable']);
+            }
+            if (array_key_exists('stockable', $fulfillment)) {
+                $variationData->setStockable((bool)$fulfillment['stockable']);
             }
         }
 
@@ -548,6 +562,14 @@ class CatalogExporter implements CatalogExporterInterface
         $selectionType = (string)($modifierList['selection_type'] ?? 'SINGLE');
         if ($selectionType === 'SINGLE' || $selectionType === 'MULTIPLE') {
             $listData->setSelectionType($selectionType);
+        }
+
+        $modifierType = (string)($modifierList['modifier_type'] ?? '');
+        if ($modifierType === 'NON_ALCOHOL' || $modifierType === 'ALCOHOL') {
+            $listData->setModifierType($modifierType);
+        }
+        if (isset($modifierList['ordinal'])) {
+            $listData->setOrdinal((int)$modifierList['ordinal']);
         }
 
         $modifierObjects = [];

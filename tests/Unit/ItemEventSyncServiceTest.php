@@ -64,6 +64,7 @@ class ItemEventSyncServiceTest extends TestCase
         $this->mockAttrDao->method('getCustomAttributes')->willReturn([]);
         $this->mockAttrDao->method('getModifierLists')->willReturn([]);
         $this->mockAttrDao->method('getCategoryParent')->willReturn(null);
+        $this->mockAttrDao->method('getUpc')->willReturn(null);
     }
 
     /**
@@ -78,6 +79,7 @@ class ItemEventSyncServiceTest extends TestCase
             'modifier_lists'       => [],
             'category_parent_name' => null,
             'fulfillment'          => null,
+            'upc'                  => null,
         ];
     }
 
@@ -419,6 +421,19 @@ class ItemEventSyncServiceTest extends TestCase
         $this->mockExporter->expects($this->once())
             ->method('upsertProduct')
             ->with('SKU-001', 'Test Widget', 'Test Widget', 'General', 1234, 'CAD', 'GST', 0.0, null, $this->expectedAttributes(['fulfillment' => $fulfillment]))
+            ->willReturn($this->catalogObjectMock());
+        $service = $this->buildService();
+
+        $service->sync('SKU-001', 'created');
+    }
+
+    public function testSyncPassesUpcToExporter(): void
+    {
+        $this->mockAttrDao->method('getUpc')->willReturn('123456789012');
+        $this->configureDefaults();
+        $this->mockExporter->expects($this->once())
+            ->method('upsertProduct')
+            ->with('SKU-001', 'Test Widget', 'Test Widget', 'General', 1234, 'CAD', 'GST', 0.0, null, $this->expectedAttributes(['upc' => '123456789012']))
             ->willReturn($this->catalogObjectMock());
         $service = $this->buildService();
 

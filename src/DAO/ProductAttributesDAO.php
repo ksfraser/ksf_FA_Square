@@ -190,7 +190,34 @@ class ProductAttributesDAO
             'service_duration_minutes' => ($row['service_duration_minutes'] ?? null) !== null && $row['service_duration_minutes'] !== ''
                 ? (int)$row['service_duration_minutes']
                 : null,
+            'available_for_booking'    => (int)($row['available_for_booking'] ?? 0),
+            'sellable'                 => (int)($row['sellable'] ?? 1),
+            'stockable'                => (int)($row['stockable'] ?? 1),
         ];
+    }
+
+    /**
+     * UPC identifier for a stock item, if the Stage 3 module defines one.
+     *
+     * @param string $stockId Stock ID
+     * @return string|null UPC or null
+     */
+    public function getUpc(string $stockId): ?string
+    {
+        if (!$this->tableExists('product_identifiers')) {
+            return null;
+        }
+
+        $sql = "SELECT upc FROM {$this->tablePrefix}product_identifiers "
+            . "WHERE stock_id = " . \db_escape($stockId) . " LIMIT 1";
+
+        $result = \db_query($sql);
+        $row = \db_fetch_assoc($result);
+        if ($row === false || $row === null) {
+            return null;
+        }
+        $value = $row['upc'] ?? '';
+        return $value !== '' ? (string)$value : null;
     }
 
     /**

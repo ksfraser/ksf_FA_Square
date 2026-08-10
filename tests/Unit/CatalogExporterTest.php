@@ -473,4 +473,80 @@ class CatalogExporterTest extends TestCase
         $variation = $itemData->getVariations()[0];
         $this->assertNull($variation->getItemVariationData()->getServiceDuration());
     }
+
+    public function testUpsertProductSetsModifierListTypeAndOrdinal(): void
+    {
+        $this->stubEmptyCategorySearch();
+        $captured = [];
+        $this->mockSuccessUpserts([
+            '#modlist_1' => new CatalogObject('MODIFIER_LIST', 'MODLIST-1'),
+        ], $captured);
+
+        $this->exporter->upsertProduct('TEST-SKU', 'Test Item', 'Test Description', 'General', 1000, 'CAD', '', 0.0, null, [
+            'modifier_lists' => [
+                [
+                    'id' => 1,
+                    'name' => 'Alcohol',
+                    'selection_type' => 'SINGLE',
+                    'modifier_type' => 'ALCOHOL',
+                    'min_selected_modifiers' => null,
+                    'max_selected_modifiers' => null,
+                    'ordinal' => 2,
+                    'modifiers' => [],
+                ],
+            ],
+        ]);
+
+        $modListRequest = null;
+        foreach ($captured as $request) {
+            if ($request->getObject()->getType() === 'MODIFIER_LIST') {
+                $modListRequest = $request;
+            }
+        }
+        $this->assertNotNull($modListRequest);
+        $listData = $modListRequest->getObject()->getModifierListData();
+        $this->assertSame('ALCOHOL', $listData->getModifierType());
+        $this->assertSame(2, $listData->getOrdinal());
+    }
+
+    public function testUpsertProductSetsUpcFromAttributes(): void
+    {
+        $this->stubEmptyCategorySearch();
+        $captured = [];
+        $this->mockSuccessUpserts([], $captured);
+
+        $this->exporter->upsertProduct('TEST-SKU', 'Test Item', 'Test Description', 'General', 1000, 'CAD', '', 0.0, null, [
+            'upc' => '123456789012',
+        ]);
+
+        $itemRequest = $this->capturedItemRequest($captured);
+        $this->assertNotNull($itemRequest);
+        $variation = $itemRequest->getObject()->getItemData()->getVariations()[0];
+        $this->assertSame('123456789012', $variation->getItemVariationData()->getUpc());
+    }
+
+    public function testUpsertProductMapsFulfillmentFlagsFromAttributes(): void
+    {
+        $this->stubEmptyCategorySearch();
+        $captured = [];
+        $this->mockSuccessUpserts([], $captured);
+
+        $this->exporter->upsertProduct('TEST-SKU', 'Test Item', 'Test Description', 'General', 1000, 'CAD', '', 0.0, null, [
+            'fulfillment' => [
+                'product_type'             => 'SERVICE',
+                'service_duration_minutes' => 60,
+                'available_for_booking'    => 1,
+                'sellable'                 => 0,
+                'stockable'                => 1,
+            ],
+        ]);
+
+        $itemRequest = $this->capturedItemRequest($captured);
+        $this->assertNotNull($itemRequest);
+        $variation = $itemRequest->getObject()->getItemData()->getVariations()[0];
+        $variationData = $variation->getItemVariationData();
+        $this->assertTrue($variationData->getAvailableForBooking());
+        $this->assertFalse($variationData->getSellable());
+        $this->assertTrue($variationData->getStockable());
+    }
 }
