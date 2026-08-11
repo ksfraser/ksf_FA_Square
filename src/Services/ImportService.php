@@ -15,6 +15,9 @@ use Ksfraser\Frontaccounting\SquareUp\DAO\TransactionStagingDAO;
 use Ksfraser\Frontaccounting\SquareUp\DAO\ItemStagingDAO;
 use Ksfraser\Frontaccounting\SquareUp\DAO\PaymentMatchDAO;
 use Ksfraser\Frontaccounting\SquareUp\DAO\SalesMatchDAO;
+use Ksfraser\Frontaccounting\SquareUp\DAO\PaymentsDAO;
+use Ksfraser\Frontaccounting\SquareUp\DAO\PaymentMappingDAO;
+use Ksfraser\Frontaccounting\SquareUp\DAO\SquareCustomerDAO;
 use Ksfraser\Frontaccounting\SquareUp\Pull\OrderImporter;
 use Ksfraser\Frontaccounting\SquareUp\Staging\StagingTableManager;
 use Square\Exceptions\ApiException;
@@ -97,10 +100,16 @@ class ImportService
      */
     private $salesMatchDao;
 
+    /**
+     * @var PaymentService|null
+     */
+    private $paymentService;
+
     public function __construct(
         string $tablePrefix,
         Settings $settings,
-        SquareClient $client
+        SquareClient $client,
+        PaymentService $paymentService = null
     ) {
         $this->tablePrefix = $tablePrefix;
         $this->settings = $settings;
@@ -114,6 +123,24 @@ class ImportService
         $this->itemStagingDao = new ItemStagingDAO($tablePrefix);
         $this->paymentMatchDao = new PaymentMatchDAO($tablePrefix);
         $this->salesMatchDao = new SalesMatchDAO($tablePrefix);
+        $this->paymentService = $paymentService !== null
+            ? $paymentService
+            : $this->createDefaultPaymentService();
+    }
+
+    /**
+     * Builds the default PaymentService from the import dependencies.
+     *
+     * @return PaymentService
+     */
+    private function createDefaultPaymentService(): PaymentService
+    {
+        return new PaymentService(
+            new PaymentsDAO($this->tablePrefix),
+            new PaymentAdapter($this->tablePrefix),
+            new CustomerService($this->client, $this->debtorsMasterDao, new SquareCustomerDAO($this->tablePrefix)),
+            new PaymentMappingDAO($this->tablePrefix)
+        );
     }
 
     /**
@@ -567,6 +594,8 @@ class ImportService
 
         $this->salesMatchDao->insertMatch($transactionId, $orderNo);
 
+        $this->recordSquarePayment($this->buildSquarePaymentFromTransaction($trans), $debtorNo);
+
         $this->broadcastOrderImported([
             'source_order_id' => (string)$paymentId,
             'fa_order_no' => (int)$orderNo,
@@ -612,6 +641,93 @@ class ImportService
         ], $payload);
 
         hook_invoke_all('order_imported', $data);
+    }
+
+    /**
+     * Records an imported Square payment against the invoice's debtor.
+     *
+     * Failure to record the payment must not fail the import (the invoice
+     * is already written); the error is logged and null returned.
+     *
+     * @param array $squarePayment Square payment array
+     * @param int $debtorNo FA debtor number
+     * @return int|null FA payment id, or null when not recorded
+     */
+    private function recordSquarePayment(array $squarePayment, int $debtorNo): ?int
+    {
+        if ($this->paymentService === null) {
+            return null;
+        }
+
+        try {
+            return $this->paymentService->recordImportedPayment($squarePayment, $debtorNo);
+        } catch (\Exception $e) {
+            error_log('KSF Square: payment record failed for '
+                . ($squarePayment['id'] ?? 'unknown')
+                . ': ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Builds a Square payment array from a staged transaction row.
+     *
+     * Prefers the stored payment data (raw_json) and falls back to the
+     * staged total when no payment payload is available.
+     *
+     * @param array $trans Staged transaction row
+     * @return array Square payment array
+     */
+    private function buildSquarePaymentFromTransaction(array $trans): array
+    {
+        $raw = json_decode((string)($trans['raw_json'] ?? ''), true);
+        $paymentData = is_array($raw) && isset($raw['payment']) && is_array($raw['payment'])
+            ? $raw['payment']
+            : [];
+
+        $amountCents = isset($paymentData['amount']) ? (int)$paymentData['amount'] : 0;
+        if ($amountCents <= 0) {
+            $amountCents = (int)round(((float)($trans['total_collected'] ?? 0)) * 100);
+        }
+
+        $paymentId = (string)($trans['payment_id'] ?? '');
+
+        return [
+            'id' => $paymentId,
+            'amount_money' => [
+                'amount' => $amountCents,
+                'currency' => (string)($paymentData['currency'] ?? ($trans['currency'] ?? '')),
+            ],
+            'status' => 'COMPLETED',
+            'payment_method' => (string)($paymentData['source_type'] ?? 'OTHER'),
+            'reference_id' => $paymentId,
+            'note' => 'Imported from Square: ' . $paymentId,
+            'customer_email' => '',
+        ];
+    }
+
+    /**
+     * Builds a Square payment array from a Square Payment object.
+     *
+     * @param Payment $payment Square payment
+     * @return array Square payment array
+     */
+    private function buildSquarePaymentFromPayment(Payment $payment): array
+    {
+        $totalMoney = $payment->getTotalMoney();
+
+        return [
+            'id' => (string)$payment->getId(),
+            'amount_money' => [
+                'amount' => $totalMoney !== null ? (int)$totalMoney->getAmount() : 0,
+                'currency' => $totalMoney !== null ? (string)$totalMoney->getCurrency() : '',
+            ],
+            'status' => (string)($payment->getStatus() ?? 'COMPLETED'),
+            'payment_method' => (string)($payment->getSourceType() ?? 'OTHER'),
+            'reference_id' => (string)($payment->getReferenceId() ?? $payment->getId()),
+            'note' => (string)($payment->getNote() ?? 'Imported from Square: ' . $payment->getId()),
+            'customer_email' => (string)($payment->getBuyerEmailAddress() ?? ''),
+        ];
     }
 
     /**
@@ -811,6 +927,10 @@ class ImportService
                         $orderNo = $cart->write(1);
                         if ($orderNo) {
                             $this->salesMatchDao->insertMatch($payment->getId(), $orderNo);
+                            $this->recordSquarePayment(
+                                $this->buildSquarePaymentFromPayment($payment),
+                                (int)$customer['debtor_no']
+                            );
                         }
 
                         $this->broadcastOrderImported([

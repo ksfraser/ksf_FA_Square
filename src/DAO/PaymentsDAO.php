@@ -471,20 +471,25 @@ class PaymentsDAO
     /**
      * Gets payments table name.
      * 
+     * Module-owned table (not FA's core 0_payments) so payment tracking
+     * never collides with FrontAccounting's real payment records.
+     * 
      * @return string Table name
      */
     private function getPaymentsTableName(): string
     {
-        return $this->tablePrefix . 'payments';
+        return $this->tablePrefix . 'square_payments';
     }
 
     /**
      * Gets event log table name.
      * 
+     * Module-owned table to avoid clashing with FA tables.
+     * 
      * @return string Table name
      */
     private function getEventLogTableName(): string
     {
-        return $this->tablePrefix . 'payment_events';
+        return $this->tablePrefix . 'square_payment_events';
     }
 }

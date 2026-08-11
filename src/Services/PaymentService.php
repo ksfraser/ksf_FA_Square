@@ -26,7 +26,6 @@ class PaymentService implements PaymentServiceInterface
     private PaymentAdapter $paymentAdapter;
     private CustomerService $customerService;
     private PaymentMappingDAO $paymentMappingDao;
-    private string $tablePrefix;
 
     public function __construct(
         PaymentsDAO $paymentsDao,
@@ -38,7 +37,6 @@ class PaymentService implements PaymentServiceInterface
         $this->paymentAdapter = $paymentAdapter;
         $this->customerService = $customerService;
         $this->paymentMappingDao = $paymentMappingDao;
-        $this->tablePrefix = get_company_pref('table_prefix');
     }
 
     /**
@@ -60,35 +58,84 @@ class PaymentService implements PaymentServiceInterface
                 throw new PaymentProcessingException("Customer not found for payment");
             }
             
-            // Convert to FA payment format
-            $faPayment = $this->paymentAdapter->convertToFAPayment($squarePayment, $customer);
-            
-            // Record payment in FA
-            $paymentId = $this->paymentsDao->insertPayment($faPayment);
-            
-            // Create mapping
-            $this->paymentMappingDao->createMapping([
-                'square_payment_id' => $squarePayment['id'],
-                'fa_payment_id' => $paymentId,
-                'mapping_data' => json_encode($squarePayment),
-                'created_at' => date('Y-m-d H:i:s')
-            ]);
-            
-            // Log payment event
-            $this->logPaymentEvent([
-                'fa_payment_id' => $paymentId,
-                'square_payment_id' => $squarePayment['id'],
-                'event_type' => 'recorded',
-                'amount' => $faPayment['amount'],
-                'currency' => $faPayment['currency'],
-                'timestamp' => date('Y-m-d H:i:s')
-            ]);
-            
-            return $paymentId;
+            return $this->persistPayment($squarePayment, $customer);
             
         } catch (\Exception $e) {
             throw new PaymentProcessingException("Failed to record Square payment: " . $e->getMessage());
         }
+    }
+
+    /**
+     * Records an imported Square payment against an explicit FA debtor.
+     * 
+     * Used by the import flow, where the invoice was already written for
+     * the destination customer (debtor_no). Idempotent: if a mapping
+     * already exists for the Square payment id, the existing FA payment
+     * id is returned without inserting a duplicate.
+     * 
+     * @param array $squarePayment Square payment data
+     * @param int $debtorNo FA debtor number the invoice was written for
+     * @return int Payment ID
+     * @throws PaymentProcessingException on processing failure
+     */
+    public function recordImportedPayment(array $squarePayment, int $debtorNo): int
+    {
+        try {
+            // Validate Square payment data
+            $this->validateSquarePayment($squarePayment);
+
+            // Idempotency: skip when this Square payment is already recorded
+            $existing = $this->paymentMappingDao->getPaymentBySquareId($squarePayment['id']);
+            if ($existing !== null && !empty($existing['fa_payment_id'])) {
+                return (int)$existing['fa_payment_id'];
+            }
+
+            return $this->persistPayment($squarePayment, [
+                'debtor_no' => $debtorNo,
+                'person_id' => null,
+                'email' => $squarePayment['customer_email'] ?? '',
+            ]);
+
+        } catch (\Exception $e) {
+            throw new PaymentProcessingException("Failed to record Square payment: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Persists a Square payment: converts to FA format, inserts it,
+     * creates the Square<->FA mapping, and logs the event.
+     * 
+     * @param array $squarePayment Square payment data
+     * @param array $customer FA customer data (debtor_no, person_id)
+     * @return int Payment ID
+     */
+    private function persistPayment(array $squarePayment, array $customer): int
+    {
+        // Convert to FA payment format
+        $faPayment = $this->paymentAdapter->convertToFAPayment($squarePayment, $customer);
+        
+        // Record payment in FA
+        $paymentId = $this->paymentsDao->insertPayment($faPayment);
+        
+        // Create mapping
+        $this->paymentMappingDao->createMapping([
+            'square_payment_id' => $squarePayment['id'],
+            'fa_payment_id' => $paymentId,
+            'mapping_data' => json_encode($squarePayment),
+            'created_at' => date('Y-m-d H:i:s')
+        ]);
+        
+        // Log payment event
+        $this->logPaymentEvent([
+            'fa_payment_id' => $paymentId,
+            'square_payment_id' => $squarePayment['id'],
+            'event_type' => 'recorded',
+            'amount' => $faPayment['amount'],
+            'currency' => $faPayment['currency'],
+            'timestamp' => date('Y-m-d H:i:s')
+        ]);
+        
+        return $paymentId;
     }
 
     /**
@@ -391,15 +438,5 @@ class PaymentService implements PaymentServiceInterface
     private function logPaymentEvent(array $eventData): int
     {
         return $this->paymentsDao->logPaymentEvent($eventData);
-    }
-
-    /**
-     * Gets payments table name.
-     * 
-     * @return string Table name
-     */
-    private function getPaymentsTableName(): string
-    {
-        return $this->tablePrefix . 'payments';
     }
 }

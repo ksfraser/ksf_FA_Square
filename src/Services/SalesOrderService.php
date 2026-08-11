@@ -23,21 +23,18 @@ class SalesOrderService implements SalesOrderServiceInterface
     private SquareOrderAdapter $orderAdapter;
     private TaxService $taxService;
     private CustomerService $customerService;
-    private PaymentService $paymentService;
     private string $tablePrefix;
 
     public function __construct(
         SalesOrdersDAO $salesOrdersDao,
         SquareOrderAdapter $orderAdapter,
         TaxService $taxService,
-        CustomerService $customerService,
-        PaymentService $paymentService
+        CustomerService $customerService
     ) {
         $this->salesOrdersDao = $salesOrdersDao;
         $this->orderAdapter = $orderAdapter;
         $this->taxService = $taxService;
         $this->customerService = $customerService;
-        $this->paymentService = $paymentService;
         $this->tablePrefix = get_company_pref('table_prefix');
     }
 

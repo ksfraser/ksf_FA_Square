@@ -8,7 +8,6 @@ use Ksfraser\Frontaccounting\SquareUp\DAO\SalesOrdersDAO;
 use Ksfraser\Frontaccounting\SquareUp\Services\SquareOrderAdapter;
 use Ksfraser\Frontaccounting\SquareUp\Services\TaxService;
 use Ksfraser\Frontaccounting\SquareUp\Services\CustomerService;
-use Ksfraser\Frontaccounting\SquareUp\Services\PaymentService;
 use Ksfraser\Frontaccounting\SquareUp\Exceptions\SalesOrderException;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -25,7 +24,6 @@ class SalesOrderServiceTest extends TestCase
     protected MockObject $mockOrderAdapter;
     protected MockObject $mockTaxService;
     protected MockObject $mockCustomerService;
-    protected MockObject $mockPaymentService;
     protected SalesOrderService $salesOrderService;
     protected string $tablePrefix = '0_';
 
@@ -38,15 +36,13 @@ class SalesOrderServiceTest extends TestCase
         $this->mockOrderAdapter = $this->createMock(SquareOrderAdapter::class);
         $this->mockTaxService = $this->createMock(TaxService::class);
         $this->mockCustomerService = $this->createMock(CustomerService::class);
-        $this->mockPaymentService = $this->createMock(PaymentService::class);
         
         // Create sales order service
         $this->salesOrderService = new SalesOrderService(
             $this->mockSalesOrdersDao,
             $this->mockOrderAdapter,
             $this->mockTaxService,
-            $this->mockCustomerService,
-            $this->mockPaymentService
+            $this->mockCustomerService
         );
     }
 
