@@ -567,11 +567,51 @@ class ImportService
 
         $this->salesMatchDao->insertMatch($transactionId, $orderNo);
 
+        $this->broadcastOrderImported([
+            'source_order_id' => (string)$paymentId,
+            'fa_order_no' => (int)$orderNo,
+            'fa_trans_type' => ST_SALESINVOICE,
+            'customer_id' => (int)$debtorNo,
+            'order_total' => (float)($trans['total_collected'] ?? 0),
+            'order_date' => (string)($trans['tran_date'] ?? date('Y-m-d')),
+            'currency' => (string)($trans['currency'] ?? ''),
+        ]);
+
         return [
             'success' => true,
             'invoice_no' => $orderNo,
             'message' => _("Created invoice #") . $orderNo,
         ];
+    }
+
+    /**
+     * Broadcasts an order_imported event to other ksf modules.
+     *
+     * HRM (sales commissions) and ProjectManagement (project revenue)
+     * listen for this event via hook_invoke_all. The call is guarded so
+     * the module still works when the listener modules are not installed.
+     *
+     * @param array $payload Event payload
+     * @return void
+     */
+    private function broadcastOrderImported(array $payload): void
+    {
+        if (!function_exists('hook_invoke_all')) {
+            return;
+        }
+
+        $data = array_merge([
+            'source' => 'square',
+            'source_order_id' => '',
+            'fa_order_no' => 0,
+            'fa_trans_type' => ST_SALESINVOICE,
+            'customer_id' => 0,
+            'order_total' => 0.0,
+            'order_date' => date('Y-m-d'),
+            'currency' => '',
+        ], $payload);
+
+        hook_invoke_all('order_imported', $data);
     }
 
     /**
@@ -772,6 +812,15 @@ class ImportService
                         if ($orderNo) {
                             $this->salesMatchDao->insertMatch($payment->getId(), $orderNo);
                         }
+
+                        $this->broadcastOrderImported([
+                            'source_order_id' => $payment->getId(),
+                            'fa_order_no' => (int)$orderNo,
+                            'fa_trans_type' => ST_SALESINVOICE,
+                            'customer_id' => (int)$customer['debtor_no'],
+                            'order_total' => (float)($totalMoney !== null ? $totalMoney->getAmount() / 100 : 0),
+                            'order_date' => $dt ? $dt->format('Y-m-d') : date('Y-m-d'),
+                        ]);
                         $importResults['errors'][] = _("Created invoice #") . $orderNo
                             . _(" for ") . $payment->getId();
                         $importResults['imported']++;
