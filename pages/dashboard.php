@@ -12,9 +12,9 @@ include_once $path_to_root . "/includes/data_checks.inc";
 
 include_once __DIR__ . "/../vendor/autoload.php";
 
-use Ksfraser\Frontaccounting\SquareUp\Config\Settings;
-use Ksfraser\Frontaccounting\SquareUp\Infrastructure\SquareClientFactory;
-use Ksfraser\Frontaccounting\SquareUp\DAO\SquareImportLogDAO;
+use ksfraser\FrontAccounting\Square\Config\Settings;
+use ksfraser\FrontAccounting\Square\Infrastructure\SquareClientFactory;
+use ksfraser\FrontAccounting\Square\DAO\SquareImportLogDAO;
 use Square\Exceptions\ApiException;
 
 $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';

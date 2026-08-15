@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Ksfraser\Frontaccounting\SquareUp\Services;
+namespace ksfraser\FrontAccounting\Square\Services;
 
-use Ksfraser\Frontaccounting\SquareUp\Contracts\CRMAdapterInterface;
-use Ksfraser\Frontaccounting\SquareUp\DAO\DebtorsMasterDAO;
+use ksfraser\FrontAccounting\Square\Contracts\CRMAdapterInterface;
+use ksfraser\FrontAccounting\Square\DAO\DebtorsMasterDAO;
 
 /**
  * Strategy for matching a Square customer to an existing FA debtor.

@@ -1,17 +1,17 @@
 <?php
 declare(strict_types=1);
 
-namespace Ksfraser\Frontaccounting\SquareUp\Services;
+namespace ksfraser\FrontAccounting\Square\Services;
 
-use Ksfraser\Frontaccounting\SquareUp\Contracts\PaymentServiceInterface;
-use Ksfraser\Frontaccounting\SquareUp\DAO\PaymentsDAO;
-use Ksfraser\Frontaccounting\SquareUp\DAO\PaymentMappingDAO;
-use Ksfraser\Frontaccounting\SquareUp\Services\PaymentAdapter;
-use Ksfraser\Frontaccounting\SquareUp\Services\CustomerService;
-use Ksfraser\Frontaccounting\SquareUp\Exceptions\PaymentProcessingException;
-use Ksfraser\Frontaccounting\SquareUp\Exceptions\PaymentMappingException;
+use ksfraser\FrontAccounting\Square\Contracts\PaymentServiceInterface;
+use ksfraser\FrontAccounting\Square\DAO\PaymentsDAO;
+use ksfraser\FrontAccounting\Square\DAO\PaymentMappingDAO;
+use ksfraser\FrontAccounting\Square\Services\PaymentAdapter;
+use ksfraser\FrontAccounting\Square\Services\CustomerService;
+use ksfraser\FrontAccounting\Square\Exceptions\PaymentProcessingException;
+use ksfraser\FrontAccounting\Square\Exceptions\PaymentMappingException;
 
-use Ksfraser\Frontaccounting\SquareUp\Exceptions\RefundProcessingException;
+use ksfraser\FrontAccounting\Square\Exceptions\RefundProcessingException;
 /**
  * Payment Service
  * 

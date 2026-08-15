@@ -1,12 +1,12 @@
 <?php
 declare(strict_types=1);
 
-namespace Ksfraser\Frontaccounting\SquareUp\Services;
+namespace ksfraser\FrontAccounting\Square\Services;
 
-use Ksfraser\Frontaccounting\SquareUp\Contracts\SalesOrderServiceInterface;
+use ksfraser\FrontAccounting\Square\Contracts\SalesOrderServiceInterface;
 
-use Ksfraser\Frontaccounting\SquareUp\DAO\SalesOrdersDAO;
-use Ksfraser\Frontaccounting\SquareUp\Exceptions\SalesOrderException;
+use ksfraser\FrontAccounting\Square\DAO\SalesOrdersDAO;
+use ksfraser\FrontAccounting\Square\Exceptions\SalesOrderException;
 use Square\Models\Customer;
 /**
  * Sales Order Service

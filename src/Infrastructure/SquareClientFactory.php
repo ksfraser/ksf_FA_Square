@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Ksfraser\Frontaccounting\SquareUp\Infrastructure;
+namespace ksfraser\FrontAccounting\Square\Infrastructure;
 
-use Ksfraser\Frontaccounting\SquareUp\Contracts\SettingsInterface;
-use Ksfraser\Frontaccounting\SquareUp\Exceptions\SquareException;
+use ksfraser\FrontAccounting\Square\Contracts\SettingsInterface;
+use ksfraser\FrontAccounting\Square\Exceptions\SquareException;
 use Square\SquareClient;
 use Square\Environment;
 

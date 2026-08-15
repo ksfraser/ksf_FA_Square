@@ -1,12 +1,12 @@
 <?php
 declare(strict_types=1);
 
-namespace Ksfraser\Frontaccounting\SquareUp\Services;
+namespace ksfraser\FrontAccounting\Square\Services;
 
-use Ksfraser\Frontaccounting\SquareUp\Contracts\BusinessIntelligenceInterface;
+use ksfraser\FrontAccounting\Square\Contracts\BusinessIntelligenceInterface;
 
-use Ksfraser\Frontaccounting\SquareUp\Exceptions\AnalyticsException;
-use Ksfraser\Frontaccounting\SquareUp\Exceptions\ReportGenerationException;
+use ksfraser\FrontAccounting\Square\Exceptions\AnalyticsException;
+use ksfraser\FrontAccounting\Square\Exceptions\ReportGenerationException;
 /**
  * Business Intelligence Service
  * 

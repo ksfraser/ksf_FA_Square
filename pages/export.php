@@ -15,17 +15,17 @@ include_once $path_to_root . "/sales/includes/db/sales_types_db.inc";
 
 include_once __DIR__ . "/../vendor/autoload.php";
 
-use Ksfraser\Frontaccounting\SquareUp\Config\Settings;
-use Ksfraser\Frontaccounting\SquareUp\DTO\ExportRequest;
-use Ksfraser\Frontaccounting\SquareUp\Infrastructure\SquareClientFactory;
-use Ksfraser\Frontaccounting\SquareUp\Push\CatalogExporter;
-use Ksfraser\Frontaccounting\SquareUp\DAO\SquareTokenDAO;
-use Ksfraser\Frontaccounting\SquareUp\DAO\StockMasterDAO;
-use Ksfraser\Frontaccounting\SquareUp\DAO\ProductAttributesDAO;
-use Ksfraser\Frontaccounting\SquareUp\DAO\LocationMappingDAO;
-use Ksfraser\Frontaccounting\SquareUp\Services\TaxRateResolver;
-use Ksfraser\Frontaccounting\SquareUp\ValueObjects\SquarePrice;
-use Ksfraser\Frontaccounting\SquareUp\Exceptions\SquareException;
+use ksfraser\FrontAccounting\Square\Config\Settings;
+use ksfraser\FrontAccounting\Square\DTO\ExportRequest;
+use ksfraser\FrontAccounting\Square\Infrastructure\SquareClientFactory;
+use ksfraser\FrontAccounting\Square\Push\CatalogExporter;
+use ksfraser\FrontAccounting\Square\DAO\SquareTokenDAO;
+use ksfraser\FrontAccounting\Square\DAO\StockMasterDAO;
+use ksfraser\FrontAccounting\Square\DAO\ProductAttributesDAO;
+use ksfraser\FrontAccounting\Square\DAO\LocationMappingDAO;
+use ksfraser\FrontAccounting\Square\Services\TaxRateResolver;
+use ksfraser\FrontAccounting\Square\ValueObjects\SquarePrice;
+use ksfraser\FrontAccounting\Square\Exceptions\SquareException;
 use Square\Exceptions\ApiException;
 
 $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';

@@ -11,9 +11,9 @@ declare(strict_types=1);
  */
 class WebhookManagementController
 {
-    private \Ksfraser\Frontaccounting\SquareUp\Services\WebhookService $webhookService;
-    private \Ksfraser\Frontaccounting\SquareUp\DAO\WebhookSubscriptionDAO $subscriptionDao;
-    private \Ksfraser\Frontaccounting\SquareUp\DAO\WebhookEventDAO $eventDao;
+    private \ksfraser\FrontAccounting\Square\Services\WebhookService $webhookService;
+    private \ksfraser\FrontAccounting\Square\DAO\WebhookSubscriptionDAO $subscriptionDao;
+    private \ksfraser\FrontAccounting\Square\DAO\WebhookEventDAO $eventDao;
     private string $tablePrefix;
 
     public function __construct()
@@ -21,11 +21,11 @@ class WebhookManagementController
         $this->tablePrefix = get_company_pref('table_prefix');
         
         // Initialize services
-        $client = \Ksfraser\Frontaccounting\SquareUp\Infrastructure\SquareClientFactory::create(get_current_environment());
-        $this->subscriptionDao = new \Ksfraser\Frontaccounting\SquareUp\DAO\WebhookSubscriptionDAO($this->tablePrefix);
-        $this->eventDao = new \Ksfraser\Frontaccounting\SquareUp\DAO\WebhookEventDAO($this->tablePrefix);
+        $client = \ksfraser\FrontAccounting\Square\Infrastructure\SquareClientFactory::create(get_current_environment());
+        $this->subscriptionDao = new \ksfraser\FrontAccounting\Square\DAO\WebhookSubscriptionDAO($this->tablePrefix);
+        $this->eventDao = new \ksfraser\FrontAccounting\Square\DAO\WebhookEventDAO($this->tablePrefix);
         
-        $this->webhookService = new \Ksfraser\Frontaccounting\SquareUp\Services\WebhookService(
+        $this->webhookService = new \ksfraser\FrontAccounting\Square\Services\WebhookService(
             $client,
             $this->subscriptionDao,
             get_current_webhook_url()

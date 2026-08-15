@@ -1,15 +1,15 @@
 <?php
 declare(strict_types=1);
 
-namespace Ksfraser\Frontaccounting\SquareUp\Push;
+namespace ksfraser\FrontAccounting\Square\Push;
 
-use Ksfraser\Frontaccounting\SquareUp\Contracts\SettingsInterface;
-use Ksfraser\Frontaccounting\SquareUp\DAO\ProductAttributesDAO;
-use Ksfraser\Frontaccounting\SquareUp\DAO\SquareTokenDAO;
-use Ksfraser\Frontaccounting\SquareUp\DAO\StockMasterDAO;
-use Ksfraser\Frontaccounting\SquareUp\Exceptions\SquareException;
-use Ksfraser\Frontaccounting\SquareUp\Services\TaxRateResolver;
-use Ksfraser\Frontaccounting\SquareUp\ValueObjects\SquarePrice;
+use ksfraser\FrontAccounting\Square\Contracts\SettingsInterface;
+use ksfraser\FrontAccounting\Square\DAO\ProductAttributesDAO;
+use ksfraser\FrontAccounting\Square\DAO\SquareTokenDAO;
+use ksfraser\FrontAccounting\Square\DAO\StockMasterDAO;
+use ksfraser\FrontAccounting\Square\Exceptions\SquareException;
+use ksfraser\FrontAccounting\Square\Services\TaxRateResolver;
+use ksfraser\FrontAccounting\Square\ValueObjects\SquarePrice;
 use Square\Exceptions\ApiException;
 
 /**

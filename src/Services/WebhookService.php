@@ -1,13 +1,13 @@
 <?php
 declare(strict_types=1);
 
-namespace Ksfraser\Frontaccounting\SquareUp\Services;
+namespace ksfraser\FrontAccounting\Square\Services;
 
 use Square\SquareClient;
-use Ksfraser\Frontaccounting\SquareUp\DAO\WebhookSubscriptionDAO;
-use Ksfraser\Frontaccounting\SquareUp\Contracts\WebhookServiceInterface;
-use Ksfraser\Frontaccounting\SquareUp\Exceptions\WebhookCreationException;
-use Ksfraser\Frontaccounting\SquareUp\Exceptions\WebhookValidationException;
+use ksfraser\FrontAccounting\Square\DAO\WebhookSubscriptionDAO;
+use ksfraser\FrontAccounting\Square\Contracts\WebhookServiceInterface;
+use ksfraser\FrontAccounting\Square\Exceptions\WebhookCreationException;
+use ksfraser\FrontAccounting\Square\Exceptions\WebhookValidationException;
 use Square\Models\CreateWebhookSubscriptionRequest;
 use Square\Models\WebhookSubscription;
 use Square\Models\WebhookEventType;
@@ -61,7 +61,7 @@ class WebhookService implements WebhookServiceInterface
     public static function getCurrentEnvironment(): string
     {
         $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
-        $settings = \Ksfraser\Frontaccounting\SquareUp\Config\Settings::fromFADatabase($tablePrefix);
+        $settings = \ksfraser\FrontAccounting\Square\Config\Settings::fromFADatabase($tablePrefix);
         return $settings->getEnvironment();
     }
 

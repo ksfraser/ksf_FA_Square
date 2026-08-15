@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Ksfraser\Frontaccounting\SquareUp\DAO;
+namespace ksfraser\FrontAccounting\Square\DAO;
 
 use Exception;
-use Ksfraser\Frontaccounting\SquareUp\DAO\StockMovesDAO;
+use ksfraser\FrontAccounting\Square\DAO\StockMovesDAO;
 
 /**
  * Data Access Object for square_tokens table with environment isolation.

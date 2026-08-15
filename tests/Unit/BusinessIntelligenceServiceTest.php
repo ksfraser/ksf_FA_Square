@@ -1,16 +1,16 @@
 <?php
 declare(strict_types=1);
 
-namespace Ksfraser\Frontaccounting\SquareUp\Tests\Unit\Services;
+namespace ksfraser\FrontAccounting\Square\Tests\Unit\Services;
 
-use Ksfraser\Frontaccounting\SquareUp\Services\BusinessIntelligenceService;
-use Ksfraser\Frontaccounting\SquareUp\Services\SalesAnalyticsService;
-use Ksfraser\Frontaccounting\SquareUp\Services\CustomerAnalyticsService;
-use Ksfraser\Frontaccounting\SquareUp\Services\InventoryAnalyticsService;
-use Ksfraser\Frontaccounting\SquareUp\Services\FinancialAnalyticsService;
-use Ksfraser\Frontaccounting\SquareUp\Services\ReportGenerator;
-use Ksfraser\Frontaccounting\SquareUp\Exceptions\AnalyticsException;
-use Ksfraser\Frontaccounting\SquareUp\Exceptions\ReportGenerationException;
+use ksfraser\FrontAccounting\Square\Services\BusinessIntelligenceService;
+use ksfraser\FrontAccounting\Square\Services\SalesAnalyticsService;
+use ksfraser\FrontAccounting\Square\Services\CustomerAnalyticsService;
+use ksfraser\FrontAccounting\Square\Services\InventoryAnalyticsService;
+use ksfraser\FrontAccounting\Square\Services\FinancialAnalyticsService;
+use ksfraser\FrontAccounting\Square\Services\ReportGenerator;
+use ksfraser\FrontAccounting\Square\Exceptions\AnalyticsException;
+use ksfraser\FrontAccounting\Square\Exceptions\ReportGenerationException;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 

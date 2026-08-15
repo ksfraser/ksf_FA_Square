@@ -5,16 +5,16 @@ declare(strict_types=1);
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         // Initialize required services
-        $client = \Ksfraser\Frontaccounting\SquareUp\Infrastructure\SquareClientFactory::create(
-            \Ksfraser\Frontaccounting\SquareUp\Services\WebhookService::getCurrentEnvironment()
+        $client = \ksfraser\FrontAccounting\Square\Infrastructure\SquareClientFactory::create(
+            \ksfraser\FrontAccounting\Square\Services\WebhookService::getCurrentEnvironment()
         );
-        $subscriptionDao = new \Ksfraser\Frontaccounting\SquareUp\DAO\WebhookSubscriptionDAO(get_company_pref('table_prefix'));
-        $eventDao = new \Ksfraser\Frontaccounting\SquareUp\DAO\WebhookEventDAO(get_company_pref('table_prefix'));
+        $subscriptionDao = new \ksfraser\FrontAccounting\Square\DAO\WebhookSubscriptionDAO(get_company_pref('table_prefix'));
+        $eventDao = new \ksfraser\FrontAccounting\Square\DAO\WebhookEventDAO(get_company_pref('table_prefix'));
         
-        $webhookService = new \Ksfraser\Frontaccounting\SquareUp\Services\WebhookService(
+        $webhookService = new \ksfraser\FrontAccounting\Square\Services\WebhookService(
             $client,
             $subscriptionDao,
-            \Ksfraser\Frontaccounting\SquareUp\Services\WebhookService::getCurrentWebhookUrl()
+            \ksfraser\FrontAccounting\Square\Services\WebhookService::getCurrentWebhookUrl()
         );
         
         // Get webhook data
@@ -35,13 +35,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         http_response_code(200);
         echo 'OK';
         
-    } catch (\Ksfraser\Frontaccounting\SquareUp\Exceptions\WebhookValidationException $e) {
+    } catch (\ksfraser\FrontAccounting\Square\Exceptions\WebhookValidationException $e) {
         // Validation error - bad request
         http_response_code(400);
         error_log("Webhook validation error: " . $e->getMessage());
         echo 'Validation Error: ' . $e->getMessage();
         
-    } catch (\Ksfraser\Frontaccounting\SquareUp\Exceptions\WebhookCreationException $e) {
+    } catch (\ksfraser\FrontAccounting\Square\Exceptions\WebhookCreationException $e) {
         // Processing error - internal server error
         http_response_code(500);
         error_log("Webhook processing error: " . $e->getMessage());

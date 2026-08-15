@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Ksfraser\Frontaccounting\SquareUp\Tests\Unit;
+namespace ksfraser\FrontAccounting\Square\Tests\Unit;
 
-use Ksfraser\Frontaccounting\SquareUp\Exceptions\SquareException;
-use Ksfraser\Frontaccounting\SquareUp\Exceptions\ProductNotFoundException;
+use ksfraser\FrontAccounting\Square\Exceptions\SquareException;
+use ksfraser\FrontAccounting\Square\Exceptions\ProductNotFoundException;
 use PHPUnit\Framework\TestCase;
 
 class ExceptionsTest extends TestCase

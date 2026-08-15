@@ -1,15 +1,15 @@
 <?php
 declare(strict_types=1);
 
-namespace Ksfraser\Frontaccounting\SquareUp\Services;
+namespace ksfraser\FrontAccounting\Square\Services;
 
-use Ksfraser\Frontaccounting\SquareUp\Contracts\CRMAdapterInterface;
-use Ksfraser\Frontaccounting\SquareUp\Contracts\CRMIntegrationInterface;
+use ksfraser\FrontAccounting\Square\Contracts\CRMAdapterInterface;
+use ksfraser\FrontAccounting\Square\Contracts\CRMIntegrationInterface;
 
-use Ksfraser\Frontaccounting\SquareUp\DAO\DebtorsMasterDAO;
-use Ksfraser\Frontaccounting\SquareUp\DAO\SquareCustomerDAO;
-use Ksfraser\Frontaccounting\SquareUp\Exceptions\CRMIntegrationException;
-use Ksfraser\Frontaccounting\SquareUp\Exceptions\CustomerNotFoundException;
+use ksfraser\FrontAccounting\Square\DAO\DebtorsMasterDAO;
+use ksfraser\FrontAccounting\Square\DAO\SquareCustomerDAO;
+use ksfraser\FrontAccounting\Square\Exceptions\CRMIntegrationException;
+use ksfraser\FrontAccounting\Square\Exceptions\CustomerNotFoundException;
 /**
  * CRM Integration Service
  * 

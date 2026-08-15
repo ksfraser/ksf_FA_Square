@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Ksfraser\Frontaccounting\SquareUp\Push;
+namespace ksfraser\FrontAccounting\Square\Push;
 
-use Ksfraser\Frontaccounting\SquareUp\Contracts\TerminalPaymentInterface;
-use Ksfraser\Frontaccounting\SquareUp\Contracts\SettingsInterface;
-use Ksfraser\Frontaccounting\SquareUp\Exceptions\SquareException;
+use ksfraser\FrontAccounting\Square\Contracts\TerminalPaymentInterface;
+use ksfraser\FrontAccounting\Square\Contracts\SettingsInterface;
+use ksfraser\FrontAccounting\Square\Exceptions\SquareException;
 use Square\SquareClient;
 use Square\Exceptions\ApiException;
 use Square\Models\Order;

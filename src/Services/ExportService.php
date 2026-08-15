@@ -1,17 +1,17 @@
 <?php
 declare(strict_types=1);
 
-namespace Ksfraser\Frontaccounting\SquareUp\Services;
+namespace ksfraser\FrontAccounting\Square\Services;
 
 use Exception;
-use Ksfraser\Frontaccounting\SquareUp\Config\Settings;
-use Ksfraser\Frontaccounting\SquareUp\DAO\SquareTokenDAO;
-use Ksfraser\Frontaccounting\SquareUp\DAO\StockMasterDAO;
-use Ksfraser\Frontaccounting\SquareUp\DAO\StockMovesDAO;
-use Ksfraser\Frontaccounting\SquareUp\Push\CatalogExporter;
-use Ksfraser\Frontaccounting\SquareUp\ValueObjects\SquarePrice;
+use ksfraser\FrontAccounting\Square\Config\Settings;
+use ksfraser\FrontAccounting\Square\DAO\SquareTokenDAO;
+use ksfraser\FrontAccounting\Square\DAO\StockMasterDAO;
+use ksfraser\FrontAccounting\Square\DAO\StockMovesDAO;
+use ksfraser\FrontAccounting\Square\Push\CatalogExporter;
+use ksfraser\FrontAccounting\Square\ValueObjects\SquarePrice;
 use Square\Exceptions\ApiException;
-use Ksfraser\Frontaccounting\SquareUp\Exceptions\SquareException;
+use ksfraser\FrontAccounting\Square\Exceptions\SquareException;
 
 /**
  * Service class to handle Square export logic.

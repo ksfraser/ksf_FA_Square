@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Ksfraser\Frontaccounting\SquareUp\Interfaces;
+namespace ksfraser\FrontAccounting\Square\Interfaces;
 
 /**
  * Transaction Correction Service Interface

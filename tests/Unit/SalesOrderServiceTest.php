@@ -1,14 +1,14 @@
 <?php
 declare(strict_types=1);
 
-namespace Ksfraser\Frontaccounting\SquareUp\Tests\Unit\Services;
+namespace ksfraser\FrontAccounting\Square\Tests\Unit\Services;
 
-use Ksfraser\Frontaccounting\SquareUp\Services\SalesOrderService;
-use Ksfraser\Frontaccounting\SquareUp\DAO\SalesOrdersDAO;
-use Ksfraser\Frontaccounting\SquareUp\Services\SquareOrderAdapter;
-use Ksfraser\Frontaccounting\SquareUp\Services\TaxService;
-use Ksfraser\Frontaccounting\SquareUp\Services\CustomerService;
-use Ksfraser\Frontaccounting\SquareUp\Exceptions\SalesOrderException;
+use ksfraser\FrontAccounting\Square\Services\SalesOrderService;
+use ksfraser\FrontAccounting\Square\DAO\SalesOrdersDAO;
+use ksfraser\FrontAccounting\Square\Services\SquareOrderAdapter;
+use ksfraser\FrontAccounting\Square\Services\TaxService;
+use ksfraser\FrontAccounting\Square\Services\CustomerService;
+use ksfraser\FrontAccounting\Square\Exceptions\SalesOrderException;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 

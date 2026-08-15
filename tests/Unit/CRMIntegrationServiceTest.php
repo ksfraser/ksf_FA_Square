@@ -1,14 +1,14 @@
 <?php
 declare(strict_types=1);
 
-namespace Ksfraser\Frontaccounting\SquareUp\Tests\Unit\Services;
+namespace ksfraser\FrontAccounting\Square\Tests\Unit\Services;
 
-use Ksfraser\Frontaccounting\SquareUp\Services\CRMIntegrationService;
-use Ksfraser\Frontaccounting\SquareUp\Contracts\CRMAdapterInterface;
-use Ksfraser\Frontaccounting\SquareUp\Services\CustomerMatchStrategy;
-use Ksfraser\Frontaccounting\SquareUp\DAO\DebtorsMasterDAO;
-use Ksfraser\Frontaccounting\SquareUp\DAO\SquareCustomerDAO;
-use Ksfraser\Frontaccounting\SquareUp\Exceptions\CRMIntegrationException;
+use ksfraser\FrontAccounting\Square\Services\CRMIntegrationService;
+use ksfraser\FrontAccounting\Square\Contracts\CRMAdapterInterface;
+use ksfraser\FrontAccounting\Square\Services\CustomerMatchStrategy;
+use ksfraser\FrontAccounting\Square\DAO\DebtorsMasterDAO;
+use ksfraser\FrontAccounting\Square\DAO\SquareCustomerDAO;
+use ksfraser\FrontAccounting\Square\Exceptions\CRMIntegrationException;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 

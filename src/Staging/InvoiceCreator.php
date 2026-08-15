@@ -1,10 +1,10 @@
 <?php
 declare(strict_types=1);
 
-namespace Ksfraser\Frontaccounting\SquareUp\Staging;
+namespace ksfraser\FrontAccounting\Square\Staging;
 
-use Ksfraser\Frontaccounting\SquareUp\Contracts\InvoiceCreatorInterface;
-use Ksfraser\Frontaccounting\SquareUp\Exceptions\SquareException;
+use ksfraser\FrontAccounting\Square\Contracts\InvoiceCreatorInterface;
+use ksfraser\FrontAccounting\Square\Exceptions\SquareException;
 
 class InvoiceCreator implements InvoiceCreatorInterface
 {

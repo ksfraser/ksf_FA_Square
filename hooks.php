@@ -309,35 +309,35 @@ class hooks_ksf_FA_Square extends hooks {
   /**//**
   * Build the item event sync service bound to the current FA company.
   *
-  * @return \Ksfraser\Frontaccounting\SquareUp\Push\ItemEventSyncService|null
+  * @return \ksfraser\FrontAccounting\Square\Push\ItemEventSyncService|null
   */
   private function buildItemEventSyncService() {
       $autoload = dirname(__FILE__) . '/vendor/autoload.php';
       if (file_exists($autoload)) {
           require_once $autoload;
       }
-      if (!class_exists('\Ksfraser\Frontaccounting\SquareUp\Push\ItemEventSyncService')) {
+      if (!class_exists('\ksfraser\FrontAccounting\Square\Push\ItemEventSyncService')) {
           return null;
       }
       try {
           $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
-          $settings = \Ksfraser\Frontaccounting\SquareUp\Config\Settings::fromFADatabase($tablePrefix);
+          $settings = \ksfraser\FrontAccounting\Square\Config\Settings::fromFADatabase($tablePrefix);
           $accessToken = $settings->getAccessToken();
           if ($accessToken === null || $accessToken === '') {
               return null;
           }
-          $client = \Ksfraser\Frontaccounting\SquareUp\Infrastructure\SquareClientFactory::create($settings);
-          $exporter = new \Ksfraser\Frontaccounting\SquareUp\Push\CatalogExporter($client, $settings);
+          $client = \ksfraser\FrontAccounting\Square\Infrastructure\SquareClientFactory::create($settings);
+          $exporter = new \ksfraser\FrontAccounting\Square\Push\CatalogExporter($client, $settings);
           $currency = function_exists('get_company_pref') ? (string) get_company_pref('curr_default') : '';
-          return new \Ksfraser\Frontaccounting\SquareUp\Push\ItemEventSyncService(
+          return new \ksfraser\FrontAccounting\Square\Push\ItemEventSyncService(
               $settings,
               $exporter,
-              new \Ksfraser\Frontaccounting\SquareUp\DAO\StockMasterDAO($tablePrefix),
-              new \Ksfraser\Frontaccounting\SquareUp\DAO\SquareTokenDAO($tablePrefix, $settings->getEnvironment()),
+              new \ksfraser\FrontAccounting\Square\DAO\StockMasterDAO($tablePrefix),
+              new \ksfraser\FrontAccounting\Square\DAO\SquareTokenDAO($tablePrefix, $settings->getEnvironment()),
               $currency,
               0,
               null,
-              new \Ksfraser\Frontaccounting\SquareUp\DAO\ProductAttributesDAO($tablePrefix)
+              new \ksfraser\FrontAccounting\Square\DAO\ProductAttributesDAO($tablePrefix)
           );
       } catch (\Throwable $e) {
           error_log('ksf_FA_Square: item event sync unavailable: ' . $e->getMessage());

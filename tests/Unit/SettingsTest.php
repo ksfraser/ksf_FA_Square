@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Ksfraser\Frontaccounting\SquareUp\Tests\Unit;
+namespace ksfraser\FrontAccounting\Square\Tests\Unit;
 
-use Ksfraser\Frontaccounting\SquareUp\Config\Settings;
+use ksfraser\FrontAccounting\Square\Config\Settings;
 use PHPUnit\Framework\TestCase;
 
 class SettingsTest extends TestCase

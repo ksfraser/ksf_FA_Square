@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Ksfraser\Frontaccounting\SquareUp\Tests\Unit;
+namespace ksfraser\FrontAccounting\Square\Tests\Unit;
 
-use Ksfraser\Frontaccounting\SquareUp\Push\CatalogExporter;
-use Ksfraser\Frontaccounting\SquareUp\Contracts\SettingsInterface;
-use Ksfraser\Frontaccounting\SquareUp\Exceptions\SquareException;
+use ksfraser\FrontAccounting\Square\Push\CatalogExporter;
+use ksfraser\FrontAccounting\Square\Contracts\SettingsInterface;
+use ksfraser\FrontAccounting\Square\Exceptions\SquareException;
 use PHPUnit\Framework\TestCase;
 use Square\SquareClient;
 use Square\Models\CatalogObject;

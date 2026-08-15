@@ -15,9 +15,9 @@ namespace {
     }
 }
 
-namespace Ksfraser\Frontaccounting\SquareUp\Tests\Unit\Services {
+namespace ksfraser\FrontAccounting\Square\Tests\Unit\Services {
 
-use Ksfraser\Frontaccounting\SquareUp\Services\ImportService;
+use ksfraser\FrontAccounting\Square\Services\ImportService;
 use PHPUnit\Framework\TestCase;
 
 /**

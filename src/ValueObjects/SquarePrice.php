@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Ksfraser\Frontaccounting\SquareUp\ValueObjects;
+namespace ksfraser\FrontAccounting\Square\ValueObjects;
 
 /**
  * Value Object for handling Square price formatting and validation.

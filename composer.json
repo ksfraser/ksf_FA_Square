@@ -33,7 +33,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Ksfraser\\Frontaccounting\\SquareUp\\": "src/"
+            "ksfraser\\FrontAccounting\\Square\\": "src/"
         },
         "files": [
             "src/Models/WebhookEventType.php"
@@ -41,7 +41,7 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "Ksfraser\\Frontaccounting\\SquareUp\\Tests\\": "tests/"
+            "ksfraser\\FrontAccounting\\Square\\Tests\\": "tests/"
         }
     },
     "scripts": {

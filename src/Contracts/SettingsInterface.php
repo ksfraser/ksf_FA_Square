@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Ksfraser\Frontaccounting\SquareUp\Contracts;
+namespace ksfraser\FrontAccounting\Square\Contracts;
 
 interface SettingsInterface
 {

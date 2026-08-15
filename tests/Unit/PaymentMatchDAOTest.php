@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Ksfraser\Frontaccounting\SquareUp\Tests\Unit;
+namespace ksfraser\FrontAccounting\Square\Tests\Unit;
 
-use Ksfraser\Frontaccounting\SquareUp\DAO\PaymentMatchDAO;
+use ksfraser\FrontAccounting\Square\DAO\PaymentMatchDAO;
 use PHPUnit\Framework\TestCase;
 
 class PaymentMatchDAOTest extends TestCase

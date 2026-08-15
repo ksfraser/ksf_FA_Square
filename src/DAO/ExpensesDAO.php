@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Ksfraser\Frontaccounting\SquareUp\DAO;
+namespace ksfraser\FrontAccounting\Square\DAO;
 
 /**
  * Expenses DAO

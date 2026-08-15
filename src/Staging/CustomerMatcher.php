@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Ksfraser\Frontaccounting\SquareUp\Staging;
+namespace ksfraser\FrontAccounting\Square\Staging;
 
-use Ksfraser\Frontaccounting\SquareUp\Contracts\CustomerMatcherInterface;
+use ksfraser\FrontAccounting\Square\Contracts\CustomerMatcherInterface;
 
 class CustomerMatcher implements CustomerMatcherInterface
 {

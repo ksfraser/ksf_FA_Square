@@ -1,12 +1,12 @@
 <?php
 declare(strict_types=1);
 
-namespace Ksfraser\Frontaccounting\SquareUp\Services;
+namespace ksfraser\FrontAccounting\Square\Services;
 
-use Ksfraser\Frontaccounting\SquareUp\Exceptions\CorrectionException;
-use Ksfraser\Frontaccounting\SquareUp\Exceptions\DebtorException;
-use Ksfraser\Frontaccounting\SquareUp\Exceptions\TransactionException;
-use Ksfraser\Frontaccounting\SquareUp\Interfaces\TransactionCorrectionInterface;
+use ksfraser\FrontAccounting\Square\Exceptions\CorrectionException;
+use ksfraser\FrontAccounting\Square\Exceptions\DebtorException;
+use ksfraser\FrontAccounting\Square\Exceptions\TransactionException;
+use ksfraser\FrontAccounting\Square\Interfaces\TransactionCorrectionInterface;
 
 /**
  * Transaction Correction Service

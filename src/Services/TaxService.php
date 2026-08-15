@@ -1,12 +1,12 @@
 <?php
 declare(strict_types=1);
 
-namespace Ksfraser\Frontaccounting\SquareUp\Services;
+namespace ksfraser\FrontAccounting\Square\Services;
 
-use Ksfraser\Frontaccounting\SquareUp\Contracts\TaxServiceInterface;
+use ksfraser\FrontAccounting\Square\Contracts\TaxServiceInterface;
 
-use Ksfraser\Frontaccounting\SquareUp\DAO\TaxMappingDAO;
-use Ksfraser\Frontaccounting\SquareUp\DAO\TaxRatesDAO;
+use ksfraser\FrontAccounting\Square\DAO\TaxMappingDAO;
+use ksfraser\FrontAccounting\Square\DAO\TaxRatesDAO;
 /**
  * Tax Service
  * 

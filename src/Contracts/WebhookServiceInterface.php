@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Ksfraser\Frontaccounting\SquareUp\Contracts;
+namespace ksfraser\FrontAccounting\Square\Contracts;
 
 /**
  * Contract for webhook management services.
@@ -19,7 +19,7 @@ interface WebhookServiceInterface
      * @param string $url Webhook endpoint URL
      * @param array $events List of event types to subscribe to
      * @return \Square\Models\WebhookSubscription Created subscription object
-     * @throws \Ksfraser\Frontaccounting\SquareUp\Exceptions\WebhookCreationException
+     * @throws \ksfraser\FrontAccounting\Square\Exceptions\WebhookCreationException
      */
     public function createSubscription(string $url, array $events): \Square\Models\WebhookSubscription;
 
@@ -27,7 +27,7 @@ interface WebhookServiceInterface
      * Lists all webhook subscriptions from Square.
      *
      * @return array Array of \Square\Models\WebhookSubscription objects
-     * @throws \Ksfraser\Frontaccounting\SquareUp\Exceptions\WebhookCreationException
+     * @throws \ksfraser\FrontAccounting\Square\Exceptions\WebhookCreationException
      */
     public function listSubscriptions(): array;
 
@@ -37,7 +37,7 @@ interface WebhookServiceInterface
      * @param string $id Subscription ID
      * @param \Square\Models\WebhookSubscription $subscription Updated subscription data
      * @return \Square\Models\WebhookSubscription Updated subscription object
-     * @throws \Ksfraser\Frontaccounting\SquareUp\Exceptions\WebhookCreationException
+     * @throws \ksfraser\FrontAccounting\Square\Exceptions\WebhookCreationException
      */
     public function updateSubscription(string $id, \Square\Models\WebhookSubscription $subscription): \Square\Models\WebhookSubscription;
 
@@ -46,7 +46,7 @@ interface WebhookServiceInterface
      *
      * @param string $id Subscription ID
      * @return bool True if deletion was successful
-     * @throws \Ksfraser\Frontaccounting\SquareUp\Exceptions\WebhookCreationException
+     * @throws \ksfraser\FrontAccounting\Square\Exceptions\WebhookCreationException
      */
     public function deleteSubscription(string $id): bool;
 
@@ -56,7 +56,7 @@ interface WebhookServiceInterface
      * @param array $eventData Raw webhook event data
      * @param string $signature Webhook signature for validation
      * @return bool True if event was handled successfully
-     * @throws \Ksfraser\Frontaccounting\SquareUp\Exceptions\WebhookValidationException
+     * @throws \ksfraser\FrontAccounting\Square\Exceptions\WebhookValidationException
      */
     public function handleWebhookEvent(array $eventData, string $signature): bool;
 }

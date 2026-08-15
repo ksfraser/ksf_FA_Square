@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Ksfraser\Frontaccounting\SquareUp\DAO;
+namespace ksfraser\FrontAccounting\Square\DAO;
 
 /**
  * Data Access Object for the Stage 3 connector attribute domains

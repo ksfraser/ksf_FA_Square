@@ -1,14 +1,14 @@
 <?php
 declare(strict_types=1);
 
-namespace Ksfraser\Frontaccounting\SquareUp\Tests\Unit\Services;
+namespace ksfraser\FrontAccounting\Square\Tests\Unit\Services;
 
-use Ksfraser\Frontaccounting\SquareUp\Services\CustomerService;
-use Ksfraser\Frontaccounting\SquareUp\DAO\DebtorsMasterDAO;
-use Ksfraser\Frontaccounting\SquareUp\DAO\SquareCustomerDAO;
+use ksfraser\FrontAccounting\Square\Services\CustomerService;
+use ksfraser\FrontAccounting\Square\DAO\DebtorsMasterDAO;
+use ksfraser\FrontAccounting\Square\DAO\SquareCustomerDAO;
 use Square\SquareClient;
-use Ksfraser\Frontaccounting\SquareUp\Exceptions\CustomerSyncException;
-use Ksfraser\Frontaccounting\SquareUp\Exceptions\CustomerNotFoundException;
+use ksfraser\FrontAccounting\Square\Exceptions\CustomerSyncException;
+use ksfraser\FrontAccounting\Square\Exceptions\CustomerNotFoundException;
 use PHPUnit\Framework\TestCase;
 use Square\Models\Customer;
 use Square\Models\CreateCustomerRequest;

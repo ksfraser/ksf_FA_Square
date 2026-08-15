@@ -122,7 +122,7 @@ class CustomerServiceTest extends \PHPUnit\Framework\TestCase
     {
         // Arrange
         $mockSquareClient = $this->createMock(\Square\Api\CustomersApi::class);
-        $mockFaDebtor = $this->createMock(\Ksfraser\Frontaccounting\SquareUp\Models\Debtor::class);
+        $mockFaDebtor = $this->createMock(\ksfraser\FrontAccounting\Square\Models\Debtor::class);
         
         $service = new CustomerService($mockSquareClient, $mockFaDebtor);
         
@@ -385,7 +385,7 @@ class CustomerServiceTest extends \PHPUnit\Framework\TestCase
 // Integration test for API calls
 class WebhookIntegrationTest extends \PHPUnit\Framework\TestCase
 {
-    use \Ksfraser\Frontaccounting\SquareUp\Tests\Traits\SquareApiTestTrait;
+    use \ksfraser\FrontAccounting\Square\Tests\Traits\SquareApiTestTrait;
     
     public function testCanCreateWebhookSubscription(): void
     {

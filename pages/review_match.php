@@ -15,14 +15,14 @@ include_once $path_to_root . "/gl/includes/db/gl_db.inc";
 
 include_once __DIR__ . "/../vendor/autoload.php";
 
-use Ksfraser\Frontaccounting\SquareUp\Config\Settings;
-use Ksfraser\Frontaccounting\SquareUp\DAO\TransactionStagingDAO;
-use Ksfraser\Frontaccounting\SquareUp\DAO\ItemStagingDAO;
-use Ksfraser\Frontaccounting\SquareUp\DAO\SalesMatchDAO;
-use Ksfraser\Frontaccounting\SquareUp\DAO\PaymentMatchDAO;
-use Ksfraser\Frontaccounting\SquareUp\DAO\SquareImportLogDAO;
-use Ksfraser\Frontaccounting\SquareUp\Services\ImportService;
-use Ksfraser\Frontaccounting\SquareUp\Infrastructure\SquareClientFactory;
+use ksfraser\FrontAccounting\Square\Config\Settings;
+use ksfraser\FrontAccounting\Square\DAO\TransactionStagingDAO;
+use ksfraser\FrontAccounting\Square\DAO\ItemStagingDAO;
+use ksfraser\FrontAccounting\Square\DAO\SalesMatchDAO;
+use ksfraser\FrontAccounting\Square\DAO\PaymentMatchDAO;
+use ksfraser\FrontAccounting\Square\DAO\SquareImportLogDAO;
+use ksfraser\FrontAccounting\Square\Services\ImportService;
+use ksfraser\FrontAccounting\Square\Infrastructure\SquareClientFactory;
 
 $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
 try {

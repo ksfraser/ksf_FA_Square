@@ -1,11 +1,11 @@
 <?php
 declare(strict_types=1);
 
-namespace Ksfraser\Frontaccounting\SquareUp\Tests\Unit\Services {
+namespace ksfraser\FrontAccounting\Square\Tests\Unit\Services {
 
-use Ksfraser\Frontaccounting\SquareUp\Services\ImportService;
-use Ksfraser\Frontaccounting\SquareUp\Services\PaymentService;
-use Ksfraser\Frontaccounting\SquareUp\Exceptions\PaymentProcessingException;
+use ksfraser\FrontAccounting\Square\Services\ImportService;
+use ksfraser\FrontAccounting\Square\Services\PaymentService;
+use ksfraser\FrontAccounting\Square\Exceptions\PaymentProcessingException;
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 use Square\Models\Payment;

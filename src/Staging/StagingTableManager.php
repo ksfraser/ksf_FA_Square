@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Ksfraser\Frontaccounting\SquareUp\Staging;
+namespace ksfraser\FrontAccounting\Square\Staging;
 
 class StagingTableManager
 {

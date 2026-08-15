@@ -231,7 +231,7 @@ Use DTO classes that:
 <?php
 declare(strict_types=1);
 
-namespace Ksfraser\Frontaccounting\SquareUp\DTO;
+namespace ksfraser\FrontAccounting\Square\DTO;
 
 class ExportRequest
 {

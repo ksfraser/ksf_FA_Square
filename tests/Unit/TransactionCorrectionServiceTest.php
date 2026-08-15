@@ -1,14 +1,14 @@
 <?php
 declare(strict_types=1);
 
-namespace Ksfraser\Frontaccounting\SquareUp\Tests\Unit\Services;
+namespace ksfraser\FrontAccounting\Square\Tests\Unit\Services;
 
 use PHPUnit\Framework\TestCase;
-use Ksfraser\Frontaccounting\SquareUp\Services\TransactionCorrectionService;
-use Ksfraser\Frontaccounting\SquareUp\Interfaces\TransactionCorrectionInterface;
-use Ksfraser\Frontaccounting\SquareUp\Exceptions\TransactionException;
-use Ksfraser\Frontaccounting\SquareUp\Exceptions\DebtorException;
-use Ksfraser\Frontaccounting\SquareUp\Exceptions\CorrectionException;
+use ksfraser\FrontAccounting\Square\Services\TransactionCorrectionService;
+use ksfraser\FrontAccounting\Square\Interfaces\TransactionCorrectionInterface;
+use ksfraser\FrontAccounting\Square\Exceptions\TransactionException;
+use ksfraser\FrontAccounting\Square\Exceptions\DebtorException;
+use ksfraser\FrontAccounting\Square\Exceptions\CorrectionException;
 
 class TransactionCorrectionServiceTest extends TestCase
 {

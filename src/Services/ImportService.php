@@ -1,25 +1,25 @@
 <?php
 declare(strict_types=1);
 
-namespace Ksfraser\Frontaccounting\SquareUp\Services;
+namespace ksfraser\FrontAccounting\Square\Services;
 
 use Exception;
 use DateTimeImmutable;
 use DateTimeInterface;
-use Ksfraser\Frontaccounting\SquareUp\Config\Settings;
-use Ksfraser\Frontaccounting\SquareUp\DAO\DebtorsMasterDAO;
-use Ksfraser\Frontaccounting\SquareUp\DAO\CustBranchDAO;
-use Ksfraser\Frontaccounting\SquareUp\DAO\SalesOrdersDAO;
-use Ksfraser\Frontaccounting\SquareUp\DAO\SquareImportLogDAO;
-use Ksfraser\Frontaccounting\SquareUp\DAO\TransactionStagingDAO;
-use Ksfraser\Frontaccounting\SquareUp\DAO\ItemStagingDAO;
-use Ksfraser\Frontaccounting\SquareUp\DAO\PaymentMatchDAO;
-use Ksfraser\Frontaccounting\SquareUp\DAO\SalesMatchDAO;
-use Ksfraser\Frontaccounting\SquareUp\DAO\PaymentsDAO;
-use Ksfraser\Frontaccounting\SquareUp\DAO\PaymentMappingDAO;
-use Ksfraser\Frontaccounting\SquareUp\DAO\SquareCustomerDAO;
-use Ksfraser\Frontaccounting\SquareUp\Pull\OrderImporter;
-use Ksfraser\Frontaccounting\SquareUp\Staging\StagingTableManager;
+use ksfraser\FrontAccounting\Square\Config\Settings;
+use ksfraser\FrontAccounting\Square\DAO\DebtorsMasterDAO;
+use ksfraser\FrontAccounting\Square\DAO\CustBranchDAO;
+use ksfraser\FrontAccounting\Square\DAO\SalesOrdersDAO;
+use ksfraser\FrontAccounting\Square\DAO\SquareImportLogDAO;
+use ksfraser\FrontAccounting\Square\DAO\TransactionStagingDAO;
+use ksfraser\FrontAccounting\Square\DAO\ItemStagingDAO;
+use ksfraser\FrontAccounting\Square\DAO\PaymentMatchDAO;
+use ksfraser\FrontAccounting\Square\DAO\SalesMatchDAO;
+use ksfraser\FrontAccounting\Square\DAO\PaymentsDAO;
+use ksfraser\FrontAccounting\Square\DAO\PaymentMappingDAO;
+use ksfraser\FrontAccounting\Square\DAO\SquareCustomerDAO;
+use ksfraser\FrontAccounting\Square\Pull\OrderImporter;
+use ksfraser\FrontAccounting\Square\Staging\StagingTableManager;
 use Square\Exceptions\ApiException;
 use Square\SquareClient;
 use Square\Models\Payment;

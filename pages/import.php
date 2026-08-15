@@ -18,11 +18,11 @@ include_once $path_to_root . "/taxes/db/item_tax_types_db.inc";
 
 include_once __DIR__ . "/../vendor/autoload.php";
 
-use Ksfraser\Frontaccounting\SquareUp\Config\Settings;
-use Ksfraser\Frontaccounting\SquareUp\DAO\TransactionStagingDAO;
-use Ksfraser\Frontaccounting\SquareUp\DAO\ItemStagingDAO;
-use Ksfraser\Frontaccounting\SquareUp\Infrastructure\SquareClientFactory;
-use Ksfraser\Frontaccounting\SquareUp\Services\ImportService;
+use ksfraser\FrontAccounting\Square\Config\Settings;
+use ksfraser\FrontAccounting\Square\DAO\TransactionStagingDAO;
+use ksfraser\FrontAccounting\Square\DAO\ItemStagingDAO;
+use ksfraser\FrontAccounting\Square\Infrastructure\SquareClientFactory;
+use ksfraser\FrontAccounting\Square\Services\ImportService;
 use Square\Exceptions\ApiException;
 
 if (!function_exists('sales_service_items_list_row')) {
@@ -455,7 +455,7 @@ if (!empty($stagedTransactions)) {
     $branches = [];
     $destCust = (int)($_POST['destCust'] ?? $settings->getDestinationCustomer() ?? 0);
     if ($destCust > 0) {
-        $branchDao = new \Ksfraser\Frontaccounting\SquareUp\DAO\CustBranchDAO($tablePrefix);
+        $branchDao = new \ksfraser\FrontAccounting\Square\DAO\CustBranchDAO($tablePrefix);
         $customerBranches = $branchDao->getByDebtorNo($destCust);
         foreach ($customerBranches as $br) {
             $branches[$br['branch_code']] = $br['br_name'];

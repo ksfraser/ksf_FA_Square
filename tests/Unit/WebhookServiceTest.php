@@ -1,13 +1,13 @@
 <?php
 declare(strict_types=1);
 
-namespace Ksfraser\Frontaccounting\SquareUp\Tests\Unit\Services;
+namespace ksfraser\FrontAccounting\Square\Tests\Unit\Services;
 
-use Ksfraser\Frontaccounting\SquareUp\Services\WebhookService;
-use Ksfraser\Frontaccounting\SquareUp\DAO\WebhookSubscriptionDAO;
+use ksfraser\FrontAccounting\Square\Services\WebhookService;
+use ksfraser\FrontAccounting\Square\DAO\WebhookSubscriptionDAO;
 use Square\SquareClient;
-use Ksfraser\Frontaccounting\SquareUp\Exceptions\WebhookCreationException;
-use Ksfraser\Frontaccounting\SquareUp\Exceptions\WebhookValidationException;
+use ksfraser\FrontAccounting\Square\Exceptions\WebhookCreationException;
+use ksfraser\FrontAccounting\Square\Exceptions\WebhookValidationException;
 use PHPUnit\Framework\TestCase;
 use Square\Models\WebhookSubscription;
 use Square\Models\WebhookEventType;

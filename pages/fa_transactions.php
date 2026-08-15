@@ -14,10 +14,10 @@ include_once $path_to_root . "/sales/includes/db/sales_order_db.inc";
 
 include_once __DIR__ . "/../vendor/autoload.php";
 
-use Ksfraser\Frontaccounting\SquareUp\Config\Settings;
-use Ksfraser\Frontaccounting\SquareUp\DAO\SalesMatchDAO;
-use Ksfraser\Frontaccounting\SquareUp\DAO\PaymentMatchDAO;
-use Ksfraser\Frontaccounting\SquareUp\DAO\SquareImportLogDAO;
+use ksfraser\FrontAccounting\Square\Config\Settings;
+use ksfraser\FrontAccounting\Square\DAO\SalesMatchDAO;
+use ksfraser\FrontAccounting\Square\DAO\PaymentMatchDAO;
+use ksfraser\FrontAccounting\Square\DAO\SquareImportLogDAO;
 
 $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
 try {

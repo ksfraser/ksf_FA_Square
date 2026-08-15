@@ -1,14 +1,14 @@
 <?php
 declare(strict_types=1);
 
-namespace Ksfraser\Frontaccounting\SquareUp\Services;
+namespace ksfraser\FrontAccounting\Square\Services;
 
 use Square\SquareClient;
-use Ksfraser\Frontaccounting\SquareUp\DAO\SquareImportLogDAO;
-use Ksfraser\Frontaccounting\SquareUp\DAO\PaymentMatchDAO;
-use Ksfraser\Frontaccounting\SquareUp\Contracts\RefundServiceInterface;
-use Ksfraser\Frontaccounting\SquareUp\Exceptions\RefundProcessingException;
-use Ksfraser\Frontaccounting\SquareUp\InvoiceCreator;
+use ksfraser\FrontAccounting\Square\DAO\SquareImportLogDAO;
+use ksfraser\FrontAccounting\Square\DAO\PaymentMatchDAO;
+use ksfraser\FrontAccounting\Square\Contracts\RefundServiceInterface;
+use ksfraser\FrontAccounting\Square\Exceptions\RefundProcessingException;
+use ksfraser\FrontAccounting\Square\InvoiceCreator;
 use Square\Models\Refund;
 use Square\Models\CreateRefundRequest;
 use Square\Models\Payment;

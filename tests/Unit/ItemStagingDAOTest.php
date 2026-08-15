@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Ksfraser\Frontaccounting\SquareUp\Tests\Unit;
+namespace ksfraser\FrontAccounting\Square\Tests\Unit;
 
-use Ksfraser\Frontaccounting\SquareUp\DAO\ItemStagingDAO;
+use ksfraser\FrontAccounting\Square\DAO\ItemStagingDAO;
 use PHPUnit\Framework\TestCase;
 
 class ItemStagingDAOTest extends TestCase

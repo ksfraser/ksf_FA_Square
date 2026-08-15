@@ -1,16 +1,16 @@
 <?php
 declare(strict_types=1);
 
-namespace Ksfraser\Frontaccounting\SquareUp\Tests\Unit;
+namespace ksfraser\FrontAccounting\Square\Tests\Unit;
 
-use Ksfraser\Frontaccounting\SquareUp\Contracts\SettingsInterface;
-use Ksfraser\Frontaccounting\SquareUp\DAO\ProductAttributesDAO;
-use Ksfraser\Frontaccounting\SquareUp\DAO\SquareTokenDAO;
-use Ksfraser\Frontaccounting\SquareUp\DAO\StockMasterDAO;
-use Ksfraser\Frontaccounting\SquareUp\Exceptions\SquareException;
-use Ksfraser\Frontaccounting\SquareUp\Push\CatalogExporter;
-use Ksfraser\Frontaccounting\SquareUp\Push\ItemEventSyncService;
-use Ksfraser\Frontaccounting\SquareUp\Services\TaxRateResolver;
+use ksfraser\FrontAccounting\Square\Contracts\SettingsInterface;
+use ksfraser\FrontAccounting\Square\DAO\ProductAttributesDAO;
+use ksfraser\FrontAccounting\Square\DAO\SquareTokenDAO;
+use ksfraser\FrontAccounting\Square\DAO\StockMasterDAO;
+use ksfraser\FrontAccounting\Square\Exceptions\SquareException;
+use ksfraser\FrontAccounting\Square\Push\CatalogExporter;
+use ksfraser\FrontAccounting\Square\Push\ItemEventSyncService;
+use ksfraser\FrontAccounting\Square\Services\TaxRateResolver;
 use PHPUnit\Framework\TestCase;
 use Square\Models\CatalogItem;
 use Square\Models\CatalogObject;

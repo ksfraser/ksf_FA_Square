@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Ksfraser\Frontaccounting\SquareUp\Config;
+namespace ksfraser\FrontAccounting\Square\Config;
 
-use Ksfraser\Frontaccounting\SquareUp\Contracts\SettingsInterface;
+use ksfraser\FrontAccounting\Square\Contracts\SettingsInterface;
 
 class Settings implements SettingsInterface
 {

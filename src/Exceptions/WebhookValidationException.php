@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Ksfraser\Frontaccounting\SquareUp\Exceptions;
+namespace ksfraser\FrontAccounting\Square\Exceptions;
 
 /**
  * Exception thrown when webhook validation fails.

@@ -12,11 +12,11 @@ include_once $path_to_root . "/includes/data_checks.inc";
 
 include_once __DIR__ . "/../vendor/autoload.php";
 
-use Ksfraser\Frontaccounting\SquareUp\Config\Settings;
-use Ksfraser\Frontaccounting\SquareUp\DAO\DebtorsMasterDAO;
-use Ksfraser\Frontaccounting\SquareUp\DAO\LocationMappingDAO;
-use Ksfraser\Frontaccounting\SquareUp\Staging\StagingTableManager;
-use Ksfraser\Frontaccounting\SquareUp\Infrastructure\SquareClientFactory;
+use ksfraser\FrontAccounting\Square\Config\Settings;
+use ksfraser\FrontAccounting\Square\DAO\DebtorsMasterDAO;
+use ksfraser\FrontAccounting\Square\DAO\LocationMappingDAO;
+use ksfraser\FrontAccounting\Square\Staging\StagingTableManager;
+use ksfraser\FrontAccounting\Square\Infrastructure\SquareClientFactory;
 use Square\Exceptions\ApiException;
 
 $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';

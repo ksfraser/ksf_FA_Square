@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Ksfraser\Frontaccounting\SquareUp\Contracts;
+namespace ksfraser\FrontAccounting\Square\Contracts;
 
 /**
  * Contract for customer management services.
@@ -18,7 +18,7 @@ interface CustomerServiceInterface
      *
      * @param array $debtor Debtor data from FA
      * @return \Square\Models\Customer Created/updated Square customer
-     * @throws \Ksfraser\Frontaccounting\SquareUp\Exceptions\CustomerSyncException
+     * @throws \ksfraser\FrontAccounting\Square\Exceptions\CustomerSyncException
      */
     public function syncCustomerFromFA(array $debtor): \Square\Models\Customer;
 
@@ -27,7 +27,7 @@ interface CustomerServiceInterface
      *
      * @param \Square\Models\Customer $squareCustomer Square customer data
      * @return array Created/updated FA debtor
-     * @throws \Ksfraser\Frontaccounting\SquareUp\Exceptions\CustomerSyncException
+     * @throws \ksfraser\FrontAccounting\Square\Exceptions\CustomerSyncException
      */
     public function syncCustomerToSquare(\Square\Models\Customer $squareCustomer): array;
 
@@ -52,7 +52,7 @@ interface CustomerServiceInterface
      * Gets all Square customers.
      *
      * @return array Array of \Square\Models\Customer objects
-     * @throws \Ksfraser\Frontaccounting\SquareUp\Exceptions\CustomerSyncException
+     * @throws \ksfraser\FrontAccounting\Square\Exceptions\CustomerSyncException
      */
     public function getAllCustomers(): array;
 }
