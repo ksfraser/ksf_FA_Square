@@ -85,11 +85,11 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
             case 'correct':
                 return $this->correctTransaction($request);
             case 'correct_fa':
-                return $this->correctFaTransaction($request);
+                return $this->handleCorrectFaTransaction($request);
             case 'preview':
                 return $this->previewCorrection($request);
             case 'simulate':
-                return $this->simulateCorrection($request);
+                return $this->handleSimulateCorrection($request);
             case 'validate':
                 return $this->validateCorrection($request);
             default:
@@ -110,15 +110,15 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
             case 'index':
                 return $this->index($request);
             case 'history':
-                return $this->getCorrectionHistory($request);
+                return $this->handleGetCorrectionHistory($request);
             case 'statistics':
-                return $this->getCorrectionStatistics($request);
+                return $this->handleGetCorrectionStatistics($request);
             case 'capabilities':
                 return $this->getCapabilities($request);
             case 'recommendations':
                 return $this->getRecommendations($request);
             case 'preview':
-                return $this->getCorrectionPreview($request);
+                return $this->handleGetCorrectionPreview($request);
             case 'impact':
                 return $this->getCorrectionImpact($request);
             case 'available_debtors':
@@ -139,9 +139,9 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
     {
         switch ($action) {
             case 'configuration':
-                return $this->updateConfiguration($request);
+                return $this->handleUpdateConfiguration($request);
             case 'rollback':
-                return $this->performRollback($request);
+                return $this->handlePerformRollback($request);
             default:
                 return $this->createErrorResponse(404, 'Action not found');
         }
@@ -207,7 +207,7 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
      * @param array $request HTTP request data
      * @return array HTTP response
      */
-    public function correctFaTransaction(array $request): array
+    public function handleCorrectFaTransaction(array $request): array
     {
         try {
             $transactionId = (int)($request['transaction_id'] ?? 0);
@@ -244,7 +244,7 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
      * @param array $request HTTP request data
      * @return array HTTP response
      */
-    public function getCorrectionPreview(array $request): array
+    public function handleGetCorrectionPreview(array $request): array
     {
         try {
             $transactionId = (int)($request['transaction_id'] ?? 0);
@@ -275,7 +275,7 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
      * @param array $request HTTP request data
      * @return array HTTP response
      */
-    public function simulateCorrection(array $request): array
+    public function handleSimulateCorrection(array $request): array
     {
         try {
             $transactionId = (int)($request['transaction_id'] ?? 0);
@@ -329,7 +329,7 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
      * @param array $request HTTP request data
      * @return array HTTP response
      */
-    public function getCorrectionHistory(array $request): array
+    public function handleGetCorrectionHistory(array $request): array
     {
         try {
             $transactionId = (int)($request['transaction_id'] ?? 0);
@@ -369,7 +369,7 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
      * @param array $request HTTP request data
      * @return array HTTP response
      */
-    public function getCorrectionStatistics(array $request): array
+    public function handleGetCorrectionStatistics(array $request): array
     {
         try {
             $statistics = $this->correctionService->getCorrectionStatistics();
@@ -487,7 +487,7 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
      * @param array $request HTTP request data
      * @return array HTTP response
      */
-    public function updateConfiguration(array $request): array
+    public function handleUpdateConfiguration(array $request): array
     {
         try {
             $configuration = $request['configuration'] ?? [];
@@ -514,7 +514,7 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
      * @param array $request HTTP request data
      * @return array HTTP response
      */
-    public function performRollback(array $request): array
+    public function handlePerformRollback(array $request): array
     {
         try {
             $correctionId = (int)($request['correction_id'] ?? 0);
@@ -622,7 +622,7 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
 
     public function validateCorrectionRequest(int $transactionId, int $newDebtorId): void
     {
-        return $this->correctionService->validateCorrectionRequest($transactionId, $newDebtorId);
+        $this->correctionService->validateCorrectionRequest($transactionId, $newDebtorId);
     }
 
     public function getCorrectionHistory(int $transactionId): array
@@ -667,22 +667,22 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
 
     public function linkTransactions(array $originalTransaction, array $newTransaction): void
     {
-        return $this->correctionService->linkTransactions($originalTransaction, $newTransaction);
+        $this->correctionService->linkTransactions($originalTransaction, $newTransaction);
     }
 
     public function updateTransactionHistory(array $originalTransaction, array $newTransaction): void
     {
-        return $this->correctionService->updateTransactionHistory($originalTransaction, $newTransaction);
+        $this->correctionService->updateTransactionHistory($originalTransaction, $newTransaction);
     }
 
     public function logCorrection(array $result, string $transactionSource = 'unknown'): void
     {
-        return $this->correctionService->logCorrection($result, $transactionSource);
+        $this->correctionService->logCorrection($result, $transactionSource);
     }
 
     public function trackTransactionHistory(int $transactionId, array $result, string $transactionSource = 'unknown'): void
     {
-        return $this->correctionService->trackTransactionHistory($transactionId, $result, $transactionSource);
+        $this->correctionService->trackTransactionHistory($transactionId, $result, $transactionSource);
     }
 
     public function getSourceDetectionCapabilities(): array

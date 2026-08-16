@@ -1151,12 +1151,13 @@ class SecurityHardeningService
     /**
      * Calculate compliance score.
      * 
+     * @param string $standard Optional compliance standard
      * @return int Compliance score
      */
-    private function calculateComplianceScore(): int
+    private function calculateComplianceScore(string $standard = ''): int
     {
         // This would be implemented with actual compliance scoring logic
-        return 88;
+        return $standard !== '' ? 90 : 88;
     }
 
     /**
@@ -1173,18 +1174,6 @@ class SecurityHardeningService
             'score' => 90,
             'gaps' => []
         ];
-    }
-
-    /**
-     * Calculate compliance score.
-     * 
-     * @param string $standard Compliance standard
-     * @return int Compliance score
-     */
-    private function calculateComplianceScore(string $standard): int
-    {
-        // This would be implemented with actual compliance scoring logic
-        return 90;
     }
 
     /**
