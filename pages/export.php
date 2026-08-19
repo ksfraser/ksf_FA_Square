@@ -540,19 +540,21 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
             if ($processed >= $maxItems) break;
         }
 
-        display_notification(_("Checking for items to delete from Square..."));
-        $stockMasterDao = new StockMasterDAO($tablePrefix);
-        foreach ($existingSquareItems as $sqSku => $sqItem) {
-            $activeCount = $stockMasterDao->countActiveStockItems((string)$sqSku);
+        if ($fullSync) {
+            display_notification(_("Full Sync: Checking for items to delete from Square..."));
+            $stockMasterDao = new StockMasterDAO($tablePrefix);
+            foreach ($existingSquareItems as $sqSku => $sqItem) {
+                $activeCount = $stockMasterDao->countActiveStockItems((string)$sqSku);
 
-            if ($activeCount == 0) {
-                try {
-                    display_notification(_("Deleting from Square: ") . $sqSku);
-                    $exporter->deleteProduct($sqItem->getId());
-                    $deleted++;
-                } catch (Exception $e) {
-                    display_error(_("Failed to delete ") . $sqSku . _(": ") . $e->getMessage());
-                    $errors[] = 'Delete ' . $sqSku . ': ' . $e->getMessage();
+                if ($activeCount == 0) {
+                    try {
+                        display_notification(_("Deleting from Square: ") . $sqSku);
+                        $exporter->deleteProduct($sqItem->getId());
+                        $deleted++;
+                    } catch (Exception $e) {
+                        display_error(_("Failed to delete ") . $sqSku . _(": ") . $e->getMessage());
+                        $errors[] = 'Delete ' . $sqSku . ': ' . $e->getMessage();
+                    }
                 }
             }
         }
