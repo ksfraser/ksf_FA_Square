@@ -319,7 +319,10 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
             $exportRequest->shouldExcludeInactive(),
             $exportRequest->shouldSortRecent(),
             $ksfGenPrefs,
-            $ksfGenCatalogueInstalled
+            $ksfGenCatalogueInstalled,
+            $exportRequest->shouldOnlyNew(),
+            $exportRequest->shouldOnlyChanged(),
+            $env
         );
 
         $exported = 0;
@@ -328,7 +331,7 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
         $errors = [];
 
         $totalFound = db_num_rows($itemsResult);
-        display_notification(_("Total FA items to process: ") . $totalFound . _(" (limited to ") . $maxItems . _(")"));
+        display_notification(_("Total FA items to process: ") . $totalFound . ($maxItems > 0 ? _(" (limited to ") . $maxItems . _(")") : _(" (unlimited)")));
 
         $processed = 0;
         while ($item = db_fetch_assoc($itemsResult)) {
@@ -393,7 +396,7 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
                 if ($existingItem->getPresentAtAllLocations() && $locationId !== '0') {
                     display_notification(_("  Skipping (already at all locations)"));
                     $skipped++;
-                    if ($processed >= $maxItems) break;
+                    if ($maxItems > 0 && $processed >= $maxItems) break;
                     continue;
                 }
             }
@@ -537,7 +540,7 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
 
             usleep(500000);
 
-            if ($processed >= $maxItems) break;
+            if ($maxItems > 0 && $processed >= $maxItems) break;
         }
 
         if ($fullSync) {
@@ -610,6 +613,8 @@ yesno_list_row(_("Upload Images:"), 'upload', null);
 yesno_list_row(_("Available Online:"), 'online', null);
 yesno_list_row(_("Send Inactive Items:"), 'send_inactive', null);
 yesno_list_row(_("Full Sync (ignore existing mappings):"), 'full_sync', null);
+yesno_list_row(_("Only New Items (not yet exported):"), 'only_new', null);
+yesno_list_row(_("Only Changed Items (since last export):"), 'only_changed', null);
 
 end_table(1);
 

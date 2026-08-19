@@ -65,6 +65,16 @@ class ExportRequest
     private $sortRecent;
 
     /**
+     * @var bool
+     */
+    private $onlyNew;
+
+    /**
+     * @var bool
+     */
+    private $onlyChanged;
+
+    /**
      * @var string
      */
     private $currency;
@@ -86,7 +96,9 @@ class ExportRequest
         bool $fullSync = false,
         bool $sortRecent = false,
         string $currency = '',
-        int $salesType = 0
+        int $salesType = 0,
+        bool $onlyNew = false,
+        bool $onlyChanged = false
     ) {
         $this->action = $action;
         $this->locationId = $locationId;
@@ -94,12 +106,14 @@ class ExportRequest
         $this->stockLike = $stockLike;
         $this->uploadImages = $uploadImages;
         $this->availableOnline = $availableOnline;
-        $this->maxItems = $maxItems > 0 ? $maxItems : 10;
+        $this->maxItems = $maxItems >= 0 ? $maxItems : 10;
         $this->sendInactive = $sendInactive;
         $this->fullSync = $fullSync;
         $this->sortRecent = $sortRecent;
         $this->currency = $currency;
         $this->salesType = $salesType;
+        $this->onlyNew = $onlyNew;
+        $this->onlyChanged = $onlyChanged;
     }
 
     /**
@@ -127,7 +141,9 @@ class ExportRequest
             isset($data['full_sync']) ? (int)$data['full_sync'] === 1 : false,
             !empty($data['sort_recent']),
             $data['currency'] ?? $defaultCurrency,
-            isset($data['sales_type']) ? (int)$data['sales_type'] : $defaultSalesType
+            isset($data['sales_type']) ? (int)$data['sales_type'] : $defaultSalesType,
+            isset($data['only_new']) ? (int)$data['only_new'] === 1 : false,
+            isset($data['only_changed']) ? (int)$data['only_changed'] === 1 : false
         );
     }
 
@@ -165,6 +181,8 @@ class ExportRequest
             'sort_recent' => $this->sortRecent,
             'currency' => $this->currency,
             'sales_type' => $this->salesType,
+            'only_new' => $this->onlyNew ? 1 : 0,
+            'only_changed' => $this->onlyChanged ? 1 : 0,
         ];
     }
 
@@ -247,5 +265,15 @@ class ExportRequest
     public function getSalesType(): int
     {
         return $this->salesType;
+    }
+
+    public function shouldOnlyNew(): bool
+    {
+        return $this->onlyNew;
+    }
+
+    public function shouldOnlyChanged(): bool
+    {
+        return $this->onlyChanged;
     }
 }

@@ -32,6 +32,9 @@ class StockMasterDAO
      * @param bool $sortRecent Whether to sort by recent first
      * @param array|null $ksfGenPrefs ksf_generate_catalogue preferences
      * @param bool $ksfGenCatalogueInstalled Whether ksf_generate_catalogue is installed
+     * @param bool $onlyNew Only items not yet exported to Square
+     * @param bool $onlyChanged Only items modified since last export
+     * @param string $environment Square environment for token lookup
      * @return resource Database query result
      * @throws Exception if query fails
      */
@@ -41,14 +44,26 @@ class StockMasterDAO
         bool $excludeInactive = false,
         bool $sortRecent = false,
         ?array $ksfGenPrefs = null,
-        bool $ksfGenCatalogueInstalled = false
+        bool $ksfGenCatalogueInstalled = false,
+        bool $onlyNew = false,
+        bool $onlyChanged = false,
+        string $environment = 'sandbox'
     ) {
+        $needsTokenJoin = $onlyNew || $onlyChanged;
+        $tokenAlias = $needsTokenJoin ? 'st' : null;
+
         $sql = "SELECT item.stock_id, item.description, item.units, item.inactive, item.category_id, "
-            . "cat.description AS cat_description, tt.name AS tax_name, tt.exempt "
-            . "FROM {$this->tablePrefix}stock_master item "
+            . "cat.description AS cat_description, tt.name AS tax_name, tt.exempt"
+            . ($needsTokenJoin ? ", st.id AS token_id, st.fa_last_updated AS token_last_exported, item.last_updated AS item_last_updated" : "")
+            . " FROM {$this->tablePrefix}stock_master item "
             . "LEFT JOIN {$this->tablePrefix}stock_category cat ON item.category_id = cat.category_id "
-            . "LEFT JOIN {$this->tablePrefix}item_tax_types tt ON item.tax_type_id = tt.id "
-            . "WHERE 1=1";
+            . "LEFT JOIN {$this->tablePrefix}item_tax_types tt ON item.tax_type_id = tt.id";
+
+        if ($needsTokenJoin) {
+            $sql .= " LEFT JOIN {$this->tablePrefix}0_square_tokens st ON item.stock_id = st.stock_id AND st.environment = " . \db_escape($environment);
+        }
+
+        $sql .= " WHERE 1=1";
         
         if ($excludeInactive) {
             $sql .= " AND item.inactive = 0";
@@ -60,6 +75,14 @@ class StockMasterDAO
         
         if ($stockLike !== '' && $stockLike !== null) {
             $sql .= " AND item.stock_id LIKE " . \db_escape('%' . $stockLike . '%');
+        }
+
+        if ($onlyNew) {
+            $sql .= " AND st.id IS NULL";
+        }
+
+        if ($onlyChanged) {
+            $sql .= " AND (st.id IS NULL OR item.last_updated > st.fa_last_updated OR st.fa_last_updated IS NULL)";
         }
         
         // Special prefix handling from ksf_generate_catalogue
