@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 $page_security = 'SA_ksf_FA_SquareMANAGE';
-$path_to_root = __DIR__ . "/../../..";
+$path_to_root = "../../..";
 
 include_once $path_to_root . "/includes/session.inc";
 add_access_extensions();
@@ -46,7 +46,6 @@ $badgeColor = $env === 'production' ? '#dc3545' : '#ffc107';
 $badgeText = $env === 'production' ? _('LIVE') : _('SANDBOX');
 echo '<style>
 .square-env-badge { display: inline-block; padding: 4px 12px; border-radius: 4px; font-weight: bold; font-size: 0.85em; color: #fff; background-color: ' . $badgeColor . '; margin-left: 8px; }
-body { background-color: ' . ($env === 'production' ? '#fff5f5' : '#fffde7') . '; }
 </style>';
 echo '<span class="square-env-badge">' . $badgeText . '</span>';
 

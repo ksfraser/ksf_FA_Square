@@ -36,7 +36,6 @@ echo '<style>
 .square-env-badge { display: inline-block; padding: 4px 12px; border-radius: 4px; font-weight: bold; font-size: 0.85em; color: #fff; background-color: ' . $badgeColor . '; margin-left: 8px; }
 .square-sandbox { background: #fffde7; }
 .square-production { background: #fff5f5; }
-body { background-color: ' . ($env === 'production' ? '#fff5f5' : '#fffde7') . '; }
 </style>';
 
 echo '<div class="square-env-badge">' . $badgeText . '</div>';

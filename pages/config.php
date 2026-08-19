@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 $page_security = 'SA_ksf_FA_SquareMANAGE';
-$path_to_root = __DIR__ . "/../../..";
+$path_to_root = "../../..";
 
 include_once $path_to_root . "/includes/session.inc";
 add_access_extensions();
