@@ -3,7 +3,7 @@
  * KSF FrontAccounting Module Hooks
  * 
  * @package ksf_FA_Square
- * @version 2.4.3
+ * @version 2.4.4
  */
 define ('SS_ksf_FA_Square', 108<<8);
 
