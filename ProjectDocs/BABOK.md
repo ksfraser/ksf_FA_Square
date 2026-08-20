@@ -440,3 +440,56 @@ class hooks_ksf_yourmodule extends hooks {
 ```
 
 See `AGENTS_MODULE_COMMUNICATION_ADDENDUM.md` for the complete pattern that can be shared with other modules.
+
+---
+
+## BABOK Alignment: Square-Invoice Feature (v2.4.4)
+
+### Business Requirements
+
+| ID | Business Requirement | BABOK Task | Rationale |
+|----|---------------------|------------|-----------|
+| BR-SQ-001 | Enable remote payment collection via Square Invoices | Define Needs | Customers need to pay invoices remotely without visiting POS |
+| BR-SQ-002 | Suppress FA auto-payment for Square-Invoice terms | Define Change Requirements | Prevents double-payment (FA auto-record + Square payment) |
+| BR-SQ-003 | Auto-create Square Customers from FA debtors | Assess Risk | Eliminates manual customer setup in Square |
+| BR-SQ-004 | Store FA↔Square mapping for payment matching | Define Requirements | Enables payment reconciliation on import |
+| BR-SQ-005 | Support email/SMS delivery of Square Invoices | Assess Risk | Multiple delivery channels improve collection rates |
+
+### Functional Requirements Traceability
+
+| FR | Business Requirement | Stakeholder Need | Solution |
+|----|---------------------|-----------------|----------|
+| FR-09.01 | BR-SQ-001 | Remote payment collection | Hook-based interception of payment terms |
+| FR-09.02 | BR-SQ-002 | Prevent double-payment | Set cash_sale=0 in db_prewrite |
+| FR-09.03-06 | BR-SQ-001 | Automated invoice creation | SquareInvoiceService orchestrates API calls |
+| FR-09.04 | BR-SQ-003 | Zero manual Square setup | Auto-create from FA debtor data |
+| FR-09.07-08 | BR-SQ-004 | Payment matching | DAO stores bidirectional mappings |
+| FR-09.09 | BR-SQ-005 | Multiple delivery channels | Configurable delivery method per term |
+| FR-09.10 | BR-SQ-001 | Recurring payments | Card-on-file automatic charging |
+
+### Stakeholder Analysis
+
+| Stakeholder | Need | How Addressed | Risk |
+|-------------|------|---------------|------|
+| Sales Operator | Send invoices from FA | Payment term triggers Square Invoice | Medium: API failures after FA commit |
+| Customer | Pay remotely | Email/SMS with payment link | Low: Square handles payment UX |
+| Accountant | Reconcile payments | Mapping table enables matching on import | High: must prevent double-payment |
+| Administrator | Configure destinations | FA_PaymentDestinations admin UI | Low: simple CRUD |
+
+### Risk Analysis
+
+| Risk | Impact | Likelihood | Mitigation |
+|------|--------|------------|------------|
+| Square API fails after FA commit | Invoice posted but no Square Invoice | Low | Error logged, manual retry via CRM page |
+| Customer not created in Square | Cannot publish Invoice | Low | Auto-create from FA debtor data |
+| Double-refund (in-store + CC chargeback) | Financial loss | Medium | Dispute tracking in CRM, refund config toggle |
+| Idempotency failure (duplicate Square Invoices) | Customer confused, reconciliation issues | Low | Idempotent mapping lookup before creation |
+
+### Design Decisions
+
+| Decision | Rationale | Alternatives Considered |
+|----------|-----------|------------------------|
+| Hook-based interception (db_prewrite/postwrite) | FA's existing extension mechanism, no core modifications | Direct FA API calls (too invasive), separate module import (too late) |
+| Separate SquareInvoiceService class | SRP: single class for Square Invoice lifecycle | Inline in hooks.php (violates SRP), separate module (unnecessary coupling) |
+| Two mapping tables (invoice_map + customer_mappings) | Separate concerns: invoice tracking vs customer linking | Single table (violates SRP), no customer mapping (can't create invoices) |
+| Auto-create Square Customer | Zero-config for administrators | Require manual setup (friction), skip customer (can't publish) |

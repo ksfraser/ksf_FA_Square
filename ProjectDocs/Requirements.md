@@ -566,3 +566,69 @@ Both:
 - **N/A**: No viable FA equivalent or already handled by Square
 - **WON'T DO**: Explicitly excluded (blocked/risky)
 ```
+
+---
+
+## 2. Square-Invoice Payment Destination (v2.4.4)
+
+### 2.1 Business Context
+FA users need to send invoices to customers for remote payment via Square Invoices (email, phone app POS, or card-on-file). When a sales invoice is posted with a Square-Invoice payment term, the system should suppress FA's auto-payment and instead create a Square Invoice via the API, sending the customer a payment link.
+
+### 2.2 Functional Requirements
+
+| ID | Requirement | Priority | Status |
+|----|-------------|----------|--------|
+| **FR-09.01** | Detect `square_invoice*` payment terms in `db_prewrite` | High | ✅ Implemented |
+| **FR-09.02** | Suppress FA auto-payment (`cash_sale=0`) for Square-Invoice terms | High | ✅ Implemented |
+| **FR-09.03** | Create Square Order from FA cart line items | High | ✅ Implemented |
+| **FR-09.04** | Auto-create Square Customer from FA debtor if not mapped | High | ✅ Implemented |
+| **FR-09.05** | Create Square Invoice (DRAFT) with accepted payment methods | High | ✅ Implemented |
+| **FR-09.06** | Publish Square Invoice (UNPAID) with public payment URL | High | ✅ Implemented |
+| **FR-09.07** | Store FA↔Square Invoice mapping in `0_square_invoice_map` | High | ✅ Implemented |
+| **FR-09.08** | Store FA↔Square Customer mapping in `0_square_customer_mappings` | High | ✅ Implemented |
+| **FR-09.09** | Support three delivery methods: SHARE_MANUALLY, EMAIL, SMS | Medium | ✅ Implemented |
+| **FR-09.10** | Support automatic payment source (card-on-file) for `square_invoice_card` | Medium | ✅ Implemented |
+| **FR-09.11** | Idempotent: return existing mapping if FA invoice already mapped | High | ✅ Implemented |
+| **FR-09.12** | Display notification with payment URL after invoice creation | Medium | ✅ Implemented |
+| **FR-09.13** | `resolvePaymentDestination()` checks both `0_ksf_payment_destinations` and `0_payment_terms` | High | ✅ Implemented |
+| **FR-09.14** | Payment term mapping configured via FA_PaymentDestinations module | High | ✅ Implemented |
+
+### 2.3 Data Model
+
+| Table | Purpose |
+|-------|---------|
+| `0_square_invoice_map` | Links FA `debtor_trans` (sales invoices) to Square Invoices. PK: `fa_invoice_no`. Tracks status, public URL. |
+| `0_square_customer_mappings` | Maps FA `debtors_master` to Square Customers. PK: `fa_debtor_no`. Auto-populated on first invoice. |
+| `0_ksf_payment_destinations` | (FA_PaymentDestinations module) Maps payment_term → GL bank_account + destination name. |
+
+### 2.4 Architecture
+
+```
+FA creates sales invoice (ST_SALESINVOICE)
+  ↓
+db_prewrite (ksf_FA_Square)
+  → resolvePaymentDestination() checks payment_term
+  → If square_invoice*: cash_sale=0, store cart data
+  → If non-Square*: pass to next handler (FA_PaymentDestinations)
+  ↓
+FA commits transaction (db_postwrite)
+  → SquareInvoiceService.createInvoiceFromFA()
+  → 1. Create Square Order (OrdersApi)
+  → 2. Resolve/Create Square Customer (CustomersApi)
+  → 3. Create Invoice DRAFT (InvoicesApi)
+  → 4. Publish Invoice (InvoicesApi)
+  → 5. Store mapping in 0_square_invoice_map
+  → 6. Display notification with payment URL
+```
+
+### 2.5 SDK v40 Compatibility Notes
+
+| Issue | Fix |
+|-------|-----|
+| `OrderLineItem` constructor requires `$quantity` | `new OrderLineItem($qty)` |
+| `Order` constructor requires `$locationId` | `new Order($this->locationId)` |
+| `Money` setters return void (can't chain) | Separate `$money = new Money(); $money->setAmount(...)` calls |
+| `CreateOrderRequest` has no constructor arg | `$req = new CreateOrderRequest(); $req->setOrder($order)` |
+| `acceptedPaymentMethods` required on Invoice | Must set `InvoiceAcceptedPaymentMethods` with card=true |
+| `primaryRecipient.customer_id` required to publish | Auto-create Square Customer via CustomersApi |
+| `getInvoiceAmount()` doesn't exist | Removed from test; not needed

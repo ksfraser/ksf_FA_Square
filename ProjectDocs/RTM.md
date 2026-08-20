@@ -74,6 +74,20 @@
 | **FR-08.06** | Aggregate QOH by SUM across mapped FA locations | UC-01/08 | `CatalogExporter::pushInventory()` enhanced | TC-08.06 |
 | **FR-08.07** | Pass individual QOH for DIRECT mapping | UC-01/08 | `CatalogExporter::pushInventory()` enhanced | TC-08.07 |
 | **FR-08.08** | Replace manual Square Location dropdown with mapping-based selection | UC-01/08 | `pages/export.php` updated | TC-08.08 |
+| **FR-09.01** | Detect square_invoice* payment terms in db_prewrite | UC-09: Send to Square | `hooks.php::db_prewrite()` | UAT-SQ-001 |
+| **FR-09.02** | Suppress FA auto-payment (cash_sale=0) | UC-09 | `hooks.php::db_prewrite()` | UAT-SQ-001 |
+| **FR-09.03** | Create Square Order from FA cart line items | UC-09 | `src/Services/SquareInvoiceService::createSquareOrder()` | UAT-SQ-001 |
+| **FR-09.04** | Auto-create Square Customer from FA debtor | UC-09 | `src/Services/SquareInvoiceService::createSquareCustomer()` | UAT-SQ-004 |
+| **FR-09.05** | Create Square Invoice (DRAFT) with accepted payment methods | UC-09 | `src/Services/SquareInvoiceService::createInvoiceFromFA()` | UAT-SQ-001 |
+| **FR-09.06** | Publish Square Invoice (UNPAID) with public payment URL | UC-09 | `src/Services/SquareInvoiceService::publishInvoiceInternal()` | UAT-SQ-001 |
+| **FR-09.07** | Store FA↔Square Invoice mapping | UC-09 | `src/DAO/SquareInvoiceMapDAO::insert()` | UAT-SQ-003 |
+| **FR-09.08** | Store FA↔Square Customer mapping | UC-09 | `src/Services/SquareInvoiceService::createSquareCustomer()` | UAT-SQ-004 |
+| **FR-09.09** | Support SHARE_MANUALLY, EMAIL, SMS delivery | UC-09 | `SquareInvoiceService` + hooks | UAT-SQ-002 |
+| **FR-09.10** | Support automatic payment source (card-on-file) | UC-09 | `SquareInvoiceService::createInvoiceFromFA()` | UAT-SQ-002 |
+| **FR-09.11** | Idempotent: return existing mapping | UC-09 | `SquareInvoiceService::createInvoiceFromFA()` | UAT-SQ-003 |
+| **FR-09.12** | Display notification with payment URL | UC-09 | `hooks.php::db_postwrite()` | UAT-SQ-001 |
+| **FR-09.13** | resolvePaymentDestination checks both tables | UC-09 | `hooks.php::resolvePaymentDestination()` | UAT-SQ-005 |
+| **FR-09.14** | Payment term mapping via FA_PaymentDestinations | UC-11 | FA_PaymentDestinations module | UAT-SQ-006 |
 | **NFR-01** | PHP 7.3/7.4 compatibility | All | composer.json | PHP unit |
 | **NFR-02** | FA 2.4.x integration | All | hooks.php | Manual |
 | **NFR-03** | Square SDK ^40.0.0 | All | composer.json | CI |
@@ -97,6 +111,9 @@
 | UC-06 | Configure Integration | User opens Configuration page | FA Administrator |
 | UC-07 | Unified Import Staging | Any import flow (Square API/CSV/WooCommerce) | System (automatic) |
 | UC-08 | Map Locations | User opens Location Mapping page | FA Administrator |
+| UC-09 | Send Invoice to Square | User creates invoice with square_invoice term | Sales Operator |
+| UC-10 | Track Invoice Payment Status | Customer pays via Square link | System (automatic) |
+| UC-11 | Configure Payment Term Destination | Admin maps payment term to Square | FA Administrator |
 
 ---
 
