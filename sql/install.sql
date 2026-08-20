@@ -329,3 +329,35 @@ CREATE TABLE IF NOT EXISTS 0_ksf_import_square_sales (
 --
 -- TransactionStagingDAO::ensureTableExists() and ItemStagingDAO::ensureTableExists()
 -- will automatically add these columns if they don't exist (safe for production).
+
+-- Square Invoice mapping table
+-- Links FA sales invoices to Square Invoices for payment tracking.
+-- When a Square-Invoice destination triggers, the Square Invoice ID is stored here.
+-- When the Square transaction is imported, it matches back to the FA invoice.
+CREATE TABLE IF NOT EXISTS 0_square_invoice_map (
+    fa_invoice_no INT(11) NOT NULL,
+    square_invoice_id VARCHAR(64) NOT NULL DEFAULT '',
+    square_order_id VARCHAR(64) NOT NULL DEFAULT '',
+    square_customer_id VARCHAR(64) NOT NULL DEFAULT '',
+    amount_cents INT(11) NOT NULL DEFAULT 0,
+    currency VARCHAR(3) NOT NULL DEFAULT 'CAD',
+    destination VARCHAR(32) NOT NULL DEFAULT 'square_invoice',
+    status VARCHAR(16) NOT NULL DEFAULT 'DRAFT',
+    public_url VARCHAR(512) NOT NULL DEFAULT '',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (fa_invoice_no),
+    KEY idx_square_invoice_id (square_invoice_id),
+    KEY idx_square_order_id (square_order_id),
+    KEY idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Square Customer mappings table
+-- Maps FA debtors to Square Customers (required for Square Invoices).
+CREATE TABLE IF NOT EXISTS 0_square_customer_mappings (
+    fa_debtor_no INT(11) NOT NULL,
+    square_customer_id VARCHAR(64) NOT NULL DEFAULT '',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (fa_debtor_no),
+    KEY idx_square_customer_id (square_customer_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

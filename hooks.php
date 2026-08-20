@@ -344,6 +344,230 @@ class hooks_ksf_FA_Square extends hooks {
           return null;
       }
   }
+
+  // =========================================================================
+  // SQUARE-INVOICE DESTINATION HOOKS
+  // Intercept ST_SALESINVOICE for square_invoice* payment destinations.
+  // Must fire BEFORE ksf_FA_PaymentDestinations to suppress cash_sale.
+  // =========================================================================
+
+  /** @var array Temporary storage for cart data between prewrite and postwrite */
+  private static $pendingSquareInvoice = [];
+
+  /**
+   * Intercept ST_SALESINVOICE for square_invoice* destinations.
+   *
+   * When the payment term maps to a square_invoice* destination:
+   * - Suppresses the auto-payment (cash_sale=0) so FA doesn't create a payment
+   * - Stores cart data for db_postwrite to create the Square Invoice
+   *
+   * For non-square_invoice destinations, returns null to let other modules handle.
+   */
+  function db_prewrite(&$cart, $trans_type)
+  {
+      if ($trans_type !== ST_SALESINVOICE) {
+          return null;
+      }
+
+      if (!isset($cart->payment_terms['terms_indicator'])) {
+          return null;
+      }
+
+      // Check if this payment term is a square_invoice* destination
+      $destination = $this->resolvePaymentDestination((int)$cart->payment_terms['terms_indicator']);
+      if ($destination === null || strpos($destination, 'square_invoice') !== 0) {
+          return null; // Not our destination — pass to next handler
+      }
+
+      // Suppress auto-payment — Square Invoice is the payment mechanism
+      $cart->payment_terms['cash_sale'] = 0;
+
+      // Store cart data for db_postwrite
+      self::$pendingSquareInvoice = [
+          'customer_id'  => (int)$cart->customer_id,
+          'line_items'   => $this->extractLineItems($cart),
+          'destination'  => $destination,
+          'terms_indicator' => (int)$cart->payment_terms['terms_indicator'],
+      ];
+
+      return true; // We handled this — stop other handlers
+  }
+
+  /**
+   * Post-write hook: create the Square Invoice after the FA invoice is committed.
+   */
+  function db_postwrite(&$cart, $trans_type)
+  {
+      if ($trans_type !== ST_SALESINVOICE) {
+          return null;
+      }
+
+      if (empty(self::$pendingSquareInvoice)) {
+          return null;
+      }
+
+      $data = self::$pendingSquareInvoice;
+      self::$pendingSquareInvoice = [];
+
+      // Get the invoice number from the cart
+      $faInvoiceNo = 0;
+      if (isset($cart->trans_no) && $cart->trans_no > 0) {
+          $faInvoiceNo = (int)$cart->trans_no;
+      } elseif (isset($cart->order_no)) {
+          $faInvoiceNo = (int)$cart->order_no;
+      }
+
+      if ($faInvoiceNo <= 0) {
+          error_log('ksf_FA_Square: db_postwrite could not determine invoice number');
+          return null;
+      }
+
+      try {
+          $service = $this->buildSquareInvoiceService();
+          if ($service === null) {
+              error_log('ksf_FA_Square: SquareInvoiceService unavailable for invoice #' . $faInvoiceNo);
+              return null;
+          }
+
+          $dueDate = date('Y-m-d', strtotime('+30 days'));
+          $deliveryMethod = $data['destination'] === 'square_invoice_email'
+              ? 'EMAIL'
+              : 'SHARE_MANUALLY';
+
+          $autoPaymentSource = $data['destination'] === 'square_invoice_card'
+              ? 'CARD_ON_FILE'
+              : null;
+
+          $result = $service->createInvoiceFromFA(
+              $faInvoiceNo,
+              $data['customer_id'],
+              $data['line_items'],
+              $dueDate,
+              $deliveryMethod,
+              $autoPaymentSource
+          );
+
+          // Log the activity
+          if (function_exists('display_notification')) {
+              $url = $result['public_url'] ?? '';
+              $msg = _("Square Invoice created") . ': #' . $faInvoiceNo;
+              if ($url) {
+                  $msg .= ' — <a href="' . htmlspecialchars($url) . '" target="_blank">' . _("View") . '</a>';
+              }
+              display_notification($msg);
+          }
+
+          return $result;
+      } catch (\Throwable $e) {
+          error_log('ksf_FA_Square: Square Invoice creation failed for #' . $faInvoiceNo . ': ' . $e->getMessage());
+          if (function_exists('display_error')) {
+              display_error(_("Square Invoice creation failed") . ': ' . $e->getMessage());
+          }
+          return null;
+      }
+  }
+
+  /**
+   * Look up the payment destination name for a given payment term ID.
+   *
+   * Checks the 0_ksf_payment_destinations table for a mapping,
+   * then looks up the payment term name to detect square_invoice* destinations.
+   */
+  private function resolvePaymentDestination(int $termsIndicator): ?string
+  {
+      if (!function_exists('db_query')) {
+          return null;
+      }
+
+      $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
+
+      // Check our custom destination mapping table
+      $sql = "SELECT payment_term_name FROM {$tablePrefix}ksf_payment_destinations
+              WHERE payment_term = " . (int)$termsIndicator;
+      $result = @db_query($sql);
+      if ($result) {
+          $row = db_fetch($result);
+          if ($row && !empty($row['payment_term_name'])) {
+              $name = strtolower(trim($row['payment_term_name']));
+              if (strpos($name, 'square_invoice') === 0) {
+                  return $name;
+              }
+          }
+      }
+
+      // Fallback: check FA's payment_terms table directly
+      $sql = "SELECT terms FROM " . TB_PREF . "payment_terms
+              WHERE terms_indicator = " . (int)$termsIndicator;
+      $result = @db_query($sql);
+      if ($result) {
+          $row = db_fetch($result);
+          if ($row && !empty($row['terms'])) {
+              $name = strtolower(trim($row['terms']));
+              if (strpos($name, 'square_invoice') === 0) {
+                  return $name;
+              }
+          }
+      }
+
+      return null;
+  }
+
+  /**
+   * Extract line items from the cart for Square Invoice creation.
+   */
+  private function extractLineItems($cart): array
+  {
+      $items = [];
+      if (isset($cart->line_items) && is_array($cart->line_items)) {
+          foreach ($cart->line_items as $line) {
+              $items[] = [
+                  'stock_id'         => $line->stock_id ?? '',
+                  'item_description' => $line->item_description ?? $line->stock_id ?? '',
+                  'quantity'         => $line->quantity ?? 1,
+                  'price'            => $line->price ?? 0,
+                  'tax_type_id'      => $line->tax_type_id ?? 0,
+              ];
+          }
+      }
+      return $items;
+  }
+
+  /**
+   * Build the SquareInvoiceService bound to the current FA company.
+   */
+  private function buildSquareInvoiceService()
+  {
+      $autoload = dirname(__FILE__) . '/vendor/autoload.php';
+      if (file_exists($autoload)) {
+          require_once $autoload;
+      }
+
+      if (!class_exists('\ksfraser\FrontAccounting\Square\Services\SquareInvoiceService')) {
+          return null;
+      }
+
+      try {
+          $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
+          $settings = \ksfraser\FrontAccounting\Square\Config\Settings::fromFADatabase($tablePrefix);
+          $accessToken = $settings->getAccessToken();
+          if (empty($accessToken)) {
+              return null;
+          }
+
+          $client = \ksfraser\FrontAccounting\Square\Infrastructure\SquareClientFactory::create($settings);
+          $mapDao = new \ksfraser\FrontAccounting\Square\DAO\SquareInvoiceMapDAO($tablePrefix);
+          $locationId = $settings->getDefaultLocation() ?? '';
+
+          return new \ksfraser\FrontAccounting\Square\Services\SquareInvoiceService(
+              $client,
+              $mapDao,
+              $locationId
+          );
+      } catch (\Throwable $e) {
+          error_log('ksf_FA_Square: SquareInvoiceService init failed: ' . $e->getMessage());
+          return null;
+      }
+  }
 }
 
 /**
