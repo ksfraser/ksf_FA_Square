@@ -558,6 +558,25 @@ class hooks_ksf_FA_Square extends hooks {
           $mapDao = new \ksfraser\FrontAccounting\Square\DAO\SquareInvoiceMapDAO($tablePrefix);
           $locationId = $settings->getDefaultLocation() ?? '';
 
+          if (empty($locationId)) {
+              try {
+                  $locResp = $client->getLocationsApi()->listLocations();
+                  if ($locResp->isSuccess()) {
+                      $locs = $locResp->getResult()->getLocations();
+                      if ($locs !== null && count($locs) > 0) {
+                          $locationId = $locs[0]->getId();
+                      }
+                  }
+              } catch (\Throwable $e) {
+                  error_log('ksf_FA_Square: Could not resolve location: ' . $e->getMessage());
+              }
+          }
+
+          if (empty($locationId)) {
+              error_log('ksf_FA_Square: No Square location configured or available');
+              return null;
+          }
+
           return new \ksfraser\FrontAccounting\Square\Services\SquareInvoiceService(
               $client,
               $mapDao,
