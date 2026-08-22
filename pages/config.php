@@ -15,7 +15,8 @@ include_once __DIR__ . "/../vendor/autoload.php";
 use ksfraser\FrontAccounting\Square\Config\Settings;
 use ksfraser\FrontAccounting\Square\DAO\DebtorsMasterDAO;
 use ksfraser\FrontAccounting\Square\DAO\LocationMappingDAO;
-use ksfraser\FrontAccounting\Square\Staging\StagingTableManager;
+use ksfraser\FrontAccounting\Square\DAO\TransactionStagingDAO;
+use ksfraser\FrontAccounting\Square\DAO\ItemStagingDAO;
 use ksfraser\FrontAccounting\Square\Infrastructure\SquareClientFactory;
 use Square\Exceptions\ApiException;
 
@@ -26,10 +27,12 @@ $error = '';
 
 try {
     $settings = Settings::fromFADatabase($tablePrefix);
-    $stagingManager = new StagingTableManager($tablePrefix);
+    $txnDao = new TransactionStagingDAO($tablePrefix);
+    $itemDao = new ItemStagingDAO($tablePrefix);
 } catch (\Exception $e) {
     $settings = new Settings();
-    $stagingManager = new StagingTableManager($tablePrefix);
+    $txnDao = new TransactionStagingDAO($tablePrefix);
+    $itemDao = new ItemStagingDAO($tablePrefix);
     $error = _("Failed to load configuration: ") . $e->getMessage();
 }
 
@@ -95,6 +98,30 @@ if (isset($_POST['action'])) {
                 $defaultTaxGroup = $_POST['default_tax_group'] ?? '';
                 Settings::saveToDatabase($tablePrefix, 'default_tax_group', $defaultTaxGroup);
 
+                // Save absorbed import config fields
+                $importFields = [
+                    'gl_account' => 'int',
+                    'cash_gl' => 'int',
+                    'xfer_to_gl' => 'int',
+                    'bank_account' => 'int',
+                    'xfer_to_bank' => 'int',
+                    'cash_bank' => 'int',
+                    'default_pay_card' => 'int',
+                    'default_pay_cash' => 'int',
+                    'useCardAsBranch' => 'bool',
+                    'allowSkuChange' => 'bool',
+                    'default_pricebook' => 'string',
+                ];
+                foreach ($importFields as $field => $type) {
+                    $value = $_POST[$field] ?? '';
+                    if ($type === 'int') {
+                        $value = (int)$value;
+                    } elseif ($type === 'bool') {
+                        $value = isset($_POST[$field]) ? 1 : 0;
+                    }
+                    Settings::saveToDatabase($tablePrefix, $field, $value);
+                }
+
                 $msg = _("Configuration updated");
                 $settings = Settings::fromFADatabase($tablePrefix);
                 break;
@@ -125,12 +152,14 @@ if (isset($_POST['action'])) {
                 break;
 
             case 'create_tables':
-                $stagingManager->createStagingTables();
+                $txnDao->ensureTableExists();
+                $itemDao->ensureTableExists();
                 $msg = _("Staging tables created");
                 break;
 
             case 'drop_tables':
-                $stagingManager->dropStagingTables();
+                \db_query("DROP TABLE IF EXISTS {$tablePrefix}ksf_import_square_transactions");
+                \db_query("DROP TABLE IF EXISTS {$tablePrefix}ksf_import_square_items");
                 $msg = _("Staging tables dropped");
                 break;
         }
@@ -210,6 +239,66 @@ echo array_selector('default_tax_group', $defaultTaxGroup, $taxGroups, [
 ]);
 echo '</td></tr>';
 label_row('', _('(Used to set the tax rate on items pushed to Square; leave unset to push items tax-free)'));
+
+end_table(1);
+
+// -- Import Settings (absorbed from ISU) ---------------------------------
+start_table(TABLESTYLE);
+table_section_title(_("Import Settings (for ISU staging processing)"));
+
+$glAccounts = [];
+if (function_exists('get_all_gl_accounts')) {
+    $glResult = get_all_gl_accounts();
+    if ($glResult !== false) {
+        while ($glRow = db_fetch_assoc($glResult)) {
+            $glAccounts[$glRow['account_code']] = $glRow['account_code'] . ' - ' . $glRow['account_name'];
+        }
+    }
+}
+
+$bankAccounts = [];
+if (function_exists('get_all_bank_accounts')) {
+    $bankResult = get_all_bank_accounts();
+    if ($bankResult !== false) {
+        while ($bankRow = db_fetch_assoc($bankResult)) {
+            $bankAccounts[$bankRow['id']] = $bankRow['id'] . ' - ' . $bankRow['bank_name'];
+        }
+    }
+}
+
+$payTypes = [0 => _('-- Default --')];
+if (function_exists('get_all_payment_terms')) {
+    // payment types from FA
+}
+
+echo '<tr><td class="label">' . _("Square GL Account:") . '</td><td>';
+echo array_selector('gl_account', $settings->getGlAccount(), $glAccounts);
+echo '</td></tr>';
+
+echo '<tr><td class="label">' . _("Transfer To GL Account:") . '</td><td>';
+echo array_selector('xfer_to_gl', $settings->getXferToGl(), $glAccounts);
+echo '</td></tr>';
+
+echo '<tr><td class="label">' . _("Cash GL Account:") . '</td><td>';
+echo array_selector('cash_gl', $settings->getCashGl(), $glAccounts);
+echo '</td></tr>';
+
+echo '<tr><td class="label">' . _("Square Bank Account:") . '</td><td>';
+echo array_selector('bank_account', $settings->getBankAccount(), $bankAccounts);
+echo '</td></tr>';
+
+echo '<tr><td class="label">' . _("Transfer To Bank Account:") . '</td><td>';
+echo array_selector('xfer_to_bank', $settings->getXferToBank(), $bankAccounts);
+echo '</td></tr>';
+
+echo '<tr><td class="label">' . _("Cash Bank Account:") . '</td><td>';
+echo array_selector('cash_bank', $settings->getCashBank(), $bankAccounts);
+echo '</td></tr>';
+
+check_row(_("Use Card as Branch:"), 'useCardAsBranch', $settings->isUseCardAsBranch());
+check_row(_("Allow SKU Change:"), 'allowSkuChange', $settings->isAllowSkuChange());
+
+text_row(_("Default Price Book:"), 'default_pricebook', $settings->getDefaultPricebook(), 30, 50);
 
 end_table(1);
 
@@ -298,7 +387,7 @@ start_table(TABLESTYLE);
 
 table_section_title(_("Staging Tables"));
 
-$sql = "SHOW TABLES LIKE '{$tablePrefix}square_staging_transactions'";
+$sql = "SHOW TABLES LIKE '{$tablePrefix}ksf_import_square_transactions'";
 $result = db_query($sql);
 $tablesExist = $result !== false && db_num_rows($result) > 0;
 

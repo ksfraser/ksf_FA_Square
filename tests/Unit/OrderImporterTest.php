@@ -147,9 +147,12 @@ class OrderImporterTest extends TestCase
         $mockResponse = $this->createMock(\Square\Http\ApiResponse::class);
         $mockResult = $this->createMock(\Square\Models\ListPaymentsResponse::class);
 
+        $payment = new Payment('pmt_loc');
+        $payment->setLocationId('LOC-001');
+
         $mockResponse->method('isSuccess')->willReturn(true);
         $mockResponse->method('getResult')->willReturn($mockResult);
-        $mockResult->method('getPayments')->willReturn([new Payment('pmt_loc')]);
+        $mockResult->method('getPayments')->willReturn([$payment]);
         $mockResult->method('getCursor')->willReturn(null);
 
         $this->mockPaymentsApi->expects($this->once())
@@ -161,5 +164,33 @@ class OrderImporterTest extends TestCase
 
         $result = $this->importer->listPayments($from, $to, 'LOC-001');
         $this->assertCount(1, $result);
+    }
+
+    public function testListPaymentsWithLocationFilterExcludesOtherLocations(): void
+    {
+        $paymentWrongLoc = new Payment('pmt_other');
+        $paymentWrongLoc->setLocationId('LOC-999');
+
+        $paymentRightLoc = new Payment('pmt_right');
+        $paymentRightLoc->setLocationId('LOC-001');
+
+        $mockResponse = $this->createMock(\Square\Http\ApiResponse::class);
+        $mockResult = $this->createMock(\Square\Models\ListPaymentsResponse::class);
+
+        $mockResponse->method('isSuccess')->willReturn(true);
+        $mockResponse->method('getResult')->willReturn($mockResult);
+        $mockResult->method('getPayments')->willReturn([$paymentWrongLoc, $paymentRightLoc]);
+        $mockResult->method('getCursor')->willReturn(null);
+
+        $this->mockPaymentsApi->expects($this->once())
+            ->method('listPayments')
+            ->willReturn($mockResponse);
+
+        $from = new \DateTimeImmutable('2026-01-01');
+        $to = new \DateTimeImmutable('2026-01-31');
+
+        $result = $this->importer->listPayments($from, $to, 'LOC-001');
+        $this->assertCount(1, $result);
+        $this->assertSame('LOC-001', $result[0]->getLocationId());
     }
 }

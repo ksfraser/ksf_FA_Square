@@ -41,21 +41,38 @@ class OrderImporter implements OrderImporterInterface
         $payments = [];
         $cursor = null;
 
+        // Square endTime is exclusive for range queries. Add 1 day to cover
+        // the full "to" date (e.g. "2026-08-21" → endTime at 2026-08-22T00:00:00Z).
+        $endTime = clone $to;
+        if ($endTime instanceof \DateTimeImmutable) {
+            $endTime = $endTime->modify('+1 day');
+        } else {
+            $endTime = new \DateTime($endTime->format('Y-m-d') . ' +1 day');
+        }
+
         try {
             do {
+                // Don't pass locationId to the API — Square sandbox ignores it.
+                // Filter locally after fetching instead.
                 $response = $this->client->getPaymentsApi()->listPayments(
                     $from->format('Y-m-d\TH:i:s\Z'),
-                    $to->format('Y-m-d\TH:i:s\Z'),
+                    $endTime->format('Y-m-d\TH:i:s\Z'),
                     null,
                     $cursor,
-                    $locationId,
+                    null,
                     100
                 );
 
                 if ($response->isSuccess()) {
                     $result = $response->getResult();
                     if ($result->getPayments() !== null) {
-                        $payments = array_merge($payments, $result->getPayments());
+                        foreach ($result->getPayments() as $payment) {
+                            if ($locationId === null
+                                || $payment->getLocationId() === $locationId
+                            ) {
+                                $payments[] = $payment;
+                            }
+                        }
                     }
                     $cursor = $result->getCursor();
                 } else {

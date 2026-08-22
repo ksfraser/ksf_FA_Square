@@ -1,161 +1,341 @@
-# User Acceptance Test Plan — ksf_FA_Square (Square-Invoice Feature)
+# User Acceptance Test Cases — ksf_FA_Square
 
-## UAT-SQ-001: Create Square Invoice from FA Sales Invoice
-
-| Field | Value |
-|-------|-------|
-| **ID** | UAT-SQ-001 |
-| **Title** | Square Invoice created when posting sales invoice with square_invoice payment term |
-| **Priority** | High |
-| **Preconditions** | Square sandbox configured, "Square Invoice (Manual)" payment term exists, customer "Donald Easter LLC" has payment term set |
-
-### Steps
-1. Log into FA as admin
-2. Navigate to Sales → Sales Invoice Entry → New Sales Invoice
-3. Select customer "Donald Easter LLC"
-4. Select payment term "Square Invoice (Manual)" (terms_indicator=8)
-5. Add line items (e.g., "Wedding Embellishments" × 2 @ $5.50)
-6. Click "Process Invoice"
-7. Verify FA notification shows Square Invoice public URL
-8. Log into Square sandbox dashboard → Invoices
-9. Verify invoice appears with status UNPAID
-10. Verify line items, amounts match FA invoice
-
-### Expected Result
-- FA invoice posted successfully (no error)
-- Square Invoice created with status UNPAID
-- Public payment URL displayed in FA notification
-- Line items and amounts match between FA and Square
+> **Module Code**: SQ
+> **Version**: 2.4.4-0
+> **Platform**: PHP 7.3 / FrontAccounting 2.4.19
 
 ---
 
-## UAT-SQ-002: Square Invoice with Email Delivery
+## Test Environment Requirements
 
-| Field | Value |
-|-------|-------|
-| **ID** | UAT-SQ-002 |
-| **Title** | Email delivery sends Square Invoice to customer email |
-| **Priority** | High |
-| **Preconditions** | Customer has valid email address, payment term uses `square_invoice_email` destination |
-
-### Steps
-1. Create sales invoice with `square_invoice_email` payment term
-2. Verify Square Invoice created with delivery_method=EMAIL
-3. Check customer's email for Square Invoice notification
-4. Click payment link in email
-5. Verify Square payment page loads with correct invoice details
-
-### Expected Result
-- Email sent from Square to customer
-- Payment link works and opens correct invoice
-- Invoice details (items, amounts) are correct
+- FA 2.4.19 installed with sample data
+- ksf_FA_Square module activated with Composer dependencies
+- Square sandbox account with API access
+- Square Terminal/Reader (for terminal payment tests)
+- Test FA stock items with prices, categories, and QOH
+- FA_PaymentDestinations module installed (for Square-Invoice tests)
 
 ---
 
-## UAT-SQ-003: Idempotent Invoice Creation
+## UAT-SQ-001: Export FA Product to Square
+
+**@BABOK Related: FR-SQ-001**
 
 | Field | Value |
 |-------|-------|
-| **ID** | UAT-SQ-003 |
-| **Title** | Re-posting same invoice returns existing mapping |
+| **Actor** | FA Administrator |
+| **Preconditions** | Square sandbox configured; active FA stock item with price and category |
 | **Priority** | High |
+
+### Steps
+
+| Step | Action | Expected Result |
+|------|--------|----------------|
+| 1 | Navigate to Orders → Export to Square | Export form loads |
+| 2 | Select location, category filter | Filters applied |
+| 3 | Set max_items=1 for testing | Limit set |
+| 4 | Click "Export" | Progress notifications shown |
+| 5 | Verify notification: SKU exported successfully | Item name, SKU, price logged |
+| 6 | Open Square sandbox dashboard → Items | Product appears with correct SKU, name, price |
+| 7 | Verify `square_tokens` has mapping entry | stock_id ↔ Square catalog_object_id stored |
+
+### Pass Criteria
+- Product exists in Square with correct fields
+- Token mapping stored for future updates
+- No errors in export log
+
+---
+
+## UAT-SQ-002: Import Square Orders via Staging
+
+**@BABOK Related: FR-SQ-003**
+
+| Field | Value |
+|-------|-------|
+| **Actor** | FA Administrator |
+| **Preconditions** | Completed Square payments exist; date range includes test data |
+| **Priority** | High |
+
+### Steps
+
+| Step | Action | Expected Result |
+|------|--------|----------------|
+| 1 | Navigate to Orders → Import Square Orders | Import form loads |
+| 2 | Select "Stage-First" mode | Mode selected |
+| 3 | Set date range, customer, location | Filters set |
+| 4 | Click "Import" | System connects to Square API |
+| 5 | Verify progress notifications | Payments retrieved, orders resolved |
+| 6 | Navigate to Process Staging tab | Staged transactions listed |
+| 7 | Select transaction, click "Process" | FA sales invoice created |
+| 8 | Verify FA invoice has correct line items | SKU, quantity, price match Square order |
+| 9 | Verify payment recorded against debtor | Payment matches Square payment amount |
+
+### Pass Criteria
+- Transactions staged successfully
+- FA invoice created with correct items and amounts
+- Payment recorded idempotently
+- Import log records success
+
+---
+
+## UAT-SQ-003: Create Square Invoice from FA
+
+**@BABOK Related: FR-SQ-007**
+
+| Field | Value |
+|-------|-------|
+| **Actor** | Sales Operator |
+| **Preconditions** | Square sandbox configured; "Square Invoice (Manual)" payment term exists; customer exists |
+| **Priority** | High |
+
+### Steps
+
+| Step | Action | Expected Result |
+|------|--------|----------------|
+| 1 | Create Sales Invoice for customer | Invoice form loads |
+| 2 | Select payment term "Square Invoice (Manual)" | Term selected |
+| 3 | Add line items (e.g., 2× $5.50) | Items added |
+| 4 | Process Invoice | FA posts invoice |
+| 5 | Verify notification shows Square Invoice URL | Public payment URL displayed |
+| 6 | Open Square sandbox → Invoices | Invoice appears with status UNPAID |
+| 7 | Verify `0_square_invoice_map` has entry | fa_invoice_no ↔ Square invoice stored |
+| 8 | Click payment URL | Square payment page loads correctly |
+
+### Pass Criteria
+- Square Invoice created with correct amounts
+- Public URL accessible and functional
+- Mapping stored for idempotency
+
+---
+
+## UAT-SQ-004: Square Invoice Email Delivery
+
+**@BABOK Related: FR-SQ-007**
+
+| Field | Value |
+|-------|-------|
+| **Actor** | Sales Operator |
+| **Preconditions** | Customer has valid email; payment term uses `square_invoice_email` |
+| **Priority** | High |
+
+### Steps
+
+| Step | Action | Expected Result |
+|------|--------|----------------|
+| 1 | Create invoice with `square_invoice_email` payment term | Invoice processed |
+| 2 | Verify delivery_method=EMAIL on Square Invoice | Square shows email delivery |
+| 3 | Check customer email for Square notification | Email received |
+| 4 | Click payment link in email | Payment page loads with correct invoice |
+
+### Pass Criteria
+- Email sent from Square
+- Payment link functional
+- Invoice details correct
+
+---
+
+## UAT-SQ-005: Idempotent Square Invoice Creation
+
+**@BABOK Related: FR-SQ-007**
+
+| Field | Value |
+|-------|-------|
+| **Actor** | FA system (automatic) |
 | **Preconditions** | Square Invoice already created for FA invoice #N |
-
-### Steps
-1. Note the Square Invoice ID for FA invoice #N
-2. Simulate re-posting the same invoice (trigger db_postwrite again)
-3. Verify no duplicate Square Invoice created
-4. Verify same mapping returned
-
-### Expected Result
-- Only one Square Invoice exists in Square
-- Same mapping returned from `0_square_invoice_map`
-- No duplicate Square Orders or Invoices created
-
----
-
-## UAT-SQ-004: Auto-Create Square Customer
-
-| Field | Value |
-|-------|-------|
-| **ID** | UAT-SQ-004 |
-| **Title** | Square Customer auto-created from FA debtor on first invoice |
 | **Priority** | High |
-| **Preconditions** | FA debtor has no existing `0_square_customer_mappings` entry |
 
 ### Steps
-1. Create sales invoice for a debtor with no Square customer mapping
-2. Verify Square Customer created in Square sandbox
-3. Verify mapping stored in `0_square_customer_mappings`
-4. Create another invoice for same debtor
-5. Verify same Square Customer reused (no duplicate)
 
-### Expected Result
-- First invoice: Square Customer created, mapping stored
-- Second invoice: Existing mapping used, no duplicate customer
+| Step | Action | Expected Result |
+|------|--------|----------------|
+| 1 | Note Square Invoice ID for FA invoice #N | ID recorded |
+| 2 | Re-trigger db_postwrite for same invoice | Hook fires again |
+| 3 | Verify no duplicate Square Invoice | Only one Square Invoice exists |
+| 4 | Verify same mapping returned | Same entry in `0_square_invoice_map` |
+
+### Pass Criteria
+- No duplicate Square Invoices or Orders
+- Same mapping returned on re-trigger
 
 ---
 
-## UAT-SQ-005: Non-Square Payment Terms Pass Through
+## UAT-SQ-006: Non-Square Payment Terms Pass Through
+
+**@BABOK Related: FR-SQ-007, FR-SQ-014**
 
 | Field | Value |
 |-------|-------|
-| **ID** | UAT-SQ-005 |
-| **Title** | Normal FA payment flow for non-Square payment terms |
+| **Actor** | FA system (automatic) |
+| **Preconditions** | Standard payment terms configured |
 | **Priority** | Medium |
-| **Preconditions** | Standard payment terms (e.g., "Due 15th Of the Following Month") configured |
 
 ### Steps
-1. Create sales invoice with standard payment term (terms_indicator=1)
-2. Verify normal FA payment flow (no Square Invoice created)
-3. Verify GL posting goes to normal AR account
 
-### Expected Result
+| Step | Action | Expected Result |
+|------|--------|----------------|
+| 1 | Create invoice with standard payment term (e.g., "Net 30") | Invoice posted normally |
+| 2 | Verify no Square Invoice created | Square dashboard unchanged |
+| 3 | Verify GL posting goes to default AR account | Normal FA behavior |
+
+### Pass Criteria
 - FA payment flow unchanged for non-Square terms
-- No Square Invoice created
-- GL posting as normal
+- No Square API calls made
 
 ---
 
-## UAT-SQ-006: Payment Destinations Module GL Routing
+## UAT-SQ-007: Customer Auto-Creation for Square Invoice
+
+**@BABOK Related: FR-SQ-007, FR-SQ-004**
 
 | Field | Value |
 |-------|-------|
-| **ID** | UAT-SQ-006 |
-| **Title** | FA_PaymentDestinations routes GL for mapped payment terms |
-| **Priority** | Medium |
-| **Preconditions** | FA_PaymentDestinations installed, payment term mapped to bank account |
-
-### Steps
-1. Configure payment destination: payment_term → bank_account = 1200 (Checking)
-2. Create sales invoice with that payment term (non-Square destination)
-3. Verify GL posting goes to bank account 1200
-4. Verify cash_sale forced to 1
-
-### Expected Result
-- GL posting redirected to configured bank account
-- cash_sale=1 (cash transaction)
-
----
-
-## UAT-SQ-007: Square Invoice Sandbox Email Delivery
-
-| Field | Value |
-|-------|-------|
-| **ID** | UAT-SQ-007 |
-| **Title** | Verify email delivery to kevin@ksfraser.ca |
+| **Actor** | FA system (automatic) |
+| **Preconditions** | FA debtor has no existing `0_square_customer_mappings` entry |
 | **Priority** | High |
-| **Preconditions** | Square sandbox configured with sandbox email |
 
 ### Steps
-1. Create Square Invoice for Kevin Fraser (kevin@ksfraser.ca) with EMAIL delivery
-2. Check kevin@ksfraser.ca inbox for Square sandbox email
-3. Open email and click "Pay Invoice" link
-4. Verify payment page shows correct invoice amount ($40.00 CAD)
-5. Enter test card details and submit payment
-6. Verify Square Invoice status changes to PAID
 
-### Expected Result
-- Email received from Square sandbox
-- Payment page loads with correct details
-- Payment processing works end-to-end
+| Step | Action | Expected Result |
+|------|--------|----------------|
+| 1 | Create invoice for unmapped debtor | Invoice processed |
+| 2 | Verify Square Customer created | Customer in Square sandbox |
+| 3 | Verify mapping in `0_square_customer_mappings` | debtor_no ↔ customer_id stored |
+| 4 | Create second invoice for same debtor | Same Square Customer reused |
+
+### Pass Criteria
+- First invoice: Customer created, mapping stored
+- Second invoice: Existing mapping used, no duplicate
+
+---
+
+## UAT-SQ-008: Refund Processing
+
+**@BABOK Related: FR-SQ-006**
+
+| Field | Value |
+|-------|-------|
+| **Actor** | FA Administrator |
+| **Preconditions** | Completed payment exists; refund amount ≤ payment |
+| **Priority** | High |
+
+### Steps
+
+| Step | Action | Expected Result |
+|------|--------|----------------|
+| 1 | Identify payment to refund | Payment details shown |
+| 2 | Initiate refund with reason | Refund amount validated |
+| 3 | Verify Square refund created | Refund in Square sandbox |
+| 4 | Verify FA credit note created | Credit note linked to original invoice |
+| 5 | Verify refund reference on original invoice | Audit trail complete |
+
+### Pass Criteria
+- Refund created in Square with correct amount
+- FA credit note created and linked
+- Original invoice shows refund reference
+
+---
+
+## UAT-SQ-009: Webhook Subscription Management
+
+**@BABOK Related: FR-SQ-005**
+
+| Field | Value |
+|-------|-------|
+| **Actor** | FA Administrator |
+| **Preconditions** | Square API credentials configured |
+| **Priority** | Medium |
+
+### Steps
+
+| Step | Action | Expected Result |
+|------|--------|----------------|
+| 1 | Navigate to Webhook Management page | Subscription list displayed |
+| 2 | Create new subscription (URL, events) | Subscription created in Square |
+| 3 | Verify webhook endpoint responds | Test event validated |
+| 4 | Trigger `payment.created` event in sandbox | Event logged in `square_webhook_events` |
+| 5 | Delete subscription | Subscription removed |
+
+### Pass Criteria
+- CRUD operations work on webhook subscriptions
+- HMAC-SHA256 signature validated
+- Events logged correctly
+
+---
+
+## UAT-SQ-010: Location Mapping for Inventory Push
+
+**@BABOK Related: FR-SQ-010**
+
+| Field | Value |
+|-------|-------|
+| **Actor** | FA Administrator |
+| **Preconditions** | FA locations exist; Square locations retrieved from API |
+| **Priority** | Medium |
+
+### Steps
+
+| Step | Action | Expected Result |
+|------|--------|----------------|
+| 1 | Navigate to Config → Location Mapping | Mapping UI loads |
+| 2 | Verify Square locations fetched from API | Dropdown populated |
+| 3 | Map FA location "Main" → Square location "FHS" | Mapping saved |
+| 4 | Export product with QOH at "Main" | QOH pushed to Square "FHS" location |
+| 5 | Verify Square inventory count matches FA QOH | Inventory accurate |
+
+### Pass Criteria
+- Location mapping saved and applied
+- QOH correctly mapped to Square location
+- Inventory counts match
+
+---
+
+## UAT-SQ-011: Payment Destinations GL Routing
+
+**@BABOK Related: FR-SQ-014**
+
+| Field | Value |
+|-------|-------|
+| **Actor** | FA Administrator |
+| **Preconditions** | FA_PaymentDestinations installed; payment term mapped |
+| **Priority** | Medium |
+
+### Steps
+
+| Step | Action | Expected Result |
+|------|--------|----------------|
+| 1 | Configure payment destination: "Visa MC" → "Credit Card Processing" bank | Mapping saved |
+| 2 | Create invoice with "Visa MC" payment term | Invoice posted |
+| 3 | Verify GL posting to mapped bank account | Money in correct GL account |
+| 4 | Verify cash_sale forced to 1 | Cash transaction recorded |
+
+### Pass Criteria
+- GL redirected to configured bank account
+- cash_sale=1 for mapped terms
+- Unmapped terms follow normal FA behavior
+
+---
+
+## Summary
+
+| UAT ID | Description | FR | Priority |
+|--------|-------------|----|----------|
+| UAT-SQ-001 | Export FA product to Square | FR-SQ-001 | High |
+| UAT-SQ-002 | Import orders via staging | FR-SQ-003 | High |
+| UAT-SQ-003 | Create Square Invoice | FR-SQ-007 | High |
+| UAT-SQ-004 | Square Invoice email delivery | FR-SQ-007 | High |
+| UAT-SQ-005 | Idempotent invoice creation | FR-SQ-007 | High |
+| UAT-SQ-006 | Non-Square terms pass through | FR-SQ-007 | Medium |
+| UAT-SQ-007 | Auto-create Square Customer | FR-SQ-004 | High |
+| UAT-SQ-008 | Refund processing | FR-SQ-006 | High |
+| UAT-SQ-009 | Webhook management | FR-SQ-005 | Medium |
+| UAT-SQ-010 | Location mapping for inventory | FR-SQ-010 | Medium |
+| UAT-SQ-011 | Payment Destinations GL routing | FR-SQ-014 | Medium |
+
+---
+
+## Version History
+
+| Version | Date | Author | Changes |
+|---------|------|--------|---------|
+| 1.0 | 2026-05-20 | KSFraser | Initial (UAT-SQ-001 to UAT-SQ-007) |
+| 2.0 | 2026-08-20 | KSFraser | Added UAT-SQ-008 to UAT-SQ-011; renumbered with module prefix |

@@ -1,402 +1,346 @@
 # Requirements Specification — ksf_FA_Square
 
+> **Module Code**: SQ
+> **Version**: 2.4.4-0
+> **Platform**: PHP 7.3 / FrontAccounting 2.4.19
+
+---
+
 ## 1. Business Context
 
-### 1.1 Problem Statement
 FrontAccounting (FA) users need to sell products through Square POS terminals and card readers while maintaining centralized inventory, pricing, and transaction records in FA. Currently there is no integrated bridge — products must be managed in two systems, and sales must be reconciled manually.
 
-### 1.2 Business Objectives
+### 1.1 Business Objectives
+
 | ID | Objective | Priority | Status |
 |----|-----------|----------|--------|
 | BO-01 | Eliminate dual data entry for product catalog | High | ✅ Implemented |
-| BO-02 | Ensure real-time inventory accuracy across systems | High | ✅ Implemented (with location mapping) |
+| BO-02 | Ensure real-time inventory accuracy across systems | High | ✅ Implemented (location mapping) |
 | BO-03 | Enable card-present payment collection via Square Reader | Medium | ✅ Implemented |
-| BO-04 | Automate sales reconciliation (Square -> FA) | High | ✅ Implemented (two-stage) |
-| BO-05 | Provide audit trail for all synchronized data | Medium | ✅ Implemented (comprehensive logging) |
-| BO-06 | Unify import staging across Square API, Square CSV, and WooCommerce | Medium | ✅ Implemented |
-| BO-07 | Enable bi-directional customer data synchronization | High | ✅ **IMPLEMENTED** |
-| BO-08 | Implement real-time webhook-driven synchronization | High | ✅ **IMPLEMENTED** |
-| BO-09 | Complete refund processing and payment lifecycle | High | ✅ **IMPLEMENTED** |
-| BO-10 | Integrate with FA's native systems for better maintainability | Medium | ✅ **IMPLEMENTED** |
-| BO-11 | Implement comprehensive stock event synchronization | Medium | ✅ **IMPLEMENTED** |
-| BO-12 | Create sales order integration between Square and FA | Medium | ✅ **IMPLEMENTED** |
-| BO-13 | Implement tax mapping and calculation integration | Medium | 🔄 **IN PROGRESS** |
-| BO-14 | Create payment reconciliation with FA native accounting | Medium | 🔄 **IN PROGRESS** |
-| BO-15 | Implement business intelligence and reporting | Low | 🔄 **PLANNED** |
+| BO-04 | Automate sales reconciliation (Square → FA) | High | ✅ Implemented (two-stage) |
+| BO-05 | Provide audit trail for all synchronized data | Medium | ✅ Implemented |
+| BO-06 | Enable remote payment via Square Invoices | High | ✅ Implemented |
+| BO-07 | Bi-directional customer synchronization | High | ✅ Implemented |
+| BO-08 | Webhook-driven real-time events | High | ✅ Implemented |
+| BO-09 | Refund and dispute lifecycle management | High | ✅ Implemented |
+| BO-10 | Unified import staging across Square + WooCommerce | Medium | ✅ Implemented |
+| BO-11 | Tax mapping integration | Medium | 🔄 In Progress |
+| BO-12 | Business intelligence and reporting | Low | 📋 Planned |
 
-### 1.3 Current Implementation Status
-| Component | Status | Coverage | Next Steps |
-|-----------|--------|----------|------------|
-| Catalog Export | ✅ Complete | 100% | Phase 3 optimization |
-| Terminal Payments | ✅ Complete | 100% | Enhanced error handling |
-| Sales Import | ✅ Complete | 100% | Refund processing |
-| Customer Management | ✅ Complete | 100% | Phase 2 integration |
-| Webhook Management | ✅ Complete | 100% | Phase 1 critical |
-| Refund Processing | ✅ Complete | 100% | Phase 1 completion |
-| CRM Integration | ✅ Complete | 100% | Phase 2 enhancement |
-| Stock Event Integration | ✅ Complete | 100% | Phase 2 enhancement |
-| Sales Order Integration | ✅ Complete | 100% | Phase 2 enhancement |
-| Tax Integration | 🔄 In Progress | 40% | Complete implementation |
-| Payment Reconciliation | 🔄 In Progress | 50% | Enhanced features |
-| Business Intelligence | 🔄 Planned | 0% | Phase 3 future |
+### 1.2 Stakeholders
 
-### 1.4 Missing Square API Features for FA Native Integration
-
-#### 1.4.1 Tax Integration (Priority: MEDIUM) 🔄 IN PROGRESS
-**Square APIs Used:**
-- **Tax Rates API**: Tax rate definitions
-- **Tax Calculations API**: Tax computations
-- **Tax Categories API**: Tax classifications
-- **Tax Groups API**: Tax combinations
-
-**FA Native Integration Points:**
-- **Tax Types**: Tax definitions (SQL: `tax_types`)
-- **Tax Groups**: Tax combinations (SQL: `tax_groups`)
-- **Tax Calculations**: Price computations (SQL: `debtor_trans`)
-- **Tax Reports**: Tax compliance (SQL: `gl_trans`)
-
-**Implementation Strategy:**
-```php
-interface TaxServiceInterface
-{
-    public function calculateSquareTaxes(array $squareData): array;
-    public function mapFATaxToSquare(array $faTaxData): array;
-    public function mapSquareTaxToFA(array $squareTaxData): array;
-}
-
-class TaxService implements TaxServiceInterface
-{
-    private TaxRatesDAO $taxRatesDao;
-    private TaxMappingDAO $taxMappingDao;
-}
-```
-
-#### 1.4.2 Payment Reconciliation (Priority: HIGH) 🔄 IN PROGRESS
-**Square APIs Used:**
-- **Payments API**: Payment processing
-- **Payment Refunds API**: Refunds
-- **Payment Disputes API**: Dispute management
-- **Payment Methods API**: Payment options
-
-**FA Native Integration Points:**
-- **Customer Payments**: Payment records (SQL: `bank_trans`)
-- **Payment Methods**: Payment options (SQL: `payment_methods`)
-- **Refunds**: Credit notes (SQL: `debtor_trans` with `type=11`)
-- **Reconciliation**: Payment matching (SQL: `bank_trans`)
-
-**Implementation Strategy:**
-```php
-interface PaymentServiceInterface
-{
-    public function recordSquarePayment(array $squarePayment): int;
-    public function processSquareRefund(array $squareRefund): int;
-    public function reconcileSquarePayments(array $payments): array;
-}
-
-class PaymentService implements PaymentServiceInterface
-{
-    private PaymentsDAO $paymentsDao;
-    private PaymentAdapter $paymentAdapter;
-    private CustomerService $customerService;
-}
-```
-
-#### 1.4.3 Business Intelligence (Priority: LOW) 🔄 PLANNED
-**Square APIs Used:**
-- **Analytics API**: Sales analytics
-- **Customer Insights API**: Customer behavior
-- **Inventory Insights API**: Inventory optimization
-- **Reporting API**: Custom reports
-
-**FA Native Integration Points:**
-- **Sales Analytics**: Sales performance (SQL: `debtor_trans`)
-- **Customer Analytics**: Customer lifetime value (SQL: `debtors_master`)
-- **Inventory Analytics**: Stock turnover (SQL: `stock_moves`)
-- **Financial Reports**: Business intelligence (SQL: `gl_trans`)
-
-**Implementation Strategy:**
-```php
-interface BusinessIntelligenceInterface
-{
-    public function getSalesAnalytics(array $filters): array;
-    public function getCustomerAnalytics(array $filters): array;
-    public function getInventoryAnalytics(array $filters): array;
-}
-
-class BusinessIntelligenceService implements BusinessIntelligenceInterface
-{
-    private SalesAnalyticsService $salesAnalytics;
-    private CustomerAnalyticsService $customerAnalytics;
-    private InventoryAnalyticsService $inventoryAnalytics;
-}
-```
-
-### 1.5 Stakeholders
 | Role | Interest | Engagement |
 |------|----------|------------|
-| FA Administrator | Configures integration, monitors sync, reviews gaps | Active |
-| Sales / POS Operator | Uses Square Reader for payments, processes imports | Active |
-| Finance / Accounting | Relies on accurate sales records, refunds, reconciliation | Consulted |
-| IT / Developer | Maintains and enhances module, implements missing APIs | Responsible |
+| FA Administrator | Configures integration, monitors sync | Active |
+| Sales / POS Operator | Uses Square Reader, processes imports | Active |
+| Finance / Accounting | Reconciles sales, refunds, disputes | Consulted |
+| IT / Developer | Maintains module, implements features | Responsible |
 
 ---
 
 ## 2. Scope
 
 ### 2.1 In Scope
-- Product catalog sync (FA -> Square): SKU, description, category, price, stock-on-hand
-- Image upload for Square catalog items
-- Order creation in Square from FA invoices (for Terminal payment)
+- Product catalog sync (FA → Square): SKU, description, category, price, QOH, images
 - Terminal/Reader checkout initiation and status polling
-- Completed sales import (Square API -> staging -> FA): orders, payments, refunds
+- Completed sales import (Square API → staging → FA)
+- Square-Invoice payment destination (email, manual, card-on-file)
 - Customer matching and creation (bi-directional)
-- CSV import merging (Square Dashboard exports) as backup to API pull
-- Token tracking (FA_SquareUpTokens integration) for update-vs-insert on catalog items
-- **Unified import staging**: single staging table schema shared across Square API, Square CSV, and WooCommerce imports
+- Webhook subscription management
+- Refund processing (create, list, void)
+- Dispute tracking
+- Card-on-file management
+- CSV import merging (Square Dashboard exports)
+- Location mapping (FA ↔ Square)
+- Import logging and gap detection
 
-### 2.2 Out of Scope (Phase 2+)
-- Real-time two-way inventory sync
+### 2.2 Out of Scope
 - Loyalty program integration
 - Employee timecard sync
 - Gift card management
-- Subscription/invoice management
-- Automatic Square location creation from FA locations (API exists but deferred)
+- Subscription/invoice recurring billing
+- Automatic Square location creation from FA locations
 
 ---
 
 ## 3. Functional Requirements
 
-### FR-01: Product Catalog Export (FA -> Square)
+### FR-SQ-001: Product Catalog Export (FA → Square)
 
 | ID | Requirement | Implementation | Status |
 |----|-------------|----------------|--------|
-| FR-01.01 | System shall export FA stock items to Square Catalog via `CatalogApi::upsertCatalogObject` | `CatalogExporter::upsertProduct()` | Implemented |
-| FR-01.02 | System shall map FA `stock_id` to Square `CatalogItemVariation.sku` | `CatalogExporter` item build | Implemented |
-| FR-01.03 | System shall map FA `description` to Square `CatalogItem.name` and `description` | `CatalogExporter` item build | Implemented |
-| FR-01.04 | System shall map FA `stock_category.description` to Square `CatalogCategory` | `CatalogExporter::resolveCategory()` | Implemented |
-| FR-01.05 | System shall map FA item price (`sales_prices`) to Square `CatalogItemVariation.price_money` | `CatalogExporter` item build | Implemented |
-| FR-01.06 | System shall push stock-on-hand (QoH) to Square via `InventoryApi::batchChangeInventory` | `CatalogExporter::pushInventory()` / `batchPushInventory()` | **Implemented 2026-05-23 (wired into export flow)** |
-| FR-01.07 | System shall upload item images via `CatalogApi::createCatalogImage` | `pages/export.php` (to refactor into service) | Implemented |
-| FR-01.08 | System shall assign FA tax types to Square `CatalogTax` objects | `CatalogExporter::resolveTax()` | Implemented |
-| FR-01.09 | System shall support batched upsert of catalog objects via `batchUpsertCatalogObjects` | `CatalogExporter::batchUpsertProducts()` | Implemented (not wired into UI) |
-| FR-01.10 | System shall delete Square catalog objects when FA items are deactivated | `CatalogExporter::deleteProduct()` | Implemented |
-| FR-01.11 | System shall sanitize FA data (latin1→UTF-8) before sending to Square API to prevent `json_encode` serialization failure | `CatalogExporter::sanitizeUtf8()` | Implemented 2026-05-21 |
-| FR-01.12 | Export page shall support a configurable item limit for testing | `pages/export.php` (`max_items` field) | Implemented 2026-05-21 |
-| FR-01.13 | Export page shall display per-item progress logging (processing, SKU resolution, API call, result) | `pages/export.php` (detailed notifications) | Implemented 2026-05-21 |
-| FR-01.14 | System shall track export status and token mappings | `FA_SquareUpTokens` integration | Planned |
+| FR-SQ-001-001 | Export FA stock items to Square Catalog via `CatalogApi::upsertCatalogObject` | `CatalogExporter::upsertProduct()` | ✅ |
+| FR-SQ-001-002 | Map FA `stock_id` to Square `CatalogItemVariation.sku` | CatalogExporter | ✅ |
+| FR-SQ-001-003 | Map FA `description` to Square `CatalogItem.name` | CatalogExporter | ✅ |
+| FR-SQ-001-004 | Map FA stock category to Square `CatalogCategory` | `CatalogExporter::resolveCategory()` | ✅ |
+| FR-SQ-001-005 | Map FA item price to Square `price_money` | CatalogExporter | ✅ |
+| FR-SQ-001-006 | Push QOH to Square via `InventoryApi::batchChangeInventory` | `CatalogExporter::pushInventory()` | ✅ |
+| FR-SQ-001-007 | Upload item images via `CatalogApi::createCatalogImage` | `pages/export.php` | ✅ |
+| FR-SQ-001-008 | Assign FA tax types to Square `CatalogTax` objects | `CatalogExporter::resolveTax()` | ✅ |
+| FR-SQ-001-009 | Batch upsert via `batchUpsertCatalogObjects` | `CatalogExporter::batchUpsertProducts()` | ✅ |
+| FR-SQ-001-010 | Delete Square catalog objects when FA items deactivated | `CatalogExporter::deleteProduct()` | ✅ |
+| FR-SQ-001-011 | Sanitize FA data (latin1→UTF-8) before API calls | `CatalogExporter::sanitizeUtf8()` | ✅ |
+| FR-SQ-001-012 | Configurable item limit for testing | `pages/export.php` | ✅ |
+| FR-SQ-001-013 | Per-item progress logging | `pages/export.php` | ✅ |
 
-### FR-02: Payment Collection (FA -> Square Terminal)
+---
 
-| ID | Requirement | Implementation |
-|----|-------------|----------------|
-| FR-02.01 | System shall create a Square Order from an FA Sales Invoice | `TerminalPayment::createOrderFromInvoice()` |
-| FR-02.02 | System shall initiate a Terminal checkout via `TerminalApi::createTerminalCheckout` | `TerminalPayment::createTerminalCheckout()` |
-| FR-02.03 | System shall support device selection (which Square Reader/Terminal) | Device code param |
-| FR-02.04 | System shall poll checkout status and update FA invoice on completion | `TerminalPayment::getCheckoutStatus()` |
-| FR-02.05 | System shall handle checkout cancellation and timeout | `TerminalPayment::cancelCheckout()` |
-| FR-02.06 | System shall record Square payment reference on the FA invoice | Post-checkout recording |
-
-### FR-03: Sales Import (Square -> FA)
-
-| ID | Requirement | Implementation |
-|----|-------------|----------------|
-| FR-03.01 | System shall retrieve completed payments via `PaymentsApi::listPayments` filtered by date range | `OrderImporter::listPayments()` |
-| FR-03.02 | System shall retrieve full order details via `OrdersApi::retrieveOrder` for each payment | `OrderImporter::getPaymentWithOrder()` |
-| FR-03.03 | System shall map Square `location` to FA `cust_branch` | `CustomerMatcher::findOrCreateBranch()` |
-| FR-03.04 | System shall resolve Square `CatalogItemVariation.sku` to FA `stock_id` | SKU resolution in import flow |
-| FR-03.05 | System shall create FA sales invoices from Square order line items | `InvoiceCreator::createSalesInvoice()` |
-| FR-03.06 | System shall map Square taxes to FA item tax types | Tax mapping in import flow |
-| FR-03.07 | System shall map Square discounts/adjustments to FA adjustment items | Adjustment handling |
-| FR-03.08 | System shall record the Square payment against the FA invoice | `InvoiceCreator::recordPayment()` |
-| FR-03.09 | System shall handle tips as separate FA line items or adjustments | Tip handling |
-| FR-03.10 | System shall deduplicate imports (skip previously imported payments) | Dedup check in import flow |
-| FR-03.11 | System shall log import results with success/failure per order | `StagingTableManager` / import log table |
-
-### FR-05: Webhook Management (Square -> FA) - ✅ **IMPLEMENTED**
+### FR-SQ-002: Terminal Payment Collection (FA → Square)
 
 | ID | Requirement | Implementation | Status |
 |----|-------------|----------------|--------|
-| FR-05.01 | System shall create webhook subscriptions via `WebhookSubscriptionsApi::createWebhookSubscription` | `WebhookService::createSubscription()` | ✅ Implemented |
-| FR-05.02 | System shall list existing webhook subscriptions | `WebhookService::listSubscriptions()` | ✅ Implemented |
-| FR-05.03 | System shall update webhook subscriptions | `WebhookService::updateSubscription()` | ✅ Implemented |
-| FR-05.04 | System shall delete webhook subscriptions | `WebhookService::deleteSubscription()` | ✅ Implemented |
-| FR-05.05 | System shall handle webhook events: `payment.created`, `order.created`, `customer.created` | `WebhookService::handleWebhookEvent()` | ✅ Implemented |
-| FR-05.06 | System shall provide webhook endpoint URL for Square to call | Webhook controller | ✅ Implemented |
-| FR-05.07 | System shall validate webhook signatures for security | Signature verification | ✅ Implemented |
+| FR-SQ-002-001 | Create Square Order from FA Sales Invoice | `TerminalPayment::createOrderFromInvoice()` | ✅ |
+| FR-SQ-002-002 | Initiate Terminal checkout via `TerminalApi::createTerminalCheckout` | `TerminalPayment::createTerminalCheckout()` | ✅ |
+| FR-SQ-002-003 | Support device selection (which Terminal/Reader) | Device code param | ✅ |
+| FR-SQ-002-004 | Poll checkout status and update FA invoice | `TerminalPayment::getCheckoutStatus()` | ✅ |
+| FR-SQ-002-005 | Handle checkout cancellation and timeout | `TerminalPayment::cancelCheckout()` | ✅ |
+| FR-SQ-002-006 | Record Square payment reference on FA invoice | Post-checkout recording | ✅ |
 
-### FR-06: Refund Management (Square <-> FA) - ✅ **IMPLEMENTED**
+---
 
-| ID | Requirement | Implementation | Status |
-|----|-------------|----------------|--------|
-| FR-06.01 | System shall process refunds via `RefundsApi::createRefund` | `RefundService::createRefund()` | ✅ Implemented |
-| FR-06.02 | System shall list refunds via `RefundsApi::listRefunds` | `RefundService::listRefunds()` | ✅ Implemented |
-| FR-06.03 | System shall void payments via `PaymentsApi::cancelPayment` | `RefundService::cancelPayment()` | ✅ Implemented |
-| FR-06.04 | System shall map Square refunds to FA credit notes | `RefundService::recordRefundInFA()` | ✅ Implemented |
-| FR-06.05 | System shall record refund references on original FA invoices | `RefundService::recordRefundInFA()` | ✅ Implemented |
-
-### FR-07: Configuration Management
+### FR-SQ-003: Sales Import (Square → FA)
 
 | ID | Requirement | Implementation | Status |
 |----|-------------|----------------|--------|
-| FR-07.01 | System shall support sandbox/production environment switcher | `Settings::setEnvironment()` | ✅ Implemented |
-| FR-07.02 | System shall manage separate access tokens for sandbox/production | `Settings::getProductionAccessToken()` | ✅ Implemented |
-| FR-07.03 | System shall validate access tokens and API connectivity | `SquareClientFactory::create()` | ✅ Implemented |
-| FR-07.04 | System shall save settings to FA's system preferences | `Settings::saveToDatabase()` | ✅ Implemented |
-| FR-07.05 | System shall provide configuration UI for all settings | `pages/config.php` | ✅ Implemented |
-| FR-07.06 | System shall manage location mappings (FA locations -> Square locations) | `LocationMappingDAO` | ✅ Implemented |
-| FR-07.07 | System shall manage destination customer for imports | `Settings::getDestinationCustomer()` | ✅ Implemented |
+| FR-SQ-003-001 | Retrieve payments via `PaymentsApi::listPayments` (date-filtered) | `OrderImporter::listPayments()` | ✅ |
+| FR-SQ-003-002 | Retrieve order details via `OrdersApi::retrieveOrder` | `OrderImporter::getPaymentWithOrder()` | ✅ |
+| FR-SQ-003-003 | Map Square location to FA `cust_branch` | `CustomerMatcher::findOrCreateBranch()` | ✅ |
+| FR-SQ-003-004 | Resolve Square SKU to FA `stock_id` | SKU resolution | ✅ |
+| FR-SQ-003-005 | Create FA sales invoices from Square order line items | `InvoiceCreator::createSalesInvoice()` | ✅ |
+| FR-SQ-003-006 | Map Square taxes to FA item tax types | Tax mapping | ✅ |
+| FR-SQ-003-007 | Map Square discounts/adjustments to FA adjustment items | Adjustment handling | ✅ |
+| FR-SQ-003-008 | Record Square payment against FA invoice | `InvoiceCreator::recordPayment()` | ✅ |
+| FR-SQ-003-009 | Handle tips as separate FA line items | Tip handling | ✅ |
+| FR-SQ-003-010 | Deduplicate imports (skip previously imported payments) | Dedup check | ✅ |
+| FR-SQ-003-011 | Log import results per order | `StagingTableManager` | ✅ |
 
-### FR-08: Data Management & Staging
+---
 
-| ID | Requirement | Implementation | Status |
-|----|-------------|----------------|--------|
-| FR-08.01 | System shall create unified staging tables for imports | `TransactionStagingDAO`, `ItemStagingDAO` | ✅ Implemented |
-| FR-08.02 | System shall support two-stage import workflow (Stage → Process) | `ImportService::stageFromApi()`, `ImportService::processStagedTransaction()` | ✅ Implemented |
-| FR-08.03 | System shall track import date ranges to identify gaps | `SquareImportLogDAO::findDateGaps()` | ✅ Implemented |
-| FR-08.04 | System shall provide edit functionality for staged transactions | `pages/import.php` edit forms | ✅ Implemented |
-| FR-08.05 | System shall provide review/match interface for Square vs FA transactions | `pages/review_match.php` | ✅ Implemented |
-| FR-08.06 | System shall match transactions by amount, date, and customer | `SalesMatchDAO`, `PaymentMatchDAO` | ✅ Implemented |
-| FR-08.07 | System shall prevent duplicate imports | Deduplication logic | ✅ Implemented |
-| FR-08.08 | System shall provide comprehensive audit logging | `SquareImportLogDAO` | ✅ Implemented |
-
-### FR-09: FrontAccounting Native Integration - 🔄 **IN PROGRESS**
+### FR-SQ-004: Customer Management (Square ↔ FA)
 
 | ID | Requirement | Implementation | Status |
 |----|-------------|----------------|--------|
-| FR-09.01 | System shall integrate with ksf_FA_CRM for customer management | `CustomerService::syncWithCRM()` | 🚨 **Not implemented** |
-| FR-09.02 | System shall use FA's stock events instead of custom inventory push | `InventoryService::listenToStockEvents()` | 🚨 **Not implemented** |
-| FR-09.03 | System shall use FA's sales order system instead of custom invoices | `SalesService::createSalesOrder()` | 🚨 **Not implemented** |
-| FR-09.04 | System shall use FA's tax system instead of Square tax objects | `TaxService::mapFATaxToSquare()` | 🚨 **Not implemented** |
-| FR-09.05 | System shall use FA's payment system instead of custom recording | `PaymentService::recordSquarePayment()` | 🚨 **Not implemented** |
-| FR-09.06 | System shall use FA's reporting system for analytics | `ReportingService::getSquareSalesReport()` | 🚨 **Not implemented** |
-| FR-09.07 | System shall use FA's system preferences instead of custom config | `Settings::useFAPreferences()` | 🚨 **Not implemented** |
+| FR-SQ-004-001 | Retrieve customers via `CustomersApi::listCustomers` | `CustomerService::getAllCustomers()` | ✅ |
+| FR-SQ-004-002 | Search customers via `CustomersApi::searchCustomers` | `CustomerService::findCustomerByEmail()` | ✅ |
+| FR-SQ-004-003 | Create new Square customers via `CustomersApi::createCustomer` | `CustomerService::syncCustomerFromFA()` | ✅ |
+| FR-SQ-004-004 | Update existing Square customer data | `CustomerService::syncCustomerFromFA()` | ✅ |
+| FR-SQ-004-005 | Match Square customers to FA debtors by email/phone/name | `CustomerService::matchCustomer()` | ✅ |
+| FR-SQ-004-006 | Create FA debtors from Square customers when no match found | `CustomerService::syncCustomerToSquare()` | ✅ |
+| FR-SQ-004-007 | Sync customer contact information bi-directionally | `CustomerService` | ✅ |
+| FR-SQ-004-008 | Map Square `Customer.groups` to FA customer groups | Group mapping service | 📋 |
 
-### FR-10: Customer Management API (Square <-> FA) - ✅ **IMPLEMENTED**
+---
 
-| ID | Requirement | Implementation | Status |
-|----|-------------|----------------|--------|
-| FR-10.01 | System shall retrieve customers via `CustomersApi::listCustomers` | `CustomerService::getAllCustomers()` | ✅ Implemented |
-| FR-10.02 | System shall search existing customers via `CustomersApi::searchCustomers` | `CustomerService::findCustomerByEmail()` | ✅ Implemented |
-| FR-10.03 | System shall create new customers in Square via `CustomersApi::createCustomer` | `CustomerService::syncCustomerFromFA()` | ✅ Implemented |
-| FR-10.04 | System shall update existing customer data in Square | `CustomerService::syncCustomerFromFA()` | ✅ Implemented |
-| FR-10.05 | System shall match Square customers to FA debtors using email/phone/name | `CustomerService::matchCustomer()` | ✅ Implemented |
-| FR-10.06 | System shall create FA debtors from Square customers when no match found | `CustomerService::syncCustomerToSquare()` | ✅ Implemented |
-| FR-10.07 | System shall map Square `Customer.groups` to FA customer groups | Group mapping service | 🚨 **Not implemented** |
-| FR-10.08 | System shall sync customer contact information bi-directionally | `CustomerService::syncCustomerToSquare()` | ✅ Implemented |
-
-### FR-11: Customer Management (Square <-> FA) - ✅ **IMPLEMENTED**
-
-### FR-07: Configuration Management
+### FR-SQ-005: Webhook Management (Square → FA)
 
 | ID | Requirement | Implementation | Status |
 |----|-------------|----------------|--------|
-| FR-07.01 | System shall support sandbox/production environment switcher | `Settings::setEnvironment()` | ✅ Implemented |
-| FR-07.02 | System shall manage separate access tokens for sandbox/production | `Settings::getProductionAccessToken()` | ✅ Implemented |
-| FR-07.03 | System shall validate access tokens and API connectivity | `SquareClientFactory::create()` | ✅ Implemented |
-| FR-07.04 | System shall save settings to FA's system preferences | `Settings::saveToDatabase()` | ✅ Implemented |
-| FR-07.05 | System shall provide configuration UI for all settings | `pages/config.php` | ✅ Implemented |
-| FR-07.06 | System shall manage location mappings (FA locations -> Square locations) | `LocationMappingDAO` | ✅ Implemented |
-| FR-07.07 | System shall manage destination customer for imports | `Settings::getDestinationCustomer()` | ✅ Implemented |
+| FR-SQ-005-001 | Create webhook subscriptions via `WebhookSubscriptionsApi` | `WebhookService::createSubscription()` | ✅ |
+| FR-SQ-005-002 | List existing webhook subscriptions | `WebhookService::listSubscriptions()` | ✅ |
+| FR-SQ-005-003 | Update webhook subscriptions | `WebhookService::updateSubscription()` | ✅ |
+| FR-SQ-005-004 | Delete webhook subscriptions | `WebhookService::deleteSubscription()` | ✅ |
+| FR-SQ-005-005 | Handle events: `payment.created`, `order.created`, `customer.created/updated` | `WebhookService::handleWebhookEvent()` | ✅ |
+| FR-SQ-005-006 | Provide webhook endpoint URL for Square callbacks | `pages/webhook.php` | ✅ |
+| FR-SQ-005-007 | Validate HMAC-SHA256 webhook signatures | Signature verification | ✅ |
+| FR-SQ-005-008 | Admin UI for webhook subscription management | `pages/webhook_management.php` | ✅ |
+| FR-SQ-005-009 | Event logging with failed-event retry | WebhookService | ✅ |
 
-### FR-08: Data Management & Staging
+---
 
-| ID | Requirement | Implementation | Status |
-|----|-------------|----------------|--------|
-| FR-08.01 | System shall create unified staging tables for imports | `TransactionStagingDAO`, `ItemStagingDAO` | ✅ Implemented |
-| FR-08.02 | System shall support two-stage import workflow (Stage → Process) | `ImportService::stageFromApi()`, `ImportService::processStagedTransaction()` | ✅ Implemented |
-| FR-08.03 | System shall track import date ranges to identify gaps | `SquareImportLogDAO::findDateGaps()` | ✅ Implemented |
-| FR-08.04 | System shall provide edit functionality for staged transactions | `pages/import.php` edit forms | ✅ Implemented |
-| FR-08.05 | System shall provide review/match interface for Square vs FA transactions | `pages/review_match.php` | ✅ Implemented |
-| FR-08.06 | System shall match transactions by amount, date, and customer | `SalesMatchDAO`, `PaymentMatchDAO` | ✅ Implemented |
-| FR-08.07 | System shall prevent duplicate imports | Deduplication logic | ✅ Implemented |
-| FR-08.08 | System shall provide comprehensive audit logging | `SquareImportLogDAO` | ✅ Implemented |
-
-### FR-09: FrontAccounting Native Integration - 🔄 **IN PROGRESS**
+### FR-SQ-006: Refund Management (Square ↔ FA)
 
 | ID | Requirement | Implementation | Status |
 |----|-------------|----------------|--------|
-| FR-09.01 | System shall integrate with ksf_FA_CRM for customer management | `CustomerService::syncWithCRM()` | 🚨 **Not implemented** |
-| FR-09.02 | System shall use FA's stock events instead of custom inventory push | `InventoryService::listenToStockEvents()` | 🚨 **Not implemented** |
-| FR-09.03 | System shall use FA's sales order system instead of custom invoices | `SalesService::createSalesOrder()` | 🚨 **Not implemented** |
-| FR-09.04 | System shall use FA's tax system instead of Square tax objects | `TaxService::mapFATaxToSquare()` | 🚨 **Not implemented** |
-| FR-09.05 | System shall use FA's payment system instead of custom recording | `PaymentService::recordSquarePayment()` | 🚨 **Not implemented** |
-| FR-09.06 | System shall use FA's reporting system for analytics | `ReportingService::getSquareSalesReport()` | 🚨 **Not implemented** |
-| FR-09.07 | System shall use FA's system preferences instead of custom config | `Settings::useFAPreferences()` | 🚨 **Not implemented** |
+| FR-SQ-006-001 | Create refunds via `RefundsApi::createRefund` | `RefundService::createRefund()` | ✅ |
+| FR-SQ-006-002 | List refunds via `RefundsApi::listRefunds` | `RefundService::listRefunds()` | ✅ |
+| FR-SQ-006-003 | Void payments via `PaymentsApi::cancelPayment` | `RefundService::cancelPayment()` | ✅ |
+| FR-SQ-006-004 | Map Square refunds to FA credit notes | `RefundService::recordRefundInFA()` | ✅ |
+| FR-SQ-006-005 | Record refund references on original FA invoices | `RefundService::recordRefundInFA()` | ✅ |
+| FR-SQ-006-006 | Batch refund processing | `RefundService::batchRefundProcessing()` | ✅ |
+| FR-SQ-006-007 | Refund statistics | `RefundService::getRefundStatistics()` | ✅ |
 
-| ID | Requirement | Implementation |
-|----|-------------|----------------|
-| FR-04.01 | System shall search for existing Square customers via `CustomersApi::searchCustomers` | Customer search |
-| FR-04.02 | System shall create Square customers from FA debtors | Customer creation |
-| FR-04.03 | System shall store Square `customer_id` on the FA debtor master record | `CustomerMatcher::linkSquareCustomer()` |
-| FR-04.04 | System shall create FA debtors from Square customers during sales import | `CustomerMatcher::findOrCreateDebtor()` |
-| FR-04.05 | System shall match customers by email, name, or reference ID | Matching logic |
+---
 
-### FR-05: CSV Import (Square Dashboard Export -> FA)
-
-| ID | Requirement |
-|----|-------------|
-| FR-05.01 | System shall accept CSV files exported from Square Dashboard |
-| FR-05.02 | System shall stage CSV data in unified staging tables |
-| FR-05.03 | System shall validate CSV structure and data types |
-| FR-05.04 | System shall match CSV transactions against existing FA transactions |
-| FR-05.05 | System shall flag unmatched records for manual review |
-| FR-05.06 | System shall merge matched transactions into FA |
-| FR-05.07 | System shall provide a review UI before finalizing imports |
-
-### FR-06: Unified Import Staging
-
-| ID | Requirement | Notes |
-|----|-------------|-------|
-| FR-06.01 | Staging tables shall accept records from Square API, Square CSV, and WooCommerce | `source` column distinguishes origin |
-| FR-06.02 | Staging schema shall support all common order fields (line items, taxes, payments, customers) | Normalized design |
-| FR-06.03 | System shall track import status per record (staged/imported/failed) | `status` column |
-| FR-06.04 | System shall provide a shared library (`ksf_ImportStaging`) for staging management | Independent Composer package |
-| FR-06.05 | Both `ksf_FA_Square` and `Export_Woocommerce` shall depend on the shared staging library | DRY |
-
-### FR-07: Configuration & Administration
+### FR-SQ-007: Square-Invoice Payment Destination
 
 | ID | Requirement | Implementation | Status |
 |----|-------------|----------------|--------|
-| FR-07.01 | System shall store Square API access token securely | `src/Config/Settings.php` | Implemented |
-| FR-07.02 | System shall support switching between Square Sandbox and Production environments | `pages/config.php` (env dropdown + Go button) | Implemented |
-| FR-07.03 | System shall store last import date for incremental pulls | `src/Config/Settings::getLastImportDate()` | Implemented |
-| FR-07.04 | System shall store destination customer/branch mapping | `src/Config/Settings::getDestinationCustomer()` | Implemented |
-| FR-07.05 | System shall provide activity log with timestamps and status | `square_import_log` table | Implemented |
-| FR-07.06 | System shall expose API error messages to administrators | `src/Exceptions/SquareException.php` | Implemented |
+| FR-SQ-007-001 | Detect `square_invoice*` payment terms in `db_prewrite` | `hooks.php` | ✅ |
+| FR-SQ-007-002 | Suppress FA auto-payment (`cash_sale=0`) for Square-Invoice terms | `hooks.php` | ✅ |
+| FR-SQ-007-003 | Create Square Order from FA cart line items | `SquareInvoiceService` | ✅ |
+| FR-SQ-007-004 | Auto-create Square Customer from FA debtor if not mapped | `SquareInvoiceService` | ✅ |
+| FR-SQ-007-005 | Create Square Invoice (DRAFT) with accepted payment methods | `SquareInvoiceService` | ✅ |
+| FR-SQ-007-006 | Publish Square Invoice (UNPAID) with public payment URL | `SquareInvoiceService` | ✅ |
+| FR-SQ-007-007 | Store FA↔Square Invoice mapping in `0_square_invoice_map` | `SquareInvoiceMapDAO` | ✅ |
+| FR-SQ-007-008 | Store FA↔Square Customer mapping in `0_square_customer_mappings` | `SquareInvoiceService` | ✅ |
+| FR-SQ-007-009 | Support delivery methods: SHARE_MANUALLY, EMAIL, SMS | `SquareInvoiceService` | ✅ |
+| FR-SQ-007-010 | Support card-on-file auto-charge for `square_invoice_card` | `SquareInvoiceService` | ✅ |
+| FR-SQ-007-011 | Idempotent: return existing mapping if already mapped | `SquareInvoiceService` | ✅ |
+| FR-SQ-007-012 | Display notification with payment URL after creation | `hooks.php` | ✅ |
+| FR-SQ-007-013 | Coordinate with FA_PaymentDestinations (non-Square terms) | Hook execution order | ✅ |
 
-### FR-08: Location Mapping (FA <-> Square)
+---
+
+### FR-SQ-008: Configuration Management
 
 | ID | Requirement | Implementation | Status |
 |----|-------------|----------------|--------|
-| FR-08.01 | System shall provide UI to map FA stock locations to Square locations | `pages/config.php` location mapping section | **Implemented 2026-05-23** |
-| FR-08.02 | System shall store location mappings in a dedicated database table (`square_location_mappings`) | `src/DAO/LocationMappingDAO.php` | **Implemented 2026-05-23** |
-| FR-08.03 | System shall support **N FA locations → 1 Square location** mapping (aggregation) | QOH summed across mapped FA locations | **Implemented 2026-05-23** |
-| FR-08.04 | System shall support **1 FA location → 1 Square location** mapping (direct) | QOH passed through directly | **Implemented 2026-05-23** |
-| FR-08.05 | System shall retrieve available Square locations via `LocationsApi::listLocations()` for the mapping UI | `pages/config.php` fetches from API | **Implemented 2026-05-23** |
-| FR-08.06 | System shall aggregate FA QOH by summing `stock_moves.qty` across mapped locations when exporting inventory | `LocationMappingDAO::getQohForLocations()` | **Implemented 2026-05-23** |
-| FR-08.07 | System shall support special "All Locations" mapping (sum ALL FA locations) | Special `*ALL*` fa_loc_code | **Implemented 2026-05-23** |
-| FR-08.08 | Inventory push shall be wired into export flow after each item upsert | `pages/export.php` after token save | **Implemented 2026-05-23** |
-| FR-08.09 | System shall optionally support creating Square locations from FA locations via `LocationsApi::createLocation()` | Future enhancement | Planned |
+| FR-SQ-008-001 | Sandbox/production environment switcher | `Settings::setEnvironment()` | ✅ |
+| FR-SQ-008-002 | Separate access tokens per environment | `Settings` | ✅ |
+| FR-SQ-008-003 | Validate access tokens and API connectivity | `SquareClientFactory::create()` | ✅ |
+| FR-SQ-008-004 | Save settings to FA database | `Settings::saveToDatabase()` | ✅ |
+| FR-SQ-008-005 | Configuration UI for all settings | `pages/config.php` | ✅ |
+| FR-SQ-008-006 | Location mapping (FA locations ↔ Square locations) | `LocationMappingDAO` | ✅ |
+| FR-SQ-008-007 | Default destination customer for imports | `Settings::getDestinationCustomer()` | ✅ |
+| FR-SQ-008-008 | Default tax group for export | `Settings::getDefaultTaxGroup()` | ✅ |
 
-#### FR-08 Design Notes (As Implemented)
+---
 
-**Mapping Model:**
-- `square_location_mappings` table stores `fa_loc_code` → `square_location_id`
-- Special `fa_loc_code = '*ALL*'` means "sum QOH across ALL FA locations"
-- Multiple FA locations can map to the same Square location (QOH is summed)
-- An FA location can only map to ONE Square location (prevents double-counting)
-- If "All Locations" is mapped, individual location mappings are ignored
+### FR-SQ-009: Import Staging & Data Management
 
-**UI in Config Page:**
-- "All Locations (sum QOH)" dropdown - maps ALL FA locations to one Square location
-- Table showing all FA locations with dropdown to map each to Square location
-- "Save Location Mappings" button
+| ID | Requirement | Implementation | Status |
+|----|-------------|----------------|--------|
+| FR-SQ-009-001 | Unified staging tables for imports | `StagingTableManager` | ✅ |
+| FR-SQ-009-002 | Two-stage import workflow (Stage → Process) | `ImportService` | ✅ |
+| FR-SQ-009-003 | Track import date ranges for gap detection | `SquareImportLogDAO::findDateGaps()` | ✅ |
+| FR-SQ-009-004 | Edit staged transactions | `pages/import.php` | ✅ |
+| FR-SQ-009-005 | Review/match interface (Square vs FA) | `pages/review_match.php` | ✅ |
+| FR-SQ-009-006 | Match by amount, date, and customer | `SalesMatchDAO` | ✅ |
+| FR-SQ-009-007 | Prevent duplicate imports | Deduplication logic | ✅ |
+| FR-SQ-009-008 | Comprehensive audit logging | `SquareImportLogDAO` | ✅ |
+| FR-SQ-009-009 | Transaction correction and history | `TransactionCorrection` | ✅ |
 
-**Inventory Push in Export Flow:**
-1. After each successful `upsertProduct()` call
-2. Calculate QOH using location mappings
-3. Push to Square using `pushInventory()` or `batchPushInventory()`
-4. Show progress notifications
+---
+
+### FR-SQ-016: ISU Config Absorption
+
+**Description**: Square owns all source-specific configuration previously
+held by ISU. GL accounts, bank accounts, payment methods, and
+Square-specific behavior flags live in Square's `Settings` class and
+config UI, NOT in ISU.
+
+| ID | Requirement | Implementation | Status |
+|----|-------------|----------------|--------|
+| FR-SQ-016-001 | Store `square_gl` (GL for card transactions) in Square Settings | `Settings::getSquareGl()` | Planned |
+| FR-SQ-016-002 | Store `cash_gl` (GL for cash transactions) in Square Settings | `Settings::getCashGl()` | Planned |
+| FR-SQ-016-003 | Store `xfer_to_gl` (transfer destination GL) in Square Settings | `Settings::getXferToGl()` | Planned |
+| FR-SQ-016-004 | Store `square_bank` (bank for deposits) in Square Settings | `Settings::getSquareBank()` | Planned |
+| FR-SQ-016-005 | Store `xfer_to_bank` (transfer dest bank) in Square Settings | `Settings::getXferToBank()` | Planned |
+| FR-SQ-016-006 | Store `cash_bank` (cash bank) in Square Settings | `Settings::getCashBank()` | Planned |
+| FR-SQ-016-007 | Store `useCardAsBranch` (PAN-suffix as customer branch) in Settings | `Settings::getUseCardAsBranch()` | Planned |
+| FR-SQ-016-008 | Store `allowSkuChange` (allow SKU editing on staged items) in Settings | `Settings::getAllowSkuChange()` | Planned |
+| FR-SQ-016-009 | Store `default_pay_card` (card payment method) in Settings | `Settings::getDefaultPayCard()` | Planned |
+| FR-SQ-016-010 | Store `default_pay_cash` (cash payment method) in Settings | `Settings::getDefaultPayCash()` | Planned |
+| FR-SQ-016-011 | Config UI section for all import settings (GL, bank, payment, booleans) | `pages/config.php` | Planned |
+| FR-SQ-016-012 | Pass source config to ISU processing methods via `$sourceConfig` array | `ImportService` | Planned |
+
+---
+
+### FR-SQ-017: Staging Ownership
+
+**Description**: Square fully owns its staging flow. Orders are staged
+via ISU staging tables using Square's own DAOs and the hook_invoke
+interface. The dormant dual-write pattern (local `square_staging_*`
+tables) is removed.
+
+| ID | Requirement | Implementation | Status |
+|----|-------------|----------------|--------|
+| FR-SQ-017-001 | All imports stage through ISU tables (`ksf_import_square_*`) | `ImportService` | ✅ |
+| FR-SQ-017-002 | Remove references to `square_staging_*` local tables | `StagingTableManager` | Planned |
+| FR-SQ-017-003 | Standardize on `ksf_import_square_*` as the canonical staging tables | — | ✅ |
+| FR-SQ-017-004 | ImportService passes Square config (GL/bank) to ISU at processing time | `ImportService` | Planned |
+
+---
+
+### FR-SQ-018: Config Absorbed from ISU
+
+**Description**: Eleven configuration fields previously in ISU's
+`config_values` are now owned by Square. These fields are source-specific
+to Square and do not belong in a generic staging module.
+
+| ID | Requirement | Config Key | Status |
+|----|-------------|-----------|--------|
+| FR-SQ-018-001 | GL account for card transactions | `square_gl` | Planned |
+| FR-SQ-018-002 | GL account for cash transactions | `cash_gl` | Planned |
+| FR-SQ-018-003 | Transfer destination GL account | `xfer_to_gl` | Planned |
+| FR-SQ-018-004 | Bank account for card deposits | `square_bank` | Planned |
+| FR-SQ-018-005 | Transfer destination bank account | `xfer_to_bank` | Planned |
+| FR-SQ-018-006 | Cash bank account | `cash_bank` | Planned |
+| FR-SQ-018-007 | Use PAN suffix as customer branch | `useCardAsBranch` | Planned |
+| FR-SQ-018-008 | Allow SKU editing on staged items | `allowSkuChange` | Planned |
+| FR-SQ-018-009 | Default card payment method | `default_pay_card` | Planned |
+| FR-SQ-018-010 | Default cash payment method | `default_pay_cash` | Planned |
+| FR-SQ-018-011 | Default pricebook (dead, to be cleaned up) | `default_pricebook` | Planned |
+
+---
+
+### FR-SQ-010: Location Mapping (FA ↔ Square)
+
+| ID | Requirement | Implementation | Status |
+|----|-------------|----------------|--------|
+| FR-SQ-010-001 | UI to map FA stock locations to Square locations | `pages/config.php` | ✅ |
+| FR-SQ-010-002 | Store mappings in `square_location_mappings` | `LocationMappingDAO` | ✅ |
+| FR-SQ-010-003 | N FA locations → 1 Square location (QOH aggregation) | `LocationMappingDAO` | ✅ |
+| FR-SQ-010-004 | 1 FA location → 1 Square location (direct) | `LocationMappingDAO` | ✅ |
+| FR-SQ-010-005 | Retrieve Square locations via `LocationsApi::listLocations()` | `pages/config.php` | ✅ |
+| FR-SQ-010-006 | Aggregate QOH by summing across mapped locations | `LocationMappingDAO::getQohForLocations()` | ✅ |
+| FR-SQ-010-007 | Special `*ALL*` mapping (sum all FA locations) | `LocationMappingDAO` | ✅ |
+| FR-SQ-010-008 | Wire inventory push into export flow | `pages/export.php` | ✅ |
+
+---
+
+### FR-SQ-011: Dispute Tracking
+
+| ID | Requirement | Implementation | Status |
+|----|-------------|----------------|--------|
+| FR-SQ-011-001 | Retrieve disputes via Square Disputes API | DisputeService | ✅ |
+| FR-SQ-011-002 | Link disputes to original FA invoices | DisputeService | ✅ |
+| FR-SQ-011-003 | Track dispute status (PENDING, WON, LOST) | DisputeService | ✅ |
+| FR-SQ-011-004 | Display dispute information in CRM module | CRM integration | ✅ |
+
+---
+
+### FR-SQ-012: Card-on-File Management
+
+| ID | Requirement | Implementation | Status |
+|----|-------------|----------------|--------|
+| FR-SQ-012-001 | List customer cards via `CustomersApi` | CardService | ✅ |
+| FR-SQ-012-002 | Store card references for Square-Invoice auto-charge | `SquareInvoiceService` | ✅ |
+| FR-SQ-012-003 | Support card refunds with processing fee awareness | RefundService | ✅ |
+
+---
+
+### FR-SQ-013: CSV Import (Square Dashboard → FA)
+
+| ID | Requirement | Implementation | Status |
+|----|-------------|----------------|--------|
+| FR-SQ-013-001 | Accept CSV files exported from Square Dashboard | `pages/import.php` | ✅ |
+| FR-SQ-013-002 | Stage CSV data in unified staging tables | `ImportService` | ✅ |
+| FR-SQ-013-003 | Validate CSV structure and data types | CSV parsers | ✅ |
+| FR-SQ-013-004 | Match CSV transactions against existing FA transactions | Matching logic | ✅ |
+| FR-SQ-013-005 | Flag unmatched records for manual review | Review UI | ✅ |
+
+---
+
+### FR-SQ-014: Inter-Module Communication
+
+| ID | Requirement | Implementation | Status |
+|----|-------------|----------------|--------|
+| FR-SQ-014-001 | Implement 4 standard hook methods for module discovery | `hooks.php` | ✅ |
+| FR-SQ-014-002 | Advertise `export`, `import`, `payments`, `config` capabilities | `getModuleCapabilities()` | ✅ |
+| FR-SQ-014-003 | Support `hook_invoke()` queries from other modules | `respondToCapabilityRequest()` | ✅ |
+
+---
+
+### FR-SQ-015: FA Native Integration (Future)
+
+| ID | Requirement | Implementation | Status |
+|----|-------------|----------------|--------|
+| FR-SQ-015-001 | Integrate with ksf_FA_CRM for customer management | — | 📋 |
+| FR-SQ-015-002 | Use FA stock events instead of custom inventory push | — | 📋 |
+| FR-SQ-015-003 | Use FA sales order system instead of custom invoices | — | 📋 |
+| FR-SQ-015-004 | Use FA tax system instead of Square tax objects | — | 📋 |
+| FR-SQ-015-005 | Use FA payment system instead of custom recording | — | 📋 |
 
 ---
 
@@ -404,231 +348,94 @@ class BusinessIntelligenceService implements BusinessIntelligenceInterface
 
 | ID | Requirement | Target |
 |----|-------------|--------|
-| NFR-01 | PHP Compatibility: must run on PHP 7.3 (prod) and 7.4 (UAT) | >=7.2 <8.0 |
-| NFR-02 | FrontAccounting Version: must integrate with FA 2.4.x | 2.4.3+ |
-| NFR-03 | Square SDK: must use `square/square ^40.0.0` (PHP 7.x compatible) | ^40.0.0 |
-| NFR-04 | Database: must use FA table prefix convention (`TB_PREF`) | - |
-| NFR-05 | Security: API tokens must not be exposed in logs or UI | - |
-| NFR-06 | Idempotency: all Square write operations must use idempotency keys | - |
-| NFR-07 | Error Handling: API errors must be caught, logged, and displayed | - |
-| NFR-08 | Performance: batch operations where Square API supports them | - |
-| NFR-09 | SOLID/DRY/DI: follow layered architecture with dependency injection | AGENTS.md |
+| NFR-SQ-001 | PHP Compatibility | ≥7.3 <8.0 |
+| NFR-SQ-002 | FrontAccounting Version | 2.4.x |
+| NFR-SQ-003 | Square SDK | `square/square ^40.0.0` |
+| NFR-SQ-004 | Database convention | FA `0_` table prefix |
+| NFR-SQ-005 | Security: tokens not exposed in logs/UI | — |
+| NFR-SQ-006 | Idempotency: all Square writes use idempotency keys | — |
+| NFR-SQ-007 | Error Handling: API errors caught, logged, displayed | — |
+| NFR-SQ-008 | Performance: batch operations where supported | — |
+| NFR-SQ-009 | Architecture: SOLID/DRY/DI, PSR-4, layered design | AGENTS.md |
 
 ---
 
-## 5. Data Model / Key Entities
+## 5. Data Model
 
-### 5.1 Current Staging Tables (in-module)
-```
-square_staging_transactions   - Transactions staged from Square API pull
-square_staging_items          - Line items per staged transaction
-square_customer_mappings      - Square customer ID <-> FA debtor_no mappings
-square_import_log             - Import run history
-```
-
-### 5.2 Future Unified Staging (shared library `ksf_ImportStaging`)
-```
-import_staging_transactions   - Source-agnostic order staging (Square API, Square CSV, WooCommerce)
-import_staging_line_items     - Line items per staged transaction
-import_customer_mappings      - Source customer ID <-> FA debtor_no mappings
-import_log                    - Import run history
-```
-
-### 5.3 Configuration Tables (Existing + Extended)
-```
-square                     - Config store (access_token, lastdate, destCust)
-square_mappings            - Entity ID mappings (FA <-> Square) [future]
-square_import_log          - Import run history
-```
-
-### 5.4 Token Tracking (FA_SquareUpTokens)
-```
-square_tokens              - Maps stock_id to Square catalog_object_id for update-vs-insert
-```
-
-### 5.5 Location Mappings (Implemented 2026-05-23)
-
-```
-square_location_mappings   - Maps FA locations to Square locations for QOH aggregation
-├── id                     INT PK AUTO_INCREMENT
-├── fa_loc_code            VARCHAR(5) NOT NULL  (references FA `locations.loc_code`)
-├── square_location_id     VARCHAR(32) NOT NULL  (Square location ID)
-├── created_at             TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-├── updated_at             TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-├── UNIQUE KEY idx_fa_loc_code (fa_loc_code)
-└── KEY idx_square_location (square_location_id)
-
-Special Values:
-- fa_loc_code = '*ALL*' = "Sum QOH across ALL FA locations"
-  - When this mapping exists, individual location mappings are ignored
-  - Useful for cases like: FHS Square location = sum of ALL FA locations
-    (including "Holding Tank" for shrinkage, etc.)
-
-Constraints:
-- fa_loc_code must be unique (an FA location maps to only one Square location)
-- Multiple FA locations can share the same square_location_id (QOH is summed)
-```
-
----
-
-## 6. Architecture Plan
-
-### 6.1 Current Architecture
-```
-src/
-├── Config/Settings.php          — Settings DTO with FA DB loading
-├── Contracts/                   — 6 service interfaces
-├── Exceptions/                  — SquareException, ProductNotFoundException
-├── Push/
-│   ├── CatalogExporter.php      — Products, inventory, prices -> Square
-│   └── TerminalPayment.php      — Invoice checkout -> Square Reader
-├── Pull/
-│   └── OrderImporter.php        — Square payments/orders -> staging
-├── Staging/
-│   ├── CustomerMatcher.php      — Match/create FA debtors
-│   ├── InvoiceCreator.php       — Staging -> FA sales invoice
-│   └── StagingTableManager.php  — Staging table CRUD
-└── Models/                      — [empty, to be populated]
-```
-
-### 6.2 Planned: SquareClientFactory
-Extract the 3x duplicate `::create()` methods into a single factory:
-```
-src/
-└── Push/
-    ├── SquareClientFactory.php  — NEW: creates configured SquareClient
-    ├── CatalogExporter.php      — Uses factory
-    └── TerminalPayment.php      — Uses factory
-└── Pull/
-    └── OrderImporter.php        — Uses factory
-```
-
-### 6.3 Current State Summary (as of 2026-05-21)
-- **Catalog Export**: Working with per-item logging and 10-item test limit. Categories created in Square. UTF-8 sanitization added to fix `json_encode` serialization failure on FA data (latin1 encoding).
-- **Configuration**: Env switcher with Go button, context-sensitive token fields, staging table create/drop.
-- **Dashboard**: Displays Square locations, API connection status, and import log.
-- **Pending**: Wire `pushInventory()` into export flow, wire `batchUpsertProducts()` into UI, location mapping (FR-08).
-
-### 6.4 Future: Unified Import Staging
-```
-ksf_ImportStaging/ (independent Composer package)
-├── src/
-│   ├── Contracts/
-│   │   ├── StagingTableManagerInterface.php
-│   │   ├── CustomerMatcherInterface.php
-│   │   └── InvoiceCreatorInterface.php
-│   ├── StagingTableManager.php     — CRUD for unified staging tables
-│   ├── CustomerMatcher.php         — Source-agnostic debtor management
-│   └── InvoiceCreator.php          — Source-agnostic invoice creation
-├── sql/install.sql                 — Unified staging table schemas
-└── composer.json
-
-Both:
-  ksf_FA_Square/composer.json
-  Export_Woocommerce/composer.json
-    → "require": { "ksfraser/ksf-import-staging": "^1.0" }
-
----
-
-## 7. Square API → FA Module Mapping (Landscape Analysis)
-
-| Square API | FA Equivalent / Module | Priority | Notes |
-|-----------|----------------------|----------|-------|
-| **Bank Accounts** | GL (ksf_FA_GL) | **WON'T DO** | Risk of corrupting payment records |
-| **Bookings** | ksf_FA_Calendar / ksf_FA_CRM | Future | Meetings/appointments |
-| **Cards** | — | Needs research | Customer CC info — unclear FA mapping |
-| **Cash Drawers / Shifts** | ksf_FA_HRM | Future | Shift portion only; drawers have no FA equivalent |
-| **Catalog** | stock_master (this module) | **NOW** | Core ksf_FA_Square integration |
-| **Checkout** | sales_orders (this module) | **NOW** | Terminal payment flow |
-| **Customers** | debtors_master (this module) | **NOW** | Bi-directional sync |
-| **Devices** | — | N/A | No FA equivalent |
-| **Disputes** | CRM / Sales (orders) | Future | Tie into order dispute tracking |
-| **Employees** | FA Users / ksf_FA_HRM | Future | |
-| **Events** | System logging | N/A | Already handled by Square internally |
-| **Gift Cards / Loyalty** | ksf_FA_Loyalty (CRM sub-module) | Future | |
-| **Inventory** | stock_moves (this module) | **NOW** | QOH push with location mapping |
-| **Invoices** | sales_invoices (this module) | **NOW** | Import flow |
-| **Labor** | ksf_FA_HRM | Future | |
-| **Locations** | FA locations (this module) | **NOW** | Location mapping (FR-08) |
-| **Merchants** | Company setup | N/A | One-time configuration |
-| **Orders** | sales_orders (this module) | **NOW** | Core integration |
-| **Payments** | sales_invoices (this module) | **NOW** | Core integration |
-| **Payouts** | GL / Bank reconciliation | Future | Payout tracking |
-| **Refunds** | sales_invoices (this module) | **NOW** | Credit note / return |
-| **Subscriptions** | Recurring invoices → Sales + CRM | Future | Recurring billing |
-| **Team** | ksf_FA_HRM | Future | |
-| **Terminal** | (this module) | **NOW** | Card-present payments |
-| **Transactions** | sales_invoices / GL | Future | Settlement details |
-
-**Priority Legend:**
-- **NOW**: Active development in ksf_FA_Square
-- **Future**: Planned for post-v1 integration with other ksf_ modules
-- **N/A**: No viable FA equivalent or already handled by Square
-- **WON'T DO**: Explicitly excluded (blocked/risky)
-```
-
----
-
-## 2. Square-Invoice Payment Destination (v2.4.4)
-
-### 2.1 Business Context
-FA users need to send invoices to customers for remote payment via Square Invoices (email, phone app POS, or card-on-file). When a sales invoice is posted with a Square-Invoice payment term, the system should suppress FA's auto-payment and instead create a Square Invoice via the API, sending the customer a payment link.
-
-### 2.2 Functional Requirements
-
-| ID | Requirement | Priority | Status |
-|----|-------------|----------|--------|
-| **FR-09.01** | Detect `square_invoice*` payment terms in `db_prewrite` | High | ✅ Implemented |
-| **FR-09.02** | Suppress FA auto-payment (`cash_sale=0`) for Square-Invoice terms | High | ✅ Implemented |
-| **FR-09.03** | Create Square Order from FA cart line items | High | ✅ Implemented |
-| **FR-09.04** | Auto-create Square Customer from FA debtor if not mapped | High | ✅ Implemented |
-| **FR-09.05** | Create Square Invoice (DRAFT) with accepted payment methods | High | ✅ Implemented |
-| **FR-09.06** | Publish Square Invoice (UNPAID) with public payment URL | High | ✅ Implemented |
-| **FR-09.07** | Store FA↔Square Invoice mapping in `0_square_invoice_map` | High | ✅ Implemented |
-| **FR-09.08** | Store FA↔Square Customer mapping in `0_square_customer_mappings` | High | ✅ Implemented |
-| **FR-09.09** | Support three delivery methods: SHARE_MANUALLY, EMAIL, SMS | Medium | ✅ Implemented |
-| **FR-09.10** | Support automatic payment source (card-on-file) for `square_invoice_card` | Medium | ✅ Implemented |
-| **FR-09.11** | Idempotent: return existing mapping if FA invoice already mapped | High | ✅ Implemented |
-| **FR-09.12** | Display notification with payment URL after invoice creation | Medium | ✅ Implemented |
-| **FR-09.13** | `resolvePaymentDestination()` checks both `0_ksf_payment_destinations` and `0_payment_terms` | High | ✅ Implemented |
-| **FR-09.14** | Payment term mapping configured via FA_PaymentDestinations module | High | ✅ Implemented |
-
-### 2.3 Data Model
+### 5.1 Module Tables
 
 | Table | Purpose |
 |-------|---------|
-| `0_square_invoice_map` | Links FA `debtor_trans` (sales invoices) to Square Invoices. PK: `fa_invoice_no`. Tracks status, public URL. |
-| `0_square_customer_mappings` | Maps FA `debtors_master` to Square Customers. PK: `fa_debtor_no`. Auto-populated on first invoice. |
-| `0_ksf_payment_destinations` | (FA_PaymentDestinations module) Maps payment_term → GL bank_account + destination name. |
+| `square` | Config store (tokens, env, last import date, defaults) |
+| `square_tokens` | FA stock_id ↔ Square catalog_object/variation ID mapping |
+| `square_customer_mappings` | FA debtor_no ↔ Square customer_id |
+| `square_location_mappings` | FA loc_code ↔ Square location_id |
+| `square_import_log` | Import run history with date ranges |
+| `square_invoice_map` | FA invoice_no ↔ Square invoice/order, status, URL |
+| `square_webhook_subscriptions` | Webhook subscription mirror |
+| `square_webhook_events` | Webhook event log |
 
-### 2.4 Architecture
+### 5.2 Shared Staging Tables (via ISU)
+
+| Table | Purpose |
+|-------|---------|
+| `ksf_import_square_transactions` | Unified staging (source-agnostic) |
+| `ksf_import_square_items` | Line items staging |
+| `ksf_import_square_payments` | Payment ↔ FA transaction xref |
+| `ksf_import_square_sales` | Transaction ↔ FA invoice xref |
+
+---
+
+## 6. Architecture
 
 ```
-FA creates sales invoice (ST_SALESINVOICE)
-  ↓
-db_prewrite (ksf_FA_Square)
-  → resolvePaymentDestination() checks payment_term
-  → If square_invoice*: cash_sale=0, store cart data
-  → If non-Square*: pass to next handler (FA_PaymentDestinations)
-  ↓
-FA commits transaction (db_postwrite)
-  → SquareInvoiceService.createInvoiceFromFA()
-  → 1. Create Square Order (OrdersApi)
-  → 2. Resolve/Create Square Customer (CustomersApi)
-  → 3. Create Invoice DRAFT (InvoicesApi)
-  → 4. Publish Invoice (InvoicesApi)
-  → 5. Store mapping in 0_square_invoice_map
-  → 6. Display notification with payment URL
+src/
+├── Config/Settings.php              — Settings DTO
+├── Contracts/                       — Service interfaces
+├── Exceptions/                      — Custom exceptions
+├── Push/
+│   ├── CatalogExporter.php          — Products, inventory → Square
+│   ├── TerminalPayment.php          — Invoice → Square Terminal
+│   └── SquareClientFactory.php      — SDK client factory
+├── Pull/
+│   └── OrderImporter.php           — Square payments → staging
+├── Services/
+│   ├── CustomerService.php         — Bi-directional customer sync
+│   ├── RefundService.php           — Refund lifecycle
+│   ├── WebhookService.php          — Webhook CRUD + events
+│   ├── SquareInvoiceService.php    — Square-Invoice creation
+│   ├── ImportService.php           — Import orchestration
+│   └── ExportService.php           — Export orchestration
+├── Staging/
+│   ├── CustomerMatcher.php         — Match/create FA debtors
+│   ├── InvoiceCreator.php          — Staging → FA invoice
+│   └── StagingTableManager.php     — Staging CRUD
+├── DAO/                            — Data access objects
+├── BusinessIntelligence/           — Analytics services
+└── Platform/                       — Cache, encryption, email, etc.
 ```
 
-### 2.5 SDK v40 Compatibility Notes
+---
+
+## 7. SDK v40 Compatibility Notes
 
 | Issue | Fix |
 |-------|-----|
-| `OrderLineItem` constructor requires `$quantity` | `new OrderLineItem($qty)` |
-| `Order` constructor requires `$locationId` | `new Order($this->locationId)` |
-| `Money` setters return void (can't chain) | Separate `$money = new Money(); $money->setAmount(...)` calls |
-| `CreateOrderRequest` has no constructor arg | `$req = new CreateOrderRequest(); $req->setOrder($order)` |
-| `acceptedPaymentMethods` required on Invoice | Must set `InvoiceAcceptedPaymentMethods` with card=true |
-| `primaryRecipient.customer_id` required to publish | Auto-create Square Customer via CustomersApi |
-| `getInvoiceAmount()` doesn't exist | Removed from test; not needed
+| `OrderLineItem` requires `$quantity` | `new OrderLineItem($qty)` |
+| `Order` requires `$locationId` | `new Order($this->locationId)` |
+| `Money` setters return void | Separate assignment calls |
+| `CreateOrderRequest` no constructor | `$req = new CreateOrderRequest(); $req->setOrder($order)` |
+| `acceptedPaymentMethods` required | Must set `InvoiceAcceptedPaymentMethods` |
+| `primaryRecipient.customer_id` required | Auto-create via CustomersApi |
+| `UpdateCustomerRequest` no constructor | `$req = new UpdateCustomerRequest()` |
+| `SearchCustomersRequest` filter types | Use `CustomerTextFilter` objects |
+
+---
+
+## Version History
+
+| Version | Date | Author | Changes |
+|---------|------|--------|---------|
+| 1.0 | 2026-05-20 | KSFraser | Initial requirements |
+| 2.0 | 2026-08-20 | KSFraser | Consolidated: removed duplicates, added FR-SQ-011 to FR-SQ-015 |
+| 2.1 | 2026-08-20 | KSFraser | Added FR-SQ-016 (ISU config absorption), FR-SQ-017 (staging ownership), FR-SQ-018 (absorbed fields) |

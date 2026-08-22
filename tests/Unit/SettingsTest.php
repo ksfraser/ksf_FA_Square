@@ -197,4 +197,83 @@ class SettingsTest extends TestCase
         $this->assertSame(42, $settings->getDestinationCustomer());
         $this->assertSame('2026-01-15', $settings->getLastImportDate()->format('Y-m-d'));
     }
+
+    public function testAbsorbedImportConfigDefaults(): void
+    {
+        $settings = new Settings();
+        $this->assertSame(0, $settings->getGlAccount());
+        $this->assertSame(0, $settings->getCashGl());
+        $this->assertSame(0, $settings->getXferToGl());
+        $this->assertSame(0, $settings->getBankAccount());
+        $this->assertSame(0, $settings->getXferToBank());
+        $this->assertSame(0, $settings->getCashBank());
+        $this->assertSame(0, $settings->getDefaultPayCard());
+        $this->assertSame(0, $settings->getDefaultPayCash());
+        $this->assertFalse($settings->isUseCardAsBranch());
+        $this->assertFalse($settings->isAllowSkuChange());
+        $this->assertSame('', $settings->getDefaultPricebook());
+    }
+
+    public function testAbsorbedImportConfigSetAndGet(): void
+    {
+        $settings = new Settings();
+        $settings->setGlAccount(1010);
+        $settings->setCashGl(1020);
+        $settings->setXferToGl(1030);
+        $settings->setBankAccount(5);
+        $settings->setXferToBank(6);
+        $settings->setCashBank(7);
+        $settings->setDefaultPayCard(3);
+        $settings->setDefaultPayCash(4);
+        $settings->setUseCardAsBranch(true);
+        $settings->setAllowSkuChange(true);
+        $settings->setDefaultPricebook('pricebook_1');
+
+        $this->assertSame(1010, $settings->getGlAccount());
+        $this->assertSame(1020, $settings->getCashGl());
+        $this->assertSame(1030, $settings->getXferToGl());
+        $this->assertSame(5, $settings->getBankAccount());
+        $this->assertSame(6, $settings->getXferToBank());
+        $this->assertSame(7, $settings->getCashBank());
+        $this->assertSame(3, $settings->getDefaultPayCard());
+        $this->assertSame(4, $settings->getDefaultPayCash());
+        $this->assertTrue($settings->isUseCardAsBranch());
+        $this->assertTrue($settings->isAllowSkuChange());
+        $this->assertSame('pricebook_1', $settings->getDefaultPricebook());
+    }
+
+    public function testToSourceConfigArray(): void
+    {
+        $settings = new Settings([
+            'gl_account' => 1010,
+            'cash_gl' => 1020,
+            'bank_account' => 5,
+            'xfer_to_bank' => 6,
+            'useCardAsBranch' => 1,
+        ]);
+
+        $arr = $settings->toSourceConfigArray();
+
+        $this->assertSame('square', $arr['source']);
+        $this->assertSame(1010, $arr['gl_account']);
+        $this->assertSame(1020, $arr['cash_gl']);
+        $this->assertSame(5, $arr['bank_account']);
+        $this->assertSame(6, $arr['xfer_to_bank']);
+        $this->assertTrue($arr['useCardAsBranch']);
+    }
+
+    public function testAbsorbedImportConfigFromConstructor(): void
+    {
+        $settings = new Settings([
+            'gl_account' => 2010,
+            'bank_account' => 10,
+            'allowSkuChange' => 1,
+            'default_pricebook' => 'pb_main',
+        ]);
+
+        $this->assertSame(2010, $settings->getGlAccount());
+        $this->assertSame(10, $settings->getBankAccount());
+        $this->assertTrue($settings->isAllowSkuChange());
+        $this->assertSame('pb_main', $settings->getDefaultPricebook());
+    }
 }

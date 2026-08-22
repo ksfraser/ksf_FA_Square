@@ -101,7 +101,14 @@ try {
     $statusCounts = [];
 }
 
-$action = $_POST['action'] ?? '';
+$action = '';
+if (isset($_POST['oimport'])) {
+    $action = 'o_import';
+} elseif (isset($_POST['process_staged_submit'])) {
+    $action = 'process_staged';
+} elseif (isset($_POST['save_edit_submit'])) {
+    $action = 'save_edit';
+}
 $importMode = $_POST['import_mode'] ?? 'direct';
 $editId = (int)($_GET['edit'] ?? 0);
 $deleteId = (int)($_GET['delete'] ?? 0);
@@ -168,19 +175,24 @@ if ($action === 'o_import') {
                 $fromDateTime = new DateTimeImmutable($fromDate);
                 $toDateTime = new DateTimeImmutable($toDate);
 
-                $results = $importService->stageFromApi(
-                    $fromDateTime,
-                    $toDateTime,
-                    $locationFilter,
-                    $locations
-                );
+                if (empty($locations)) {
+                    $error = _("No Square locations found. Check Square API configuration.");
+                } else {
+                    $results = $importService->stageFromApi(
+                        $fromDateTime,
+                        $toDateTime,
+                        $locationFilter,
+                        $locations
+                    );
 
-                foreach ($results['errors'] as $message) {
-                    display_notification($message);
+                    foreach ($results['errors'] as $message) {
+                        display_notification($message);
+                    }
+
+                    $msg = _("Staging complete. Staged: ") . $results['staged']
+                        . _(", Skipped: ") . $results['skipped']
+                        . _(", Payments found: ") . $results['payments_found'];
                 }
-
-                $msg = _("Staging complete. Staged: ") . $results['staged']
-                    . _(", Skipped: ") . $results['skipped'];
 
                 $statusCounts = $transactionStagingDao->getStatusCounts($env);
             } else {
@@ -478,7 +490,6 @@ if (!empty($stagedTransactions)) {
 
     end_table(1);
 
-    hidden('action', 'process_staged');
     submit_center('process_staged_submit', _("Process Selected Transactions"));
 
     echo '<hr>';
@@ -536,7 +547,6 @@ if ($error !== '') {
     display_error($error);
 }
 
-hidden('action', 'o_import');
 submit_center('oimport', _("Run Import"));
 
 end_form();

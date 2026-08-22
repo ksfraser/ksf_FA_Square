@@ -246,6 +246,11 @@ class ImportService
 
         $env = $this->settings->getEnvironment();
 
+        if (empty($locations)) {
+            $results['errors'][] = _("No Square locations found. Check API connection and location configuration.");
+            return $results;
+        }
+
         foreach ($locations as $locId => $locName) {
             if ($locationFilter !== '' && $locationFilter !== $locId) {
                 continue;
@@ -277,6 +282,8 @@ class ImportService
 
                 $orderId = $payment->getOrderId();
                 if ($orderId === null) {
+                    $results['errors'][] = _("Skipping (no order ID): ") . $paymentId;
+                    $results['skipped']++;
                     continue;
                 }
 
@@ -285,7 +292,7 @@ class ImportService
                     $order = $orderResult['order'];
 
                     if ($order === null) {
-                        $results['errors'][] = _("Cannot retrieve order: ") . $orderId;
+                        $results['errors'][] = _("Cannot retrieve order: ") . $orderId . _(" for payment: ") . $paymentId;
                         $results['skipped']++;
                         continue;
                     }

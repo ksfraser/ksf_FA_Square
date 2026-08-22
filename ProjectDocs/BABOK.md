@@ -234,6 +234,7 @@ Performance gaps will be identified through:
 | 0.3 | 2026-05-21 | KSFraser | Updated current/future state, prioritization, and change strategy with Phase 1 completion and Phase 2 (Location Mapping FR-08) |
 | 0.4 | 2026-05-22 | KSFraser | Added DAO layer, Service layer, and inter-module communication via hook_invoke pattern |
 | 0.5 | 2026-05-23 | KSFraser | Updated with comprehensive Square API coverage analysis and FA integration opportunities |
+| 0.6 | 2026-08-20 | KSFraser | Added BABOK alignment for ISU config absorption and staging ownership refactor |
 
 ---
 
@@ -459,13 +460,13 @@ See `AGENTS_MODULE_COMMUNICATION_ADDENDUM.md` for the complete pattern that can 
 
 | FR | Business Requirement | Stakeholder Need | Solution |
 |----|---------------------|-----------------|----------|
-| FR-09.01 | BR-SQ-001 | Remote payment collection | Hook-based interception of payment terms |
-| FR-09.02 | BR-SQ-002 | Prevent double-payment | Set cash_sale=0 in db_prewrite |
-| FR-09.03-06 | BR-SQ-001 | Automated invoice creation | SquareInvoiceService orchestrates API calls |
-| FR-09.04 | BR-SQ-003 | Zero manual Square setup | Auto-create from FA debtor data |
-| FR-09.07-08 | BR-SQ-004 | Payment matching | DAO stores bidirectional mappings |
-| FR-09.09 | BR-SQ-005 | Multiple delivery channels | Configurable delivery method per term |
-| FR-09.10 | BR-SQ-001 | Recurring payments | Card-on-file automatic charging |
+| FR-SQ-007-001 | BR-SQ-001 | Remote payment collection | Hook-based interception of payment terms |
+| FR-SQ-007-002 | BR-SQ-002 | Prevent double-payment | Set cash_sale=0 in db_prewrite |
+| FR-SQ-007-003-006 | BR-SQ-001 | Automated invoice creation | SquareInvoiceService orchestrates API calls |
+| FR-SQ-007-004 | BR-SQ-003 | Zero manual Square setup | Auto-create from FA debtor data |
+| FR-SQ-007-007-008 | BR-SQ-004 | Payment matching | DAO stores bidirectional mappings |
+| FR-SQ-007-009 | BR-SQ-005 | Multiple delivery channels | Configurable delivery method per term |
+| FR-SQ-007-010 | BR-SQ-001 | Recurring payments | Card-on-file automatic charging |
 
 ### Stakeholder Analysis
 
@@ -493,3 +494,53 @@ See `AGENTS_MODULE_COMMUNICATION_ADDENDUM.md` for the complete pattern that can 
 | Separate SquareInvoiceService class | SRP: single class for Square Invoice lifecycle | Inline in hooks.php (violates SRP), separate module (unnecessary coupling) |
 | Two mapping tables (invoice_map + customer_mappings) | Separate concerns: invoice tracking vs customer linking | Single table (violates SRP), no customer mapping (can't create invoices) |
 | Auto-create Square Customer | Zero-config for administrators | Require manual setup (friction), skip customer (can't publish) |
+
+---
+
+## BABOK Alignment: ISU Config Absorption (Refactor)
+
+### Business Requirements
+
+| ID | Business Requirement | BABOK Task | Rationale |
+|----|---------------------|------------|-----------|
+| BR-SQ-010 | Own all Square-specific GL/bank/payment config | Define Needs | ISU is generic staging; source modules own their config |
+| BR-SQ-011 | Remove ISU coupling for Square config | Define Change Requirements | ISU should not know Square GL accounts |
+| BR-SQ-012 | Standardize staging on ISU tables (remove dual-write) | Assess Risk | Two staging table sets create confusion |
+| BR-SQ-013 | Config UI for import settings (GL, bank, payment methods) | Define Requirements | Admin configures Square import routing in Square module |
+
+### Functional Requirements Traceability
+
+| FR | Business Requirement | Stakeholder Need | Solution |
+|----|---------------------|-----------------|----------|
+| FR-SQ-016-001-003 | BR-SQ-010 | GL routing for Square imports | Settings.php stores GL accounts |
+| FR-SQ-016-004-006 | BR-SQ-010 | Bank routing for deposits/transfers | Settings.php stores bank accounts |
+| FR-SQ-016-007-010 | BR-SQ-010 | Payment method defaults | Settings.php stores payment methods |
+| FR-SQ-016-011 | BR-SQ-013 | Admin UI for import config | pages/config.php import section |
+| FR-SQ-016-012 | BR-SQ-010 | Pass config to ISU at processing time | ImportService passes $sourceConfig |
+| FR-SQ-017-001-004 | BR-SQ-012 | Single staging table set | Remove square_staging_* references |
+| FR-SQ-018-001-011 | BR-SQ-010 | Absorbed fields from ISU | Settings.php + config UI |
+
+### Config Fields Absorbed from ISU
+
+| ISU Field | Square Config | Purpose | Dead? |
+|-----------|--------------|---------|-------|
+| `square_gl` | `square_gl` | GL for card transactions | No |
+| `cash_gl` | `cash_gl` | GL for cash transactions | No |
+| `xfer_to_gl` | `xfer_to_gl` | Transfer destination GL | No |
+| `square_bank` | `square_bank` | Bank for deposits | No |
+| `xfer_to_bank` | `xfer_to_bank` | Transfer dest bank | No |
+| `cash_bank` | `cash_bank` | Cash bank | No |
+| `useCardAsBranch` | `useCardAsBranch` | PAN as branch | No |
+| `allowSkuChange` | `allowSkuChange` | SKU editing gate | No |
+| `default_pay_card` | `default_pay_card` | Card payment method | Yes |
+| `default_pay_cash` | `default_pay_cash` | Cash payment method | Yes |
+| `default_pricebook` | `default_pricebook` | Price book | Yes (dead) |
+
+### Design Decisions
+
+| Decision | Rationale | Alternatives Considered |
+|----------|-----------|------------------------|
+| Absorb ALL 11 fields including dead ones | Clean break; remove dead code later | Move only active fields (creates orphaned ISU fields) |
+| Config in Settings.php (existing DTO) | Consistent with Square module pattern | New config table (unnecessary duplication) |
+| Pass $sourceConfig at processing time | Loose coupling; ISU never imports Square | ISU reads Square config directly (tight coupling) |
+| Remove square_staging_* tables | Single canonical staging set reduces confusion | Keep both (creates maintenance burden) |

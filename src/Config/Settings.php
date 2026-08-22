@@ -23,6 +23,18 @@ class Settings implements SettingsInterface
             'destination_customer' => null,
             'default_location' => null,
             'default_tax_group' => null,
+            // Absorbed from ISU — source-specific import config
+            'gl_account' => 0,
+            'cash_gl' => 0,
+            'xfer_to_gl' => 0,
+            'bank_account' => 0,
+            'xfer_to_bank' => 0,
+            'cash_bank' => 0,
+            'default_pay_card' => 0,
+            'default_pay_cash' => 0,
+            'useCardAsBranch' => 0,
+            'allowSkuChange' => 0,
+            'default_pricebook' => '',
         ], $config);
     }
 
@@ -203,6 +215,141 @@ class Settings implements SettingsInterface
     public function toArray(): array
     {
         return $this->config;
+    }
+
+    // -- Absorbed import config fields ------------------------------------
+
+    public function getGlAccount(): int
+    {
+        return (int)($this->config['gl_account'] ?? 0);
+    }
+
+    public function setGlAccount(int $gl): void
+    {
+        $this->config['gl_account'] = $gl;
+    }
+
+    public function getCashGl(): int
+    {
+        return (int)($this->config['cash_gl'] ?? 0);
+    }
+
+    public function setCashGl(int $gl): void
+    {
+        $this->config['cash_gl'] = $gl;
+    }
+
+    public function getXferToGl(): int
+    {
+        return (int)($this->config['xfer_to_gl'] ?? 0);
+    }
+
+    public function setXferToGl(int $gl): void
+    {
+        $this->config['xfer_to_gl'] = $gl;
+    }
+
+    public function getBankAccount(): int
+    {
+        return (int)($this->config['bank_account'] ?? 0);
+    }
+
+    public function setBankAccount(int $bank): void
+    {
+        $this->config['bank_account'] = $bank;
+    }
+
+    public function getXferToBank(): int
+    {
+        return (int)($this->config['xfer_to_bank'] ?? 0);
+    }
+
+    public function setXferToBank(int $bank): void
+    {
+        $this->config['xfer_to_bank'] = $bank;
+    }
+
+    public function getCashBank(): int
+    {
+        return (int)($this->config['cash_bank'] ?? 0);
+    }
+
+    public function setCashBank(int $bank): void
+    {
+        $this->config['cash_bank'] = $bank;
+    }
+
+    public function getDefaultPayCard(): int
+    {
+        return (int)($this->config['default_pay_card'] ?? 0);
+    }
+
+    public function setDefaultPayCard(int $payType): void
+    {
+        $this->config['default_pay_card'] = $payType;
+    }
+
+    public function getDefaultPayCash(): int
+    {
+        return (int)($this->config['default_pay_cash'] ?? 0);
+    }
+
+    public function setDefaultPayCash(int $payType): void
+    {
+        $this->config['default_pay_cash'] = $payType;
+    }
+
+    public function isUseCardAsBranch(): bool
+    {
+        return (bool)($this->config['useCardAsBranch'] ?? false);
+    }
+
+    public function setUseCardAsBranch(bool $flag): void
+    {
+        $this->config['useCardAsBranch'] = $flag ? 1 : 0;
+    }
+
+    public function isAllowSkuChange(): bool
+    {
+        return (bool)($this->config['allowSkuChange'] ?? false);
+    }
+
+    public function setAllowSkuChange(bool $flag): void
+    {
+        $this->config['allowSkuChange'] = $flag ? 1 : 0;
+    }
+
+    public function getDefaultPricebook(): string
+    {
+        return (string)($this->config['default_pricebook'] ?? '');
+    }
+
+    public function setDefaultPricebook(string $pricebook): void
+    {
+        $this->config['default_pricebook'] = $pricebook;
+    }
+
+    /**
+     * Builds a SourceConfig-compatible array for ISU processing.
+     *
+     * @return array<string, mixed>
+     */
+    public function toSourceConfigArray(): array
+    {
+        return [
+            'source'            => 'square',
+            'gl_account'        => $this->getGlAccount(),
+            'cash_gl'           => $this->getCashGl(),
+            'xfer_to_gl'        => $this->getXferToGl(),
+            'bank_account'      => $this->getBankAccount(),
+            'xfer_to_bank'      => $this->getXferToBank(),
+            'cash_bank'         => $this->getCashBank(),
+            'default_pay_card'  => $this->getDefaultPayCard(),
+            'default_pay_cash'  => $this->getDefaultPayCash(),
+            'useCardAsBranch'   => $this->isUseCardAsBranch(),
+            'allowSkuChange'    => $this->isAllowSkuChange(),
+            'default_pricebook' => $this->getDefaultPricebook(),
+        ];
     }
 
     /**
