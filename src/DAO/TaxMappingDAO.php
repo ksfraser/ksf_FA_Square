@@ -49,7 +49,7 @@ class TaxMappingDAO
     public function getMappingBySquareId(string $squareTaxId): ?array
     {
         $tableName = $this->getMappingsTableName();
-        $sql = "SELECT * FROM {$tableName} WHERE square_tax_id = '" . \db_escape($squareTaxId) . "'";
+        $sql = "SELECT * FROM {$tableName} WHERE square_tax_id = " . \db_escape($squareTaxId);
         
         $result = \db_query($sql);
         if ($result !== false && \db_num_rows($result) > 0) {
@@ -98,8 +98,8 @@ class TaxMappingDAO
             fa_tax_id, square_tax_id, mapping_data, created_at
         ) VALUES (
             {$mappingData['fa_tax_id']},
-            '" . \db_escape($mappingData['square_tax_id']) . "',
-            '" . \db_escape($mappingData['mapping_data']) . "',
+            " . \db_escape($mappingData['square_tax_id']) . ",
+            " . \db_escape($mappingData['mapping_data']) . ",
             '{$mappingData['created_at']}'
         )";
 
@@ -123,7 +123,7 @@ class TaxMappingDAO
             if ($key === 'updated_at') {
                 $updates[] = "{$key} = '{$value}'";
             } else {
-                $updates[] = "{$key} = " . (is_numeric($value) ? $value : "'" . \db_escape($value) . "'");
+                $updates[] = "{$key} = " . (is_numeric($value) ? $value : \db_escape($value));
             }
         }
         

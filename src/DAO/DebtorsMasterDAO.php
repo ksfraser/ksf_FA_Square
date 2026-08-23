@@ -49,7 +49,7 @@ class DebtorsMasterDAO
     public function getByEmail(string $email): ?array
     {
         $tableName = $this->getTableName();
-        $sql = "SELECT * FROM {$tableName} WHERE email = '" . \db_escape($email) . "'";
+        $sql = "SELECT * FROM {$tableName} WHERE email = " . \db_escape($email);
         
         $result = \db_query($sql);
         if ($result !== false && \db_num_rows($result) > 0) {
@@ -69,7 +69,7 @@ class DebtorsMasterDAO
     public function getByPhone(string $phone): ?array
     {
         $tableName = $this->getTableName();
-        $sql = "SELECT * FROM {$tableName} WHERE phone = '" . \db_escape($phone) . "'";
+        $sql = "SELECT * FROM {$tableName} WHERE phone = " . \db_escape($phone);
         
         $result = \db_query($sql);
         if ($result !== false && \db_num_rows($result) > 0) {
@@ -89,7 +89,7 @@ class DebtorsMasterDAO
     public function getByName(string $name): ?array
     {
         $tableName = $this->getTableName();
-        $sql = "SELECT * FROM {$tableName} WHERE name LIKE '%" . \db_escape($name) . "%'";
+        $sql = "SELECT * FROM {$tableName} WHERE name LIKE " . \db_escape('%' . $name . '%');
         
         $result = \db_query($sql);
         $debtors = [];
@@ -121,7 +121,7 @@ class DebtorsMasterDAO
             if ($key === 'updated_at') {
                 $updates[] = "{$key} = '{$value}'";
             } else {
-                $updates[] = "{$key} = " . (is_numeric($value) ? $value : "'" . \db_escape($value) . "'");
+                $updates[] = "{$key} = " . (is_numeric($value) ? $value : \db_escape($value));
             }
         }
         
@@ -150,7 +150,7 @@ class DebtorsMasterDAO
             if (is_numeric($value)) {
                 $values[] = $value;
             } else {
-                $values[] = "'" . \db_escape($value) . "'";
+                $values[] = \db_escape($value);
             }
         }
         
@@ -198,15 +198,15 @@ class DebtorsMasterDAO
         $conditions = [];
         
         if (!empty($criteria['name'])) {
-            $conditions[] = "name LIKE '%" . \db_escape($criteria['name']) . "%'";
+            $conditions[] = "name LIKE " . \db_escape('%' . $criteria['name'] . '%');
         }
         
         if (!empty($criteria['email'])) {
-            $conditions[] = "email = '" . \db_escape($criteria['email']) . "'";
+            $conditions[] = "email = " . \db_escape($criteria['email']);
         }
         
         if (!empty($criteria['phone'])) {
-            $conditions[] = "phone = '" . \db_escape($criteria['phone']) . "'";
+            $conditions[] = "phone = " . \db_escape($criteria['phone']);
         }
         
         if (!empty($criteria['category_id'])) {

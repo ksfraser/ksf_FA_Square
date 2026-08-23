@@ -57,7 +57,7 @@ class SquareTokenDAO
                 KEY idx_environment (environment)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
             if (!\db_query($sql)) {
-                throw new Exception(_("Cannot create square_tokens table: ") . db_error());
+                throw new Exception(_("Cannot create square_tokens table: ") . \db_error_msg($db));
             }
         } else {
             $this->ensureEnvironmentColumnExists();
@@ -114,7 +114,7 @@ class SquareTokenDAO
             \db_escape($squareCatalogObjectId) . ", " .
             ($squareVariationId !== null ? \db_escape($squareVariationId) : "NULL") . ", " .
             \db_escape($this->environment) . ", " .
-            ($faLastUpdated !== null ? "'" . \db_escape($faLastUpdated) . "'" : "NULL") . ", NOW(), NOW()) " .
+            ($faLastUpdated !== null ? \db_escape($faLastUpdated) : "NULL") . ", NOW(), NOW()) " .
             "ON DUPLICATE KEY UPDATE " .
             "square_catalog_object_id = VALUES(square_catalog_object_id), " .
             "square_variation_id = VALUES(square_variation_id), " .
@@ -122,7 +122,7 @@ class SquareTokenDAO
             "updated_at = NOW()";
         
         if (!\db_query($sql)) {
-            throw new Exception(_("Failed to upsert square token: ") . db_error());
+            throw new Exception(_("Failed to upsert square token: ") . \db_error_msg($db));
         }
     }
 

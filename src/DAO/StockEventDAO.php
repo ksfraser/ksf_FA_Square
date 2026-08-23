@@ -308,13 +308,13 @@ class StockEventDAO
             " . ($data['counted_quantity'] ?? 'NULL') . ", 
             " . ($data['expected_quantity'] ?? 'NULL') . ", 
             " . ($data['difference'] ?? 'NULL') . ", 
-            '" . \db_escape($data['reason']) . "', 
+            " . \db_escape($data['reason']) . ", 
             " . ($data['fa_move_id'] ?? 'NULL') . ", 
             " . ($data['fa_adjustment_id'] ?? 'NULL') . ", 
             " . ($data['fa_count_id'] ?? 'NULL') . ", 
-            '" . \db_escape($data['event_data']) . "', 
+            " . \db_escape($data['event_data']) . ", 
             " . ($data['processed_successfully'] ? 'TRUE' : 'FALSE') . ", 
-            " . ($data['error_message'] ? "'" . \db_escape($data['error_message']) . "'" : 'NULL') . ", 
+            " . ($data['error_message'] ? \db_escape($data['error_message']) : 'NULL') . ", 
             '{$data['processed_at']}'
         )";
 

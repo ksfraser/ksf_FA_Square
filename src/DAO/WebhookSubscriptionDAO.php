@@ -75,7 +75,7 @@ class WebhookSubscriptionDAO
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
 
         if (!\db_query($sql)) {
-            throw new Exception(_("Cannot create square_webhook_subscriptions table: ") . db_error());
+            throw new Exception(_("Cannot create square_webhook_subscriptions table: ") . \db_error_msg($db));
         }
     }
 
@@ -105,7 +105,7 @@ class WebhookSubscriptionDAO
             if ($value === null) {
                 $values[] = 'NULL';
             } else {
-                $values[] = "'" . \db_escape((string)$value) . "'";
+                $values[] = \db_escape((string)$value);
             }
         }
 
@@ -115,7 +115,7 @@ class WebhookSubscriptionDAO
         $sql = "INSERT INTO {$tableName} ({$fieldsStr}) VALUES ({$valuesStr})";
 
         if (!\db_query($sql)) {
-            throw new Exception(_("Failed to insert webhook subscription: ") . db_error());
+            throw new Exception(_("Failed to insert webhook subscription: ") . \db_error_msg($db));
         }
 
         return (int)\db_insert_id();
@@ -138,7 +138,7 @@ class WebhookSubscriptionDAO
             if ($value === null) {
                 $sets[] = "{$key} = NULL";
             } else {
-                $sets[] = "{$key} = '" . \db_escape((string)$value) . "'";
+                $sets[] = "{$key} = " . \db_escape((string)$value);
             }
         }
 
@@ -147,10 +147,10 @@ class WebhookSubscriptionDAO
         }
 
         $setsStr = implode(', ', $sets);
-        $sql = "UPDATE {$tableName} SET {$setsStr} WHERE square_id = '" . \db_escape($squareId) . "'";
+        $sql = "UPDATE {$tableName} SET {$setsStr} WHERE square_id = " . \db_escape($squareId);
 
         if (!\db_query($sql)) {
-            throw new Exception(_("Failed to update webhook subscription: ") . db_error());
+            throw new Exception(_("Failed to update webhook subscription: ") . \db_error_msg($db));
         }
     }
 
@@ -164,10 +164,10 @@ class WebhookSubscriptionDAO
     public function deleteSubscription(string $squareId): void
     {
         $tableName = $this->getTableName();
-        $sql = "DELETE FROM {$tableName} WHERE square_id = '" . \db_escape($squareId) . "'";
+        $sql = "DELETE FROM {$tableName} WHERE square_id = " . \db_escape($squareId);
 
         if (!\db_query($sql)) {
-            throw new Exception(_("Failed to delete webhook subscription: ") . db_error());
+            throw new Exception(_("Failed to delete webhook subscription: ") . \db_error_msg($db));
         }
     }
 
@@ -204,7 +204,7 @@ class WebhookSubscriptionDAO
     public function getBySquareId(string $squareId): ?array
     {
         $tableName = $this->getTableName();
-        $sql = "SELECT * FROM {$tableName} WHERE square_id = '" . \db_escape($squareId) . "'";
+        $sql = "SELECT * FROM {$tableName} WHERE square_id = " . \db_escape($squareId);
         
         $result = \db_query($sql);
         if ($result !== false && \db_num_rows($result) > 0) {
@@ -240,7 +240,7 @@ class WebhookSubscriptionDAO
             if ($value === null) {
                 $values[] = 'NULL';
             } else {
-                $values[] = "'" . \db_escape((string)$value) . "'";
+                $values[] = \db_escape((string)$value);
             }
         }
 
@@ -250,7 +250,7 @@ class WebhookSubscriptionDAO
         $sql = "INSERT INTO {$tableName} ({$fieldsStr}) VALUES ({$valuesStr})";
 
         if (!\db_query($sql)) {
-            throw new Exception(_("Failed to log webhook event: ") . db_error());
+            throw new Exception(_("Failed to log webhook event: ") . \db_error_msg($db));
         }
 
         return (int)\db_insert_id();

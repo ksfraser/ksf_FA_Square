@@ -61,7 +61,7 @@ class SalesMatchDAO
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
 
             if (!\db_query($sql)) {
-                throw new Exception(_("Cannot create ksf_import_square_sales table: ") . db_error());
+                throw new Exception(_("Cannot create ksf_import_square_sales table: ") . \db_error_msg($db));
             }
         }
     }
@@ -85,7 +85,7 @@ class SalesMatchDAO
         $tableName = $this->getTableName();
 
         $fields = ['square_transaction_id'];
-        $values = ["'" . \db_escape($squareTransactionId) . "'"];
+        $values = [\db_escape($squareTransactionId)];
 
         if ($salesInvoiceNo !== null) {
             $fields[] = 'sales_invoice_no';
@@ -119,7 +119,7 @@ class SalesMatchDAO
              . "ON DUPLICATE KEY UPDATE " . implode(', ', $updates);
 
         if (!\db_query($sql)) {
-            throw new Exception(_("Failed to insert sales match: ") . db_error());
+            throw new Exception(_("Failed to insert sales match: ") . \db_error_msg($db));
         }
 
         $id = (int)\db_insert_id();
@@ -142,7 +142,7 @@ class SalesMatchDAO
     public function getBySquareTransactionId(string $squareTransactionId): ?array
     {
         $tableName = $this->getTableName();
-        $sql = "SELECT * FROM {$tableName} WHERE square_transaction_id = '" . \db_escape($squareTransactionId) . "'";
+        $sql = "SELECT * FROM {$tableName} WHERE square_transaction_id = " . \db_escape($squareTransactionId);
         $result = \db_query($sql);
 
         if ($result !== false && \db_num_rows($result) > 0) {
@@ -162,7 +162,7 @@ class SalesMatchDAO
     public function getByInvoiceNo(int $salesInvoiceNo): array
     {
         $tableName = $this->getTableName();
-        $sql = "SELECT * FROM {$tableName} WHERE sales_invoice_no = '" . \db_escape((string)$salesInvoiceNo) . "'";
+        $sql = "SELECT * FROM {$tableName} WHERE sales_invoice_no = " . \db_escape((string)$salesInvoiceNo);
         $result = \db_query($sql);
         $matches = [];
 
@@ -198,10 +198,10 @@ class SalesMatchDAO
     public function deleteMatch(string $squareTransactionId): void
     {
         $tableName = $this->getTableName();
-        $sql = "DELETE FROM {$tableName} WHERE square_transaction_id = '" . \db_escape($squareTransactionId) . "'";
+        $sql = "DELETE FROM {$tableName} WHERE square_transaction_id = " . \db_escape($squareTransactionId);
 
         if (!\db_query($sql)) {
-            throw new Exception(_("Failed to delete sales match: ") . db_error());
+            throw new Exception(_("Failed to delete sales match: ") . \db_error_msg($db));
         }
     }
 }

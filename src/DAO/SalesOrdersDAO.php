@@ -55,7 +55,7 @@ class SalesOrdersDAO
         $ordersTable = $this->getOrdersTableName();
         $sql = "SELECT o.* FROM {$mappingTable} m "
              . "JOIN {$ordersTable} o ON o.order_id = m.fa_order_id "
-             . "WHERE m.square_order_id = '" . \db_escape($squareOrderId) . "' LIMIT 1";
+             . "WHERE m.square_order_id = " . \db_escape($squareOrderId) . " LIMIT 1";
 
         $result = \db_query($sql);
         if ($result === false) {
@@ -81,7 +81,7 @@ class SalesOrdersDAO
     {
         $tableName = $this->getSalesMatchTableName();
         $sql = "SELECT ksf_import_square_sales_id FROM {$tableName} "
-             . "WHERE square_transaction_id = '" . \db_escape($squareOrderId) . "' LIMIT 1";
+             . "WHERE square_transaction_id = " . \db_escape($squareOrderId) . " LIMIT 1";
 
         $result = \db_query($sql);
         if ($result === false) {
@@ -111,7 +111,7 @@ class SalesOrdersDAO
             if (is_numeric($value)) {
                 $values[] = $value;
             } else {
-                $values[] = "'" . \db_escape($value) . "'";
+                $values[] = \db_escape($value);
             }
         }
         
@@ -138,7 +138,7 @@ class SalesOrdersDAO
             if ($key === 'updated_at') {
                 $updates[] = "{$key} = '{$value}'";
             } else {
-                $updates[] = "{$key} = " . (is_numeric($value) ? $value : "'" . \db_escape($value) . "'");
+                $updates[] = "{$key} = " . (is_numeric($value) ? $value : \db_escape($value));
             }
         }
         
@@ -188,14 +188,14 @@ class SalesOrdersDAO
             line_total, tax_amount, discount_amount, notes, sequence
         ) VALUES (
             {$itemData['order_id']},
-            '" . \db_escape($itemData['item_code']) . "',
-            '" . \db_escape($itemData['description']) . "',
+            " . \db_escape($itemData['item_code']) . ",
+            " . \db_escape($itemData['description']) . ",
             {$itemData['quantity']},
             " . (float)$itemData['unit_price'] . ",
             " . (float)$itemData['line_total'] . ",
             " . (float)$itemData['tax_amount'] . ",
             " . (float)$itemData['discount_amount'] . ",
-            '" . \db_escape($itemData['notes']) . "',
+            " . \db_escape($itemData['notes']) . ",
             {$itemData['sequence']}
         )";
 
@@ -219,12 +219,12 @@ class SalesOrdersDAO
             if ($key === 'updated_at') {
                 $updates[] = "{$key} = '{$value}'";
             } else {
-                $updates[] = "{$key} = " . (is_numeric($value) ? $value : "'" . \db_escape($value) . "'");
+                $updates[] = "{$key} = " . (is_numeric($value) ? $value : \db_escape($value));
             }
         }
         
         $sql = "UPDATE {$tableName} SET " . implode(', ', $updates) . " 
-                WHERE square_order_id = '" . \db_escape($squareOrderId) . "'";
+                WHERE square_order_id = " . \db_escape($squareOrderId);
         
         return \db_query($sql) !== false;
     }
@@ -245,7 +245,7 @@ class SalesOrdersDAO
             if ($key === 'updated_at') {
                 $updates[] = "{$key} = '{$value}'";
             } else {
-                $updates[] = "{$key} = " . (is_numeric($value) ? $value : "'" . \db_escape($value) . "'");
+                $updates[] = "{$key} = " . (is_numeric($value) ? $value : \db_escape($value));
             }
         }
         
@@ -271,9 +271,9 @@ class SalesOrdersDAO
         ) VALUES (
             {$eventData['fa_order_id']},
             " . (isset($eventData['original_order_id']) ? (int)$eventData['original_order_id'] : 'NULL') . ",
-            " . (isset($eventData['square_order_id']) ? "'" . \db_escape($eventData['square_order_id']) . "'" : 'NULL') . ",
+            " . (isset($eventData['square_order_id']) ? \db_escape($eventData['square_order_id']) : 'NULL') . ",
             '{$eventData['event_type']}',
-            '" . \db_escape($eventData['event_data']) . "',
+            " . \db_escape($eventData['event_data']) . ",
             '{$eventData['timestamp']}'
         )";
 

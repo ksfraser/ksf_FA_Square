@@ -49,7 +49,7 @@ class PaymentsDAO
     public function getPaymentByReference(string $reference): ?array
     {
         $tableName = $this->getPaymentsTableName();
-        $sql = "SELECT * FROM {$tableName} WHERE ref = '" . \db_escape($reference) . "'";
+        $sql = "SELECT * FROM {$tableName} WHERE ref = " . \db_escape($reference);
         
         $result = \db_query($sql);
         if ($result !== false && \db_num_rows($result) > 0) {
@@ -132,7 +132,7 @@ class PaymentsDAO
             if (is_numeric($value)) {
                 $values[] = $value;
             } else {
-                $values[] = "'" . \db_escape($value) . "'";
+                $values[] = \db_escape($value);
             }
         }
         
@@ -162,7 +162,7 @@ class PaymentsDAO
             if (is_numeric($value)) {
                 $values[] = $value;
             } else {
-                $values[] = "'" . \db_escape($value) . "'";
+                $values[] = \db_escape($value);
             }
         }
         
@@ -189,7 +189,7 @@ class PaymentsDAO
             if ($key === 'updated_at') {
                 $updates[] = "{$key} = '{$value}'";
             } else {
-                $updates[] = "{$key} = " . (is_numeric($value) ? $value : "'" . \db_escape($value) . "'");
+                $updates[] = "{$key} = " . (is_numeric($value) ? $value : \db_escape($value));
             }
         }
         
@@ -223,7 +223,7 @@ class PaymentsDAO
     {
         $tableName = $this->getPaymentsTableName();
         $sql = "SELECT * FROM {$tableName} 
-                WHERE payment_method = '" . \db_escape($paymentMethod) . "' 
+                WHERE payment_method = " . \db_escape($paymentMethod) . " 
                 ORDER BY date_1 DESC";
 
         $result = \db_query($sql);
@@ -250,7 +250,7 @@ class PaymentsDAO
     {
         $tableName = $this->getPaymentsTableName();
         $sql = "SELECT * FROM {$tableName} 
-                WHERE status = '" . \db_escape($status) . "' 
+                WHERE status = " . \db_escape($status) . " 
                 ORDER BY date_1 DESC";
 
         $result = \db_query($sql);
@@ -370,8 +370,8 @@ class PaymentsDAO
             currency, timestamp
         ) VALUES (
             {$faPaymentId},
-            " . (isset($eventData['square_payment_id']) ? "'" . \db_escape($eventData['square_payment_id']) . "'" : 'NULL') . ",
-            " . (isset($eventData['square_refund_id']) ? "'" . \db_escape($eventData['square_refund_id']) . "'" : 'NULL') . ",
+            " . (isset($eventData['square_payment_id']) ? \db_escape($eventData['square_payment_id']) : 'NULL') . ",
+            " . (isset($eventData['square_refund_id']) ? \db_escape($eventData['square_refund_id']) : 'NULL') . ",
             " . (isset($eventData['original_fa_payment_id']) ? (int)$eventData['original_fa_payment_id'] : 'NULL') . ",
             '{$eventData['event_type']}',
             {$eventData['amount']},

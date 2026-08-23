@@ -29,7 +29,7 @@ class SquareCustomerDAO
     public function getBySquareId(string $squareCustomerId): ?array
     {
         $tableName = $this->getTableName();
-        $sql = "SELECT * FROM {$tableName} WHERE square_customer_id = '" . \db_escape($squareCustomerId) . "'";
+        $sql = "SELECT * FROM {$tableName} WHERE square_customer_id = " . \db_escape($squareCustomerId);
         
         $result = \db_query($sql);
         if ($result !== false && \db_num_rows($result) > 0) {
@@ -76,12 +76,12 @@ class SquareCustomerDAO
             if ($key === 'sync_at' || $key === 'crm_sync_at') {
                 $updates[] = "{$key} = '{$value}'";
             } else {
-                $updates[] = "{$key} = " . (is_numeric($value) ? $value : "'" . \db_escape($value) . "'");
+                $updates[] = "{$key} = " . (is_numeric($value) ? $value : \db_escape($value));
             }
         }
         
         $sql = "UPDATE {$tableName} SET " . implode(', ', $updates) . " 
-                WHERE square_customer_id = '" . \db_escape($squareCustomerId) . "'";
+                WHERE square_customer_id = " . \db_escape($squareCustomerId);
         
         return \db_query($sql) !== false;
     }
@@ -102,7 +102,7 @@ class SquareCustomerDAO
             if ($key === 'sync_at' || $key === 'crm_sync_at') {
                 $updates[] = "{$key} = '{$value}'";
             } else {
-                $updates[] = "{$key} = " . (is_numeric($value) ? $value : "'" . \db_escape($value) . "'");
+                $updates[] = "{$key} = " . (is_numeric($value) ? $value : \db_escape($value));
             }
         }
         
@@ -126,10 +126,10 @@ class SquareCustomerDAO
             fa_debtor_no, square_customer_id, sync_at, sync_direction, crm_sync_at, created_at
         ) VALUES (
             {$data['fa_debtor_no']},
-            '" . \db_escape($data['square_customer_id']) . "',
+            " . \db_escape($data['square_customer_id']) . ",
             '{$data['sync_at']}',
-            '" . \db_escape($data['sync_direction'] ?? 'bidirectional') . "',
-            " . (isset($data['crm_sync_at']) ? "'" . \db_escape($data['crm_sync_at']) . "'" : 'NULL') . ",
+            " . \db_escape($data['sync_direction'] ?? 'bidirectional') . ",
+            " . (isset($data['crm_sync_at']) ? \db_escape($data['crm_sync_at']) : 'NULL') . ",
             '{$data['created_at']}'
         )";
 

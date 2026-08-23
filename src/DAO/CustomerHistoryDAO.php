@@ -36,7 +36,7 @@ class CustomerHistoryDAO
             {$historyData['debtor_no']},
             '{$historyData['action']}',
             '{$historyData['source']}',
-            '" . \db_escape($historyData['details']) . "',
+            " . \db_escape($historyData['details']) . ",
             '{$historyData['timestamp']}'
         )";
 

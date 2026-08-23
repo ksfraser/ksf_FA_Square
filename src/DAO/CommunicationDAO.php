@@ -35,7 +35,7 @@ class CommunicationDAO
         ) VALUES (
             {$communicationData['debtor_no']},
             '{$communicationData['type']}',
-            '" . \db_escape($communicationData['message']) . "',
+            " . \db_escape($communicationData['message']) . ",
             '{$communicationData['timestamp']}',
             '{$communicationData['timestamp']}'
         )";

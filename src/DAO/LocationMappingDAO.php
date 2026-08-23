@@ -92,7 +92,7 @@ class LocationMappingDAO
     public function getAllLocationsMapping(): ?string
     {
         $tableName = $this->getTableName();
-        $sql = "SELECT square_location_id FROM {$tableName} WHERE fa_loc_code = '" . \db_escape(self::ALL_LOCATIONS) . "'";
+        $sql = "SELECT square_location_id FROM {$tableName} WHERE fa_loc_code = " . \db_escape(self::ALL_LOCATIONS);
 
         $result = \db_query($sql);
         if ($result !== false && \db_num_rows($result) > 0) {
@@ -112,7 +112,7 @@ class LocationMappingDAO
     public function getSquareLocationId(string $faLocCode): ?string
     {
         $tableName = $this->getTableName();
-        $sql = "SELECT square_location_id FROM {$tableName} WHERE fa_loc_code = '" . \db_escape($faLocCode) . "'";
+        $sql = "SELECT square_location_id FROM {$tableName} WHERE fa_loc_code = " . \db_escape($faLocCode);
 
         $result = \db_query($sql);
         if ($result !== false && \db_num_rows($result) > 0) {
@@ -132,7 +132,7 @@ class LocationMappingDAO
     public function getSquareItemId(int $stockId): ?string
     {
         $tableName = $this->tablePrefix . '0_square_tokens';
-        $sql = "SELECT square_catalog_object_id FROM {$tableName} WHERE stock_id = '" . \db_escape((string)$stockId) . "' LIMIT 1";
+        $sql = "SELECT square_catalog_object_id FROM {$tableName} WHERE stock_id = " . \db_escape((string)$stockId) . " LIMIT 1";
 
         $result = \db_query($sql);
         if ($result !== false && \db_num_rows($result) > 0) {
@@ -161,12 +161,12 @@ class LocationMappingDAO
         $sql = "SELECT SUM(qty) AS qty FROM {$this->tablePrefix}stock_moves st
             LEFT JOIN {$this->tablePrefix}voided v ON st.type = v.type AND st.trans_no = v.id
             WHERE ISNULL(v.id)
-            AND st.stock_id = '" . \db_escape($stockId) . "'";
+            AND st.stock_id = " . \db_escape($stockId);
 
         if ($faLocCodes !== null) {
             $escapedCodes = [];
             foreach ($faLocCodes as $faLocCode) {
-                $escapedCodes[] = "'" . \db_escape($faLocCode) . "'";
+                $escapedCodes[] = \db_escape($faLocCode);
             }
             $sql .= " AND st.loc_code IN (" . implode(',', $escapedCodes) . ")";
         }
@@ -219,8 +219,8 @@ class LocationMappingDAO
     {
         $tableName = $this->getTableName();
         $sql = "INSERT INTO {$tableName} (fa_loc_code, square_location_id)
-            VALUES ('" . \db_escape($faLocCode) . "', '" . \db_escape($squareLocationId) . "')
-            ON DUPLICATE KEY UPDATE square_location_id = '" . \db_escape($squareLocationId) . "'";
+            VALUES (" . \db_escape($faLocCode) . ", " . \db_escape($squareLocationId) . ")
+            ON DUPLICATE KEY UPDATE square_location_id = " . \db_escape($squareLocationId);
 
         return \db_query($sql) !== false;
     }
@@ -234,7 +234,7 @@ class LocationMappingDAO
     public function removeMapping(string $faLocCode): bool
     {
         $tableName = $this->getTableName();
-        $sql = "DELETE FROM {$tableName} WHERE fa_loc_code = '" . \db_escape($faLocCode) . "'";
+        $sql = "DELETE FROM {$tableName} WHERE fa_loc_code = " . \db_escape($faLocCode);
 
         return \db_query($sql) !== false;
     }

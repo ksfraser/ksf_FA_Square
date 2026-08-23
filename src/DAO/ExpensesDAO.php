@@ -57,11 +57,11 @@ class ExpensesDAO
             payment_method,
             created_at
         ) VALUES (
-            '" . \db_escape($expense['expense_date'] ?? date('Y-m-d')) . "',
-            '" . \db_escape($expense['description'] ?? '') . "',
+            " . \db_escape($expense['expense_date'] ?? date('Y-m-d')) . ",
+            " . \db_escape($expense['description'] ?? '') . ",
             " . (float)($expense['amount'] ?? 0) . ",
             " . (int)($expense['category_id'] ?? 0) . ",
-            '" . \db_escape($expense['payment_method'] ?? '') . "',
+            " . \db_escape($expense['payment_method'] ?? '') . ",
             '" . date('Y-m-d H:i:s') . "'
         )";
 

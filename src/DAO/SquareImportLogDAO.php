@@ -103,7 +103,7 @@ class SquareImportLogDAO
     public function getLogsByEnvironment(string $environment, int $limit = 10): array
     {
         $tableName = $this->getTableName();
-        $sql = "SELECT * FROM {$tableName} WHERE environment = '" . \db_escape($environment) . "' ORDER BY run_date DESC LIMIT " . (int)$limit;
+        $sql = "SELECT * FROM {$tableName} WHERE environment = " . \db_escape($environment) . " ORDER BY run_date DESC LIMIT " . (int)$limit;
         $result = \db_query($sql);
         $logs = [];
         if ($result !== false && \db_num_rows($result) > 0) {
@@ -130,7 +130,7 @@ class SquareImportLogDAO
         $gaps = [];
 
         $sql = "SELECT DISTINCT from_date, to_date FROM {$tableName}
-                WHERE environment = '" . \db_escape($environment) . "'
+                WHERE environment = " . \db_escape($environment) . "
                 AND from_date IS NOT NULL AND to_date IS NOT NULL
                 ORDER BY from_date ASC";
 
@@ -172,7 +172,7 @@ class SquareImportLogDAO
     {
         $tableName = $this->getTableName();
         $sql = "SELECT MAX(to_date) as last_date FROM {$tableName}
-                WHERE environment = '" . \db_escape($environment) . "'
+                WHERE environment = " . \db_escape($environment) . "
                 AND to_date IS NOT NULL
                 AND status = 'completed'";
 
@@ -246,22 +246,22 @@ class SquareImportLogDAO
 
         if ($fromDate !== null) {
             $fields[] = 'from_date';
-            $values[] = "'" . \db_escape($fromDate) . "'";
+            $values[] = \db_escape($fromDate);
         }
         if ($toDate !== null) {
             $fields[] = 'to_date';
-            $values[] = "'" . \db_escape($toDate) . "'";
+            $values[] = \db_escape($toDate);
         }
 
         $fields[] = 'environment';
-        $values[] = "'" . \db_escape($environment) . "'";
+        $values[] = \db_escape($environment);
 
         $fields[] = 'operation_type';
-        $values[] = "'" . \db_escape($operationType) . "'";
+        $values[] = \db_escape($operationType);
 
         if ($locationFilter !== null) {
             $fields[] = 'location_filter';
-            $values[] = "'" . \db_escape($locationFilter) . "'";
+            $values[] = \db_escape($locationFilter);
         }
 
         $fieldsStr = implode(', ', $fields);
@@ -270,7 +270,7 @@ class SquareImportLogDAO
         $sql = "INSERT INTO {$tableName} ({$fieldsStr}) VALUES ({$valuesStr})";
 
         if (!\db_query($sql)) {
-            throw new Exception(_("Failed to insert import log: ") . db_error());
+            throw new Exception(_("Failed to insert import log: ") . \db_error_msg($db));
         }
     }
 }

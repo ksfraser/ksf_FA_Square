@@ -76,7 +76,7 @@ class WebhookEventDAO
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
 
         if (!\db_query($sql)) {
-            throw new Exception(_("Cannot create square_webhook_events table: ") . db_error());
+            throw new Exception(_("Cannot create square_webhook_events table: ") . \db_error_msg($db));
         }
     }
 
@@ -107,7 +107,7 @@ class WebhookEventDAO
             if ($value === null) {
                 $values[] = 'NULL';
             } else {
-                $values[] = "'" . \db_escape((string)$value) . "'";
+                $values[] = \db_escape((string)$value);
             }
         }
 
@@ -117,7 +117,7 @@ class WebhookEventDAO
         $sql = "INSERT INTO {$tableName} ({$fieldsStr}) VALUES ({$valuesStr})";
 
         if (!\db_query($sql)) {
-            throw new Exception(_("Failed to insert webhook event: ") . db_error());
+            throw new Exception(_("Failed to insert webhook event: ") . \db_error_msg($db));
         }
 
         return (int)\db_insert_id();
@@ -166,7 +166,7 @@ class WebhookEventDAO
     {
         $tableName = $this->getTableName();
         $sql = "SELECT * FROM {$tableName} 
-                WHERE event_type = '" . \db_escape($eventType) . "' 
+                WHERE event_type = " . \db_escape($eventType) . " 
                 ORDER BY processed_at DESC LIMIT " . (int)$limit;
         
         $result = \db_query($sql);
@@ -194,8 +194,8 @@ class WebhookEventDAO
     {
         $tableName = $this->getTableName();
         $sql = "SELECT * FROM {$tableName} 
-                WHERE processed_at >= '" . \db_escape($fromDate . " 00:00:00") . "' 
-                AND processed_at <= '" . \db_escape($toDate . " 23:59:59") . "'
+                WHERE processed_at >= " . \db_escape($fromDate . " 00:00:00") . " 
+                AND processed_at <= " . \db_escape($toDate . " 23:59:59") . "
                 ORDER BY processed_at DESC";
         
         $result = \db_query($sql);
@@ -236,12 +236,12 @@ class WebhookEventDAO
         $tableName = $this->getTableName();
         $sql = "UPDATE {$tableName} 
                 SET processed_successfully = FALSE, 
-                    error_message = '" . \db_escape($errorMessage) . "',
+                    error_message = " . \db_escape($errorMessage) . ",
                     processed_at = NOW()
-                WHERE event_id = '" . \db_escape($eventId) . "'";
+                WHERE event_id = " . \db_escape($eventId);
 
         if (!\db_query($sql)) {
-            throw new Exception(_("Failed to mark event as failed: ") . db_error());
+            throw new Exception(_("Failed to mark event as failed: ") . \db_error_msg($db));
         }
     }
 
@@ -257,10 +257,10 @@ class WebhookEventDAO
         $tableName = $this->getTableName();
         $cutoffDate = date('Y-m-d H:i:s', strtotime("-{$daysToKeep} days"));
         
-        $sql = "DELETE FROM {$tableName} WHERE processed_at < '" . \db_escape($cutoffDate) . "'";
+        $sql = "DELETE FROM {$tableName} WHERE processed_at < " . \db_escape($cutoffDate);
         
         if (!\db_query($sql)) {
-            throw new Exception(_("Failed to cleanup old events: ") . db_error());
+            throw new Exception(_("Failed to cleanup old events: ") . \db_error_msg($db));
         }
         
         return (int)\db_affected_rows();
@@ -275,7 +275,7 @@ class WebhookEventDAO
     public function getEventById(string $eventId): ?array
     {
         $tableName = $this->getTableName();
-        $sql = "SELECT * FROM {$tableName} WHERE event_id = '" . \db_escape($eventId) . "'";
+        $sql = "SELECT * FROM {$tableName} WHERE event_id = " . \db_escape($eventId);
         
         $result = \db_query($sql);
         if ($result !== false && \db_num_rows($result) > 0) {

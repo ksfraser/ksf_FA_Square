@@ -61,7 +61,7 @@ class PaymentMatchDAO
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
 
             if (!\db_query($sql)) {
-                throw new Exception(_("Cannot create ksf_import_square_payments table: ") . db_error());
+                throw new Exception(_("Cannot create ksf_import_square_payments table: ") . \db_error_msg($db));
             }
         }
     }
@@ -86,7 +86,7 @@ class PaymentMatchDAO
 
         $fields = ['square_payment_id', 'trans_type', 'trans_no'];
         $values = [
-            "'" . \db_escape($squarePaymentId) . "'",
+            \db_escape($squarePaymentId),
             (int)$transType,
             (int)$transNo,
         ];
@@ -103,7 +103,7 @@ class PaymentMatchDAO
              . "ON DUPLICATE KEY UPDATE updated_at = NOW()";
 
         if (!\db_query($sql)) {
-            throw new Exception(_("Failed to insert payment match: ") . db_error());
+            throw new Exception(_("Failed to insert payment match: ") . \db_error_msg($db));
         }
 
         $id = (int)\db_insert_id();
@@ -126,7 +126,7 @@ class PaymentMatchDAO
     public function getBySquarePaymentId(string $squarePaymentId): ?array
     {
         $tableName = $this->getTableName();
-        $sql = "SELECT * FROM {$tableName} WHERE square_payment_id = '" . \db_escape($squarePaymentId) . "'";
+        $sql = "SELECT * FROM {$tableName} WHERE square_payment_id = " . \db_escape($squarePaymentId);
         $result = \db_query($sql);
 
         if ($result !== false && \db_num_rows($result) > 0) {
@@ -148,7 +148,7 @@ class PaymentMatchDAO
     {
         $tableName = $this->getTableName();
         $sql = "SELECT * FROM {$tableName} WHERE trans_type = " . (int)$transType
-             . " AND trans_no = '" . \db_escape((string)$transNo) . "'";
+             . " AND trans_no = " . \db_escape((string)$transNo);
         $result = \db_query($sql);
         $matches = [];
 
@@ -184,10 +184,10 @@ class PaymentMatchDAO
     public function deleteMatch(string $squarePaymentId): void
     {
         $tableName = $this->getTableName();
-        $sql = "DELETE FROM {$tableName} WHERE square_payment_id = '" . \db_escape($squarePaymentId) . "'";
+        $sql = "DELETE FROM {$tableName} WHERE square_payment_id = " . \db_escape($squarePaymentId);
 
         if (!\db_query($sql)) {
-            throw new Exception(_("Failed to delete payment match: ") . db_error());
+            throw new Exception(_("Failed to delete payment match: ") . \db_error_msg($db));
         }
     }
 }

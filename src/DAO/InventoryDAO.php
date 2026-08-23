@@ -52,7 +52,7 @@ class InventoryDAO
         $tableName = $this->getStockMovesTableName();
         $sql = "SELECT SUM(quantity) AS total_qty
                 FROM {$tableName}
-                WHERE item_id = {$itemId} AND location_id = '" . \db_escape($locationId) . "'";
+                WHERE item_id = {$itemId} AND location_id = " . \db_escape($locationId);
 
         $result = \db_query($sql);
         if ($result !== false) {

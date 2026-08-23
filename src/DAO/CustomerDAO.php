@@ -52,11 +52,11 @@ class CustomerDAO
         $where = [];
 
         if (!empty($filters['email'])) {
-            $where[] = "email = '" . \db_escape($filters['email']) . "'";
+            $where[] = "email = " . \db_escape($filters['email']);
         }
 
         if (!empty($filters['name'])) {
-            $where[] = "name LIKE '%" . \db_escape($filters['name']) . "%'";
+            $where[] = "name LIKE " . \db_escape('%' . $filters['name'] . '%');
         }
 
         $whereClause = !empty($where) ? ' WHERE ' . implode(' AND ', $where) : '';

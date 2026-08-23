@@ -107,7 +107,7 @@ class TaxRatesDAO
             if (is_numeric($value)) {
                 $values[] = $value;
             } else {
-                $values[] = "'" . \db_escape($value) . "'";
+                $values[] = \db_escape($value);
             }
         }
         
@@ -134,7 +134,7 @@ class TaxRatesDAO
             if ($key === 'updated_at') {
                 $updates[] = "{$key} = '{$value}'";
             } else {
-                $updates[] = "{$key} = " . (is_numeric($value) ? $value : "'" . \db_escape($value) . "'");
+                $updates[] = "{$key} = " . (is_numeric($value) ? $value : \db_escape($value));
             }
         }
         

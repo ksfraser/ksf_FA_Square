@@ -160,7 +160,7 @@ class TransactionStagingDAO
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
 
         if (!\db_query($sql)) {
-            throw new Exception(_("Cannot create ksf_import_square_transactions table: ") . db_error());
+            throw new Exception(_("Cannot create ksf_import_square_transactions table: ") . \db_error_msg($db));
         }
     }
 
@@ -251,7 +251,7 @@ class TransactionStagingDAO
                 if ($value === null) {
                     $values[] = 'NULL';
                 } else {
-                    $values[] = "'" . \db_escape((string)$value) . "'";
+                    $values[] = \db_escape((string)$value);
                 }
             }
         }
@@ -263,7 +263,7 @@ class TransactionStagingDAO
              . "ON DUPLICATE KEY UPDATE updated_at = NOW()";
 
         if (!\db_query($sql)) {
-            throw new Exception(_("Failed to insert transaction: ") . db_error());
+            throw new Exception(_("Failed to insert transaction: ") . \db_error_msg($db));
         }
 
         $id = (int)\db_insert_id();
@@ -286,7 +286,7 @@ class TransactionStagingDAO
     public function getByTransactionId(string $transactionId): ?array
     {
         $tableName = $this->getTableName();
-        $sql = "SELECT * FROM {$tableName} WHERE transaction_id = '" . \db_escape($transactionId) . "'";
+        $sql = "SELECT * FROM {$tableName} WHERE transaction_id = " . \db_escape($transactionId);
         $result = \db_query($sql);
 
         if ($result !== false && \db_num_rows($result) > 0) {
@@ -306,7 +306,7 @@ class TransactionStagingDAO
     public function getByPaymentId(string $paymentId): ?array
     {
         $tableName = $this->getTableName();
-        $sql = "SELECT * FROM {$tableName} WHERE payment_id = '" . \db_escape($paymentId) . "'";
+        $sql = "SELECT * FROM {$tableName} WHERE payment_id = " . \db_escape($paymentId);
         $result = \db_query($sql);
 
         if ($result !== false && \db_num_rows($result) > 0) {
@@ -333,16 +333,16 @@ class TransactionStagingDAO
         ?string $toDate = null
     ): array {
         $tableName = $this->getTableName();
-        $sql = "SELECT * FROM {$tableName} WHERE status = '" . \db_escape($status) . "'";
+        $sql = "SELECT * FROM {$tableName} WHERE status = " . \db_escape($status);
 
         if ($environment !== null) {
-            $sql .= " AND environment = '" . \db_escape($environment) . "'";
+            $sql .= " AND environment = " . \db_escape($environment);
         }
         if ($fromDate !== null) {
-            $sql .= " AND Date >= '" . \db_escape($fromDate) . "'";
+            $sql .= " AND Date >= " . \db_escape($fromDate);
         }
         if ($toDate !== null) {
-            $sql .= " AND Date <= '" . \db_escape($toDate) . "'";
+            $sql .= " AND Date <= " . \db_escape($toDate);
         }
 
         $sql .= " ORDER BY Date ASC, Time ASC";
@@ -373,14 +373,14 @@ class TransactionStagingDAO
     public function updateStatus(int $id, string $status, ?array $extraFields = null): void
     {
         $tableName = $this->getTableName();
-        $sets = ["status = '" . \db_escape($status) . "'"];
+        $sets = ["status = " . \db_escape($status)];
 
         if ($extraFields !== null) {
             foreach ($extraFields as $key => $value) {
                 if ($value === null) {
                     $sets[] = "{$key} = NULL";
                 } else {
-                    $sets[] = "{$key} = '" . \db_escape((string)$value) . "'";
+                    $sets[] = "{$key} = " . \db_escape((string)$value);
                 }
             }
         }
@@ -389,7 +389,7 @@ class TransactionStagingDAO
         $sql = "UPDATE {$tableName} SET {$setsStr} WHERE id = " . (int)$id;
 
         if (!\db_query($sql)) {
-            throw new Exception(_("Failed to update transaction status: ") . db_error());
+            throw new Exception(_("Failed to update transaction status: ") . \db_error_msg($db));
         }
     }
 
@@ -416,7 +416,7 @@ class TransactionStagingDAO
         $sql = "SELECT status, COUNT(*) AS cnt FROM {$tableName}";
 
         if ($environment !== null) {
-            $sql .= " WHERE environment = '" . \db_escape($environment) . "'";
+            $sql .= " WHERE environment = " . \db_escape($environment);
         }
 
         $sql .= " GROUP BY status";
@@ -485,7 +485,7 @@ class TransactionStagingDAO
                 if ($value === null) {
                     $sets[] = "{$key} = NULL";
                 } else {
-                    $sets[] = "{$key} = '" . \db_escape((string)$value) . "'";
+                    $sets[] = "{$key} = " . \db_escape((string)$value);
                 }
             }
         }
@@ -498,7 +498,7 @@ class TransactionStagingDAO
         $sql = "UPDATE {$tableName} SET {$setsStr} WHERE id = " . (int)$id;
 
         if (!\db_query($sql)) {
-            throw new Exception(_("Failed to update transaction: ") . db_error());
+            throw new Exception(_("Failed to update transaction: ") . \db_error_msg($db));
         }
     }
 
@@ -515,7 +515,7 @@ class TransactionStagingDAO
         $sql = "DELETE FROM {$tableName} WHERE id = " . (int)$id;
 
         if (!\db_query($sql)) {
-            throw new Exception(_("Failed to delete transaction: ") . db_error());
+            throw new Exception(_("Failed to delete transaction: ") . \db_error_msg($db));
         }
     }
 

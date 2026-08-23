@@ -29,7 +29,7 @@ class PaymentMappingDAO
     public function getPaymentBySquareId(string $squarePaymentId): ?array
     {
         $tableName = $this->getMappingsTableName();
-        $sql = "SELECT * FROM {$tableName} WHERE square_payment_id = '" . \db_escape($squarePaymentId) . "'";
+        $sql = "SELECT * FROM {$tableName} WHERE square_payment_id = " . \db_escape($squarePaymentId);
         
         $result = \db_query($sql);
         if ($result !== false && \db_num_rows($result) > 0) {
@@ -49,7 +49,7 @@ class PaymentMappingDAO
     public function getRefundBySquareId(string $squareRefundId): ?array
     {
         $tableName = $this->getMappingsTableName();
-        $sql = "SELECT * FROM {$tableName} WHERE square_refund_id = '" . \db_escape($squareRefundId) . "'";
+        $sql = "SELECT * FROM {$tableName} WHERE square_refund_id = " . \db_escape($squareRefundId);
         
         $result = \db_query($sql);
         if ($result !== false && \db_num_rows($result) > 0) {
@@ -143,7 +143,7 @@ class PaymentMappingDAO
             if (is_numeric($value)) {
                 $values[] = $value;
             } else {
-                $values[] = "'" . \db_escape($value) . "'";
+                $values[] = \db_escape($value);
             }
         }
         
@@ -170,7 +170,7 @@ class PaymentMappingDAO
             if ($key === 'updated_at') {
                 $updates[] = "{$key} = '{$value}'";
             } else {
-                $updates[] = "{$key} = " . (is_numeric($value) ? $value : "'" . \db_escape($value) . "'");
+                $updates[] = "{$key} = " . (is_numeric($value) ? $value : \db_escape($value));
             }
         }
         

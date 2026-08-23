@@ -111,7 +111,7 @@ class ItemStagingDAO
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;";
 
         if (!\db_query($sql)) {
-            throw new Exception(_("Cannot create ksf_import_square_items table: ") . db_error());
+            throw new Exception(_("Cannot create ksf_import_square_items table: ") . \db_error_msg($db));
         }
     }
 
@@ -178,7 +178,7 @@ class ItemStagingDAO
                 if ($value === null) {
                     $values[] = 'NULL';
                 } else {
-                    $values[] = "'" . \db_escape((string)$value) . "'";
+                    $values[] = \db_escape((string)$value);
                 }
             }
         }
@@ -189,7 +189,7 @@ class ItemStagingDAO
         $sql = "INSERT INTO {$tableName} ({$fieldsStr}) VALUES ({$valuesStr})";
 
         if (!\db_query($sql)) {
-            throw new Exception(_("Failed to insert item: ") . db_error());
+            throw new Exception(_("Failed to insert item: ") . \db_error_msg($db));
         }
 
         return (int)\db_insert_id();
@@ -204,7 +204,7 @@ class ItemStagingDAO
     public function getByTransactionId(string $transactionId): array
     {
         $tableName = $this->getTableName();
-        $sql = "SELECT * FROM {$tableName} WHERE transaction_id = '" . \db_escape($transactionId) . "' ORDER BY id ASC";
+        $sql = "SELECT * FROM {$tableName} WHERE transaction_id = " . \db_escape($transactionId) . " ORDER BY id ASC";
         $result = \db_query($sql);
         $items = [];
 
@@ -228,7 +228,7 @@ class ItemStagingDAO
     public function getByPaymentId(string $paymentId): array
     {
         $tableName = $this->getTableName();
-        $sql = "SELECT * FROM {$tableName} WHERE payment_id = '" . \db_escape($paymentId) . "' ORDER BY id ASC";
+        $sql = "SELECT * FROM {$tableName} WHERE payment_id = " . \db_escape($paymentId) . " ORDER BY id ASC";
         $result = \db_query($sql);
         $items = [];
 
@@ -253,10 +253,10 @@ class ItemStagingDAO
     public function deleteByTransactionId(string $transactionId): void
     {
         $tableName = $this->getTableName();
-        $sql = "DELETE FROM {$tableName} WHERE transaction_id = '" . \db_escape($transactionId) . "'";
+        $sql = "DELETE FROM {$tableName} WHERE transaction_id = " . \db_escape($transactionId);
 
         if (!\db_query($sql)) {
-            throw new Exception(_("Failed to delete items: ") . db_error());
+            throw new Exception(_("Failed to delete items: ") . \db_error_msg($db));
         }
     }
 
@@ -307,7 +307,7 @@ class ItemStagingDAO
                 if ($value === null) {
                     $sets[] = "{$key} = NULL";
                 } else {
-                    $sets[] = "{$key} = '" . \db_escape((string)$value) . "'";
+                    $sets[] = "{$key} = " . \db_escape((string)$value);
                 }
             }
         }
@@ -320,7 +320,7 @@ class ItemStagingDAO
         $sql = "UPDATE {$tableName} SET {$setsStr} WHERE id = " . (int)$id;
 
         if (!\db_query($sql)) {
-            throw new Exception(_("Failed to update item: ") . db_error());
+            throw new Exception(_("Failed to update item: ") . \db_error_msg($db));
         }
     }
 
@@ -337,7 +337,7 @@ class ItemStagingDAO
         $sql = "DELETE FROM {$tableName} WHERE id = " . (int)$id;
 
         if (!\db_query($sql)) {
-            throw new Exception(_("Failed to delete item: ") . db_error());
+            throw new Exception(_("Failed to delete item: ") . \db_error_msg($db));
         }
     }
 
