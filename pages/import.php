@@ -23,6 +23,7 @@ use ksfraser\FrontAccounting\Square\DAO\TransactionStagingDAO;
 use ksfraser\FrontAccounting\Square\DAO\ItemStagingDAO;
 use ksfraser\FrontAccounting\Square\Infrastructure\SquareClientFactory;
 use ksfraser\FrontAccounting\Square\Services\ImportService;
+use ksfraser\FrontAccounting\Common\Utils\FADateConverter;
 use Square\Exceptions\ApiException;
 
 if (!function_exists('sales_service_items_list_row')) {
@@ -50,6 +51,7 @@ try {
     $error = _("Failed to load configuration: ") . $e->getMessage();
 }
 $accessToken = $settings->getAccessToken();
+$dateConverter = new FADateConverter();
 
 $help_context = "Import Square Orders";
 page(_($help_context), false, false, "", "");
@@ -156,8 +158,8 @@ if ($action === 'save_edit') {
 
 if ($action === 'o_import') {
     $destCust = (int)($_POST['destCust'] ?? 0);
-    $fromDate = $_POST['from_date'] ?? '';
-    $toDate = $_POST['to_date'] ?? '';
+    $fromDate = $dateConverter->toISO($_POST['from_date'] ?? '');
+    $toDate = $dateConverter->toISO($_POST['to_date'] ?? '');
     $trialRun = (bool)($_POST['trial_run'] ?? 0);
     $adjustmentItem = $_POST['adjustment'] ?? '';
     $tipsItem = $_POST['tips'] ?? '';

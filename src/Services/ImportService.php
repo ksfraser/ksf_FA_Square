@@ -209,7 +209,7 @@ class ImportService
             return ['valid' => false, 'error' => _("Please select a date range.")];
         }
 
-        $customer = $this->debtorsMasterDao->getByDebtorNo($destCust);
+        $customer = $this->debtorsMasterDao->getDebtor($destCust);
         if (!$customer) {
             return ['valid' => false, 'error' => _("Customer not found.")];
         }
@@ -353,11 +353,12 @@ class ImportService
         }
 
         $totalMoney = $payment->getTotalMoney();
-        $taxMoney = $payment->getTaxMoney();
         $tipMoney = $payment->getTipMoney();
-        $discountMoney = $payment->getDiscountMoney();
         $refundedMoney = $payment->getRefundedMoney();
         $totalCollected = $totalMoney !== null ? $totalMoney->getAmount() / 100 : 0;
+
+        $orderTaxMoney = $order->getTotalTaxMoney();
+        $orderDiscountMoney = $order->getTotalDiscountMoney();
 
         $transactionData = [
             'Date' => $dt->format('Y-m-d'),
@@ -374,7 +375,7 @@ class ImportService
             'gross_sales' => $totalCollected,
             'net_sales' => $totalCollected,
             'total_collected' => $totalCollected,
-            'tax' => $taxMoney !== null ? $taxMoney->getAmount() / 100 : 0,
+            'tax' => $orderTaxMoney !== null ? $orderTaxMoney->getAmount() / 100 : 0,
             'tip' => $tipMoney !== null ? $tipMoney->getAmount() / 100 : 0,
             'partial_refunds' => $refundedMoney !== null ? $refundedMoney->getAmount() / 100 : 0,
         ];
@@ -433,7 +434,7 @@ class ImportService
     ): int {
         $basePrice = $item->getBasePriceMoney();
         $grossSales = $item->getGrossSalesMoney();
-        $totalPrice = $item->getTotalSaleMoney();
+        $totalPrice = $item->getTotalMoney();
         $tax = $item->getTotalTaxMoney();
         $discount = $item->getTotalDiscountMoney();
 
@@ -525,7 +526,7 @@ class ImportService
             return ['success' => false, 'message' => _("Already imported")];
         }
 
-        $customer = $this->debtorsMasterDao->getByDebtorNo($debtorNo);
+        $customer = $this->debtorsMasterDao->getDebtor($debtorNo);
         if (!$customer) {
             throw new Exception(_("Customer not found: ") . $debtorNo);
         }
@@ -1032,7 +1033,6 @@ class ImportService
     private function paymentToArray(Payment $payment): array
     {
         $totalMoney = $payment->getTotalMoney();
-        $taxMoney = $payment->getTaxMoney();
         $tipMoney = $payment->getTipMoney();
 
         return [
@@ -1041,7 +1041,7 @@ class ImportService
             'updated_at' => $payment->getUpdatedAt(),
             'amount' => $totalMoney !== null ? $totalMoney->getAmount() : 0,
             'currency' => $totalMoney !== null ? $totalMoney->getCurrency() : '',
-            'tax_amount' => $taxMoney !== null ? $taxMoney->getAmount() : 0,
+            'tax_amount' => 0,
             'tip_amount' => $tipMoney !== null ? $tipMoney->getAmount() : 0,
             'source_type' => $payment->getSourceType(),
             'order_id' => $payment->getOrderId(),
