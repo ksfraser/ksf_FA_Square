@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "8b612fd6c7805893e098a9be09789b4d",
+    "content-hash": "ea32429e12f177daf598620bbb5e1e49",
     "packages": [
         {
             "name": "apimatic/core",
@@ -732,12 +732,78 @@
             "time": "2026-02-20T03:55:00+00:00"
         },
         {
+            "name": "ksfraser/import-staging",
+            "version": "dev-master",
+            "dist": {
+                "type": "path",
+                "url": "../ksf_FA_ImportStagingProcessing",
+                "reference": "b8bbc5840619086e933a0c001286f97920a76ec4"
+            },
+            "require": {
+                "ext-json": "*",
+                "ksfraser/contact-dto": "^0.1",
+                "ksfraser/exceptions": "^1.3",
+                "ksfraser/file": "dev-main",
+                "ksfraser/ksf-modules-dao": "^0.3",
+                "ksfraser/traits": "dev-main",
+                "php": ">=7.3"
+            },
+            "require-dev": {
+                "ksfraser/famock": "^0.10",
+                "phpunit/phpunit": "^9.6"
+            },
+            "type": "fa-module",
+            "extra": {
+                "fa-module": {
+                    "name": "Import Staging Processing",
+                    "description": "Unified staging and processing for post-import operations",
+                    "page": "ksf_import_staging.php",
+                    "version": "0.1.0",
+                    "depends": [
+                        "ksf_ModulesDAO",
+                        "ksf_libs"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "ksfraser\\FrontAccounting\\ImportStaging\\": "src/"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "ksfraser\\FrontAccounting\\ImportStaging\\Tests\\": "tests/"
+                }
+            },
+            "scripts": {
+                "test": [
+                    "phpunit"
+                ],
+                "test-coverage": [
+                    "phpunit --coverage-html coverage/"
+                ]
+            },
+            "license": [
+                "GPL-2.0-or-later"
+            ],
+            "authors": [
+                {
+                    "name": "Kevin Fraser",
+                    "email": "kevin@ksfraser.com"
+                }
+            ],
+            "description": "Unified staging tables and processing pipeline for third-party imports into FrontAccounting (WooCommerce, Square API, Square CSV, PayPal, Bank Import)",
+            "transport-options": {
+                "relative": true
+            }
+        },
+        {
             "name": "ksfraser/ksf-fa-common",
             "version": "dev-master",
             "dist": {
                 "type": "path",
                 "url": "../ksf_FA_Common",
-                "reference": "3a3198a8fac78c080c5a1be97e9669688879713a"
+                "reference": "8ea3b90391a18db3f3b586d092c1d271e6ae6809"
             },
             "require": {
                 "ksfraser/exceptions": "^1.3",

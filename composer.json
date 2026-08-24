@@ -19,6 +19,10 @@
         {
             "type": "path",
             "url": "../ksf_FA_Common"
+        },
+        {
+            "type": "path",
+            "url": "../ksf_FA_ImportStagingProcessing"
         }
     ],
     "require": {
@@ -30,7 +34,8 @@
         "ksfraser/file": "dev-main",
         "ksfraser/ksf-modules-dao": "^0.3",
         "ksfraser/contact-dto": "^0.1",
-        "ksfraser/ksf-fa-common": "*"
+        "ksfraser/ksf-fa-common": "*",
+        "ksfraser/import-staging": "*"
     },
     "require-dev": {
         "phpunit/phpunit": "^9.6",
