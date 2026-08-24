@@ -17,21 +17,31 @@ use ksfraser\FrontAccounting\Square\DAO\TransactionStagingDAO;
  * Extra Square-specific fields (device, staff, location, deposit, etc.) are
  * preserved in raw_json so no data is lost during the translation.
  *
- * @requirement FR-SQUARE-ISU-ADAPTER Transaction Repository Adapter
+ * @requirement FR-SQUARE-ISU-001 Transaction Repository Adapter
+ * @BABOK Related: BR-SQ-020 Standardize staging on ISU interfaces
  * @UML Note: Class diagram in ProjectDocs/UML.md
+ * @since 2.4.5
  */
 class TransactionRepositoryAdapter implements TransactionRepositoryInterface
 {
     /** @var TransactionStagingDAO */
     private $dao;
 
+    /**
+     * @param string $tablePrefix Database table prefix (e.g. '0_')
+     * @since 2.4.5
+     */
     public function __construct(string $tablePrefix)
     {
         $this->dao = new TransactionStagingDAO($tablePrefix);
     }
 
     /**
-     * {@inheritdoc}
+     * Insert a new staged transaction.
+     *
+     * @param StagingTransaction $transaction The transaction to stage
+     * @return int The inserted row ID
+     * @since 2.4.5
      */
     public function insert(StagingTransaction $transaction): int
     {

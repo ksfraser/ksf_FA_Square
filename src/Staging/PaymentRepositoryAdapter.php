@@ -12,8 +12,10 @@ use ksfraser\FrontAccounting\ImportStaging\Models\StagingPayment;
  * Uses ISU's staging_payments table for storage, allowing ISU's
  * StagingService to process Square payment data through the standard contract.
  *
- * @requirement FR-SQUARE-ISU-ADAPTER Payment Repository Adapter
+ * @requirement FR-SQUARE-ISU-003 Payment Repository Adapter
+ * @BABOK Related: BR-SQ-020 Standardize staging on ISU interfaces
  * @UML Note: Class diagram in ProjectDocs/UML.md
+ * @since 2.4.5
  */
 class PaymentRepositoryAdapter implements PaymentRepositoryInterface
 {

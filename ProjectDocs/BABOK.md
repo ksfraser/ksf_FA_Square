@@ -544,3 +544,92 @@ See `AGENTS_MODULE_COMMUNICATION_ADDENDUM.md` for the complete pattern that can 
 | Config in Settings.php (existing DTO) | Consistent with Square module pattern | New config table (unnecessary duplication) |
 | Pass $sourceConfig at processing time | Loose coupling; ISU never imports Square | ISU reads Square config directly (tight coupling) |
 | Remove square_staging_* tables | Single canonical staging set reduces confusion | Keep both (creates maintenance burden) |
+
+---
+
+## BABOK Alignment: ISU Repository Adapters (v2.4.5)
+
+### Business Requirements
+
+| ID | Business Requirement | BABOK Task | Rationale |
+|----|---------------------|------------|-----------|
+| BR-SQ-020 | Standardize Square staging on ISU repository interfaces | Define Design Options | Enables ISU's StagingService to process Square data polymorphically |
+| BR-SQ-021 | Enable ISU to consume Square transaction/customer/payment data | Recommend Solution | Single processing pipeline across all import sources |
+
+### Functional Requirements Traceability
+
+| FR | Business Requirement | Stakeholder Need | Solution |
+|----|---------------------|-----------------|----------|
+| FR-SQUARE-ISU-001 | BR-SQ-020 | ISU processes Square transactions | TransactionRepositoryAdapter bridges Square DAO to ISU StagingTransaction |
+| FR-SQUARE-ISU-002 | BR-SQ-020 | ISU processes Square customers | CustomerRepositoryAdapter maps ISU StagingCustomer to staging_customers table |
+| FR-SQUARE-ISU-003 | BR-SQ-020 | ISU processes Square payments | PaymentRepositoryAdapter maps ISU StagingPayment to staging_payments table |
+| FR-SQUARE-ISU-004 | BR-SQ-020 | ISU processes Square line items | LineItemRepositoryAdapter uses EAV for Square-specific attributes |
+| FR-SQUARE-ISU-005 | BR-SQ-020 | Unified audit trail across sources | AuditLogRepositoryAdapter writes to ISU staging_log table |
+
+### Stakeholder Analysis
+
+| Stakeholder | Need | How Addressed | Risk |
+|-------------|------|---------------|------|
+| FA Administrator | Single import dashboard | All sources visible in ISU UI | Low: ISU provides unified view |
+| Developer | Maintainable adapter layer | One adapter per entity type, testable in isolation | Low: unit + integration tests |
+| Finance | Consistent data format | ISU models normalize source-specific fields | Medium: field mapping drift |
+
+### Design Decisions
+
+| Decision | Rationale | Alternatives Considered |
+|----------|-----------|------------------------|
+| Adapter pattern (ISU interfaces) | Polymorphic access; ISU never imports Square-specific code | Direct DAO coupling (tight), abstract base class (less flexible) |
+| Use db_escape() not prepared statements | FA's db_query() doesn't support parameterized queries | PDO (requires FA core changes, incompatible with PHP 7.3 FA) |
+| db_escape($val, true) for nullable columns | FA's db_escape(null) returns '' not SQL NULL; datetime columns reject '' | Modify FA core db_escape (too invasive) |
+| Remove unused ksf_ModulesDAO parameter | Dead code; adapters use FA global db_* functions | Keep for future use (YAGNI) |
+| Square-specific fields in raw_json/attributes | ISU models don't know Square fields; EAV preserves extensibility | Extend ISU models (violates Open/Closed) |
+
+### Design: Adapter Architecture
+
+```
+ISU Module (ksf_FA_ImportStagingProcessing)
+├── Contracts/
+│   ├── TransactionRepositoryInterface
+│   ├── CustomerRepositoryInterface
+│   ├── PaymentRepositoryInterface
+│   ├── LineItemRepositoryInterface
+│   └── AuditLogRepositoryInterface
+└── Models/
+    ├── StagingTransaction
+    ├── StagingCustomer
+    ├── StagingPayment
+    └── StagingLineItem
+
+Square Module (ksf_FA_Square)
+├── Staging/
+│   ├── TransactionRepositoryAdapter ──implements──> TransactionRepositoryInterface
+│   ├── CustomerRepositoryAdapter ────implements──> CustomerRepositoryInterface
+│   ├── PaymentRepositoryAdapter ─────implements──> PaymentRepositoryInterface
+│   ├── LineItemRepositoryAdapter ────implements──> LineItemRepositoryInterface
+│   └── AuditLogRepositoryAdapter ────implements──> AuditLogRepositoryInterface
+└── DAO/
+    └── TransactionStagingDAO (used by TransactionRepositoryAdapter)
+```
+
+### Bugs Found During Integration Testing
+
+| Bug | Root Cause | Fix |
+|-----|-----------|-----|
+| All 5 adapters fail to load | `\ksf_ModulesDAO` constructor param never used | Removed parameter |
+| Customer/Payment/LineItem/AuditLog inserts fail | `db_query($sql, $params)` — FA has no prepared statements | Replaced with `db_escape()` |
+| NULL datetime values produce '' not SQL NULL | `db_escape(null)` returns `''` not `NULL` | Added `$nullify = true` for nullable columns |
+| Payment/Transaction `toModel()` crash | Models require `$source` in constructor | Pass `$row['source']` to constructor |
+
+---
+
+## Version History
+
+| Version | Date | Author | Changes |
+|---------|------|--------|---------|
+| 0.1 | 2026-05-20 | KSFraser | Initial BABOK alignment for Square SDK v40 |
+| 0.2 | 2026-05-21 | KSFraser | Updated to reflect current state, refactoring progress, and unified staging plan |
+| 0.3 | 2026-05-21 | KSFraser | Updated current/future state, prioritization, and change strategy with Phase 1 completion and Phase 2 (Location Mapping FR-08) |
+| 0.4 | 2026-05-22 | KSFraser | Added DAO layer, Service layer, and inter-module communication via hook_invoke pattern |
+| 0.5 | 2026-05-23 | KSFraser | Updated with comprehensive Square API coverage analysis and FA integration opportunities |
+| 0.6 | 2026-08-20 | KSFraser | Added BABOK alignment for ISU config absorption and staging ownership refactor |
+| 0.7 | 2026-08-23 | KSFraser | Added BABOK alignment for ISU repository adapters (FR-SQUARE-ISU-001 through 005) |

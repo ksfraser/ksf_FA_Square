@@ -124,3 +124,27 @@
 | 0.1 | 2026-05-20 | KSFraser | Initial draft from Square SDK v40 API analysis |
 | 0.2 | 2026-05-21 | KSFraser | Updated to reflect refactored class-based architecture, added unified staging vision |
 | 0.3 | 2026-05-21 | KSFraser | Added FR-01.11–14 (UTF-8 sanitization, item limit, logging, token tracking), FR-08 (Location Mapping with N:1/1:1 aggregation), UC-08 |
+| 0.4 | 2026-08-23 | KSFraser | Added ISU Repository Adapters traceability matrix (FR-SQUARE-ISU-001 through 005), test coverage summary |
+
+---
+
+## ISU Repository Adapters
+
+| Req ID | Requirement Summary | Code File | Unit Test | Integration Test |
+|--------|--------------------|-----------|-----------|------------------|
+| **FR-SQUARE-ISU-001** | TransactionRepositoryAdapter implements TransactionRepositoryInterface | `src/Staging/TransactionRepositoryAdapter.php` | `tests/Unit/RepositoryAdapterTest.php` | `tests/Integration/RepositoryAdapterIntegrationTest.php` |
+| **FR-SQUARE-ISU-002** | CustomerRepositoryAdapter implements CustomerRepositoryInterface | `src/Staging/CustomerRepositoryAdapter.php` | `tests/Unit/RepositoryAdapterTest.php` | `tests/Integration/RepositoryAdapterIntegrationTest.php` |
+| **FR-SQUARE-ISU-003** | PaymentRepositoryAdapter implements PaymentRepositoryInterface | `src/Staging/PaymentRepositoryAdapter.php` | `tests/Unit/RepositoryAdapterTest.php` | `tests/Integration/RepositoryAdapterIntegrationTest.php` |
+| **FR-SQUARE-ISU-004** | LineItemRepositoryAdapter implements LineItemRepositoryInterface | `src/Staging/LineItemRepositoryAdapter.php` | `tests/Unit/RepositoryAdapterTest.php` | `tests/Integration/RepositoryAdapterIntegrationTest.php` |
+| **FR-SQUARE-ISU-005** | AuditLogRepositoryAdapter implements AuditLogRepositoryInterface | `src/Staging/AuditLogRepositoryAdapter.php` | `tests/Unit/RepositoryAdapterTest.php` | `tests/Integration/RepositoryAdapterIntegrationTest.php` |
+
+### Test Coverage Summary
+
+| Adapter | Unit Tests | Integration Tests | Total Assertions |
+|---------|-----------|-------------------|-----------------|
+| TransactionRepositoryAdapter | 2 | 17 | 25 |
+| CustomerRepositoryAdapter | 1 | 9 | 15 |
+| PaymentRepositoryAdapter | 1 | 11 | 17 |
+| LineItemRepositoryAdapter | 1 | 7 | 11 |
+| AuditLogRepositoryAdapter | 1 | 4 | 6 |
+| **Total** | **6** | **48** | **74** |

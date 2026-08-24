@@ -12,8 +12,10 @@ use ksfraser\FrontAccounting\ImportStaging\Contracts\AuditLogRepositoryInterface
  * Stores audit entries in the ISU staging_log table, providing a unified
  * audit trail across Square and other ISU sources.
  *
- * @requirement FR-SQUARE-ISU-ADAPTER Audit Log Repository Adapter
+ * @requirement FR-SQUARE-ISU-005 Audit Log Repository Adapter
+ * @BABOK Related: BR-SQ-020 Standardize staging on ISU interfaces
  * @UML Note: Class diagram in ProjectDocs/UML.md
+ * @since 2.4.5
  */
 class AuditLogRepositoryAdapter implements AuditLogRepositoryInterface
 {

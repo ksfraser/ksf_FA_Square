@@ -9,11 +9,13 @@ use ksfraser\FrontAccounting\ImportStaging\Models\StagingCustomer;
 /**
  * Adapts Square's customer data to ISU's CustomerRepositoryInterface.
  *
- * Uses Square's customer staging table (0_ksf_import_square_customers)
+ * Uses Square's customer staging table (0_staging_customers)
  * mapped through the standard ISU contract.
  *
- * @requirement FR-SQUARE-ISU-ADAPTER Customer Repository Adapter
+ * @requirement FR-SQUARE-ISU-002 Customer Repository Adapter
+ * @BABOK Related: BR-SQ-020 Standardize staging on ISU interfaces
  * @UML Note: Class diagram in ProjectDocs/UML.md
+ * @since 2.4.5
  */
 class CustomerRepositoryAdapter implements CustomerRepositoryInterface
 {

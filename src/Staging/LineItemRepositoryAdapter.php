@@ -13,8 +13,10 @@ use ksfraser\FrontAccounting\ImportStaging\Models\StagingLineItem;
  * Square-specific fields (category, modifiers, device, etc.) are stored
  * as attributes in the EAV table.
  *
- * @requirement FR-SQUARE-ISU-ADAPTER Line Item Repository Adapter
+ * @requirement FR-SQUARE-ISU-004 Line Item Repository Adapter
+ * @BABOK Related: BR-SQ-020 Standardize staging on ISU interfaces
  * @UML Note: Class diagram in ProjectDocs/UML.md
+ * @since 2.4.5
  */
 class LineItemRepositoryAdapter implements LineItemRepositoryInterface
 {

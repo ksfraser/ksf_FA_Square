@@ -439,3 +439,30 @@ src/
 | 1.0 | 2026-05-20 | KSFraser | Initial requirements |
 | 2.0 | 2026-08-20 | KSFraser | Consolidated: removed duplicates, added FR-SQ-011 to FR-SQ-015 |
 | 2.1 | 2026-08-20 | KSFraser | Added FR-SQ-016 (ISU config absorption), FR-SQ-017 (staging ownership), FR-SQ-018 (absorbed fields) |
+| 2.2 | 2026-08-23 | KSFraser | Added FR-SQ-019 (ISU Repository Adapter Layer), FR-SQUARE-ISU-001 through 005, NFR-ISU-001 through 004 |
+
+---
+
+### FR-SQ-019: ISU Repository Adapter Layer
+
+**Description**: Square provides adapter classes that implement ISU's repository
+interfaces, enabling ISU's StagingService to process Square data through the
+standard contract. Each adapter bridges Square's proprietary data format to ISU's
+normalized models.
+
+| ID | Requirement | Implementation | Status |
+|----|-------------|----------------|--------|
+| FR-SQUARE-ISU-001 | TransactionRepositoryAdapter implements TransactionRepositoryInterface | `src/Staging/TransactionRepositoryAdapter.php` | ✅ |
+| FR-SQUARE-ISU-002 | CustomerRepositoryAdapter implements CustomerRepositoryInterface | `src/Staging/CustomerRepositoryAdapter.php` | ✅ |
+| FR-SQUARE-ISU-003 | PaymentRepositoryAdapter implements PaymentRepositoryInterface | `src/Staging/PaymentRepositoryAdapter.php` | ✅ |
+| FR-SQUARE-ISU-004 | LineItemRepositoryAdapter implements LineItemRepositoryInterface | `src/Staging/LineItemRepositoryAdapter.php` | ✅ |
+| FR-SQUARE-ISU-005 | AuditLogRepositoryAdapter implements AuditLogRepositoryInterface | `src/Staging/AuditLogRepositoryAdapter.php` | ✅ |
+
+### Non-Functional Requirements for ISU Adapters
+
+| ID | Requirement | Rationale |
+|----|-------------|-----------|
+| NFR-ISU-001 | Backward compatible with existing Square staging data | Production data in ksf_import_square_transactions |
+| NFR-ISU-002 | PHP 7.3 compatible (no PHP 8+ features) | FA 2.4.x target platform |
+| NFR-ISU-003 | Use FA's db_* functions, not PDO | FA's db_query() doesn't support prepared statements |
+| NFR-ISU-004 | Square-specific fields preserved in raw_json/attributes | ISU models don't know Square fields |

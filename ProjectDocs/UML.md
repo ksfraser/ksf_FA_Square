@@ -569,3 +569,136 @@ FA stock_moves ──> LocationMapper ──> CatalogExporter ──> Square Inv
 | 0.1 | 2026-05-20 | KSFraser | Initial UML documentation |
 | 0.2 | 2026-05-21 | KSFraser | Updated to reflect refactored class architecture, SquareClientFactory, unified staging vision |
 | 0.3 | 2026-05-21 | KSFraser | Added LocationMapper class diagram (§2), square_location_mappings table schema (§6), location mapping sequence diagram (§7), updated data flow with QOH aggregation (§9) |
+| 0.4 | 2026-08-23 | KSFraser | Added ISU Repository Adapter class diagram, sequence diagram, and data flow (§ISU Repository Adapter Layer) |
+
+---
+
+## ISU Repository Adapter Layer (v2.4.5)
+
+### Class Diagram: ISU Adapters
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  ISU Module (ksf_FA_ImportStagingProcessing)                 │
+│                                                              │
+│  Contracts/                                                  │
+│  ┌──────────────────────────────┐                            │
+│  │ «interface»                  │                            │
+│  │ TransactionRepository-       │                            │
+│  │ Interface                    │                            │
+│  │ +insert(StagingTransaction)  │                            │
+│  │ +findById(int)               │                            │
+│  │ +findBySource(string,string) │                            │
+│  │ +findByStatus(string)        │                            │
+│  │ +updateStatus(int,string)    │                            │
+│  │ +updateFaReference(int,int)  │                            │
+│  │ +countByStatus()             │                            │
+│  └──────────────┬───────────────┘                            │
+│                 │                                             │
+│  ┌──────────────┴───────────────┐                            │
+│  │ «interface»                  │                            │
+│  │ CustomerRepository-          │                            │
+│  │ Interface                    │                            │
+│  │ +insert(StagingCustomer)     │                            │
+│  │ +findById(int)               │                            │
+│  │ +findByEmail(string)         │                            │
+│  │ +updateStatus(int,string)    │                            │
+│  └──────────────────────────────┘                            │
+│                                                              │
+│  Models/                                                     │
+│  ┌──────────────────┐  ┌──────────────────┐                  │
+│  │ StagingTransaction│  │ StagingCustomer   │                 │
+│  │ StagingPayment    │  │ StagingLineItem   │                 │
+│  └──────────────────┘  └──────────────────┘                  │
+└─────────────────────────────────────────────────────────────┘
+                          │
+                          │ implements
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│  Square Module (ksf_FA_Square) — src/Staging/                │
+│                                                              │
+│  ┌─────────────────────────┐    ┌─────────────────────────┐  │
+│  │ TransactionRepository-  │    │ CustomerRepository-     │  │
+│  │ Adapter                 │    │ Adapter                 │  │
+│  │ implements              │    │ implements              │  │
+│  │ TransactionRepo-        │    │ CustomerRepo-           │  │
+│  │ Interface               │    │ Interface               │  │
+│  │                         │    │                         │  │
+│  │ -dao: Transaction-      │    │ -tablePrefix: string    │  │
+│  │   StagingDAO            │    │                         │  │
+│  │ +toSquareRow()          │    │ +insert()               │  │
+│  │ +toStagingTransaction() │    │ +findById()             │  │
+│  └──────────┬──────────────┘    │ +findByEmail()          │  │
+│             │ uses              │ +updateStatus()          │  │
+│             ▼                   └─────────────────────────┘  │
+│  ┌─────────────────────────┐    ┌─────────────────────────┐  │
+│  │ TransactionStagingDAO   │    │ PaymentRepository-      │  │
+│  │ (existing Square DAO)   │    │ Adapter                 │  │
+│  └─────────────────────────┘    │ implements              │  │
+│                                 │ PaymentRepo-            │  │
+│  ┌─────────────────────────┐    │ Interface               │  │
+│  │ LineItemRepository-     │    │ +insert()               │  │
+│  │ Adapter                 │    │ +findByTransaction()    │  │
+│  │ implements              │    │ +getQueueForReconcil-   │  │
+│  │ LineItemRepo-           │    │   iation()              │  │
+│  │ Interface               │    └─────────────────────────┘  │
+│  │ +insert() (with EAV)    │                                 │
+│  │ +findByTransactionId()  │    ┌─────────────────────────┐  │
+│  │ +deleteByTransactionId()│    │ AuditLogRepository-     │  │
+│  └─────────────────────────┘    │ Adapter                 │  │
+│                                 │ implements              │  │
+│                                 │ AuditLogRepo-           │  │
+│                                 │ Interface               │  │
+│                                 │ +log()                  │  │
+│                                 │ +findByRecord()         │  │
+│                                 │ +getRecent()            │  │
+│                                 └─────────────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Sequence Diagram: Adapter CRUD Flow
+
+```
+  ISU StagingService          Square Adapter              FA DB
+       │                          │                        │
+       │  insert(StagingTxn)      │                        │
+       │─────────────────────────>│                        │
+       │                          │  toSquareRow()         │
+       │                          │  (map ISU→Square cols) │
+       │                          │                        │
+       │                          │  db_escape(values)     │
+       │                          │───────────────────────>│
+       │                          │                        │
+       │                          │  db_query(INSERT)      │
+       │                          │───────────────────────>│
+       │                          │                        │
+       │                          │  db_insert_id()        │
+       │                          │<───────────────────────│
+       │  return int              │                        │
+       │<─────────────────────────│                        │
+       │                          │                        │
+       │  findById(int)           │                        │
+       │─────────────────────────>│                        │
+       │                          │  db_query(SELECT)      │
+       │                          │───────────────────────>│
+       │                          │  db_fetch_assoc()      │
+       │                          │<───────────────────────│
+       │                          │  toStagingTransaction()│
+       │                          │  (map Square→ISU)      │
+       │  return StagingTxn       │                        │
+       │<─────────────────────────│                        │
+```
+
+### Data Flow: Square Import via Adapters
+
+```
+Square API ──> ImportService ──> TransactionStagingDAO ──> 0_square_staging_transactions
+                   │
+                   │ (via ISU StagingService)
+                   ▼
+              TransactionRepositoryAdapter ──> 0_staging_transactions (ISU)
+              CustomerRepositoryAdapter ────> 0_staging_customers (ISU)
+              PaymentRepositoryAdapter ─────> 0_staging_payments (ISU)
+              LineItemRepositoryAdapter ────> 0_staging_line_items (ISU)
+              AuditLogRepositoryAdapter ────> 0_staging_log (ISU)
+```
