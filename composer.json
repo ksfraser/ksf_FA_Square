@@ -15,18 +15,6 @@
         {
             "type": "vcs",
             "url": "https://github.com/ksfraser/Traits.git"
-        },
-        {
-            "type": "path",
-            "url": "../ksf_FA_Common"
-        },
-        {
-            "type": "path",
-            "url": "../ksf_FA_ImportStagingProcessing"
-        },
-        {
-            "type": "path",
-            "url": "../ksf_staging_dto"
         }
     ],
     "require": {
@@ -40,7 +28,7 @@
         "ksfraser/contact-dto": "^0.1",
         "ksfraser/ksf-fa-common": "*",
         "ksfraser/import-staging": "*",
-        "ksfraser/staging-dto": "dev-main"
+        "ksfraser/staging-dto": "^0.0.1"
     },
     "require-dev": {
         "phpunit/phpunit": "^9.6",
