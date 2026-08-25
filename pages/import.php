@@ -19,8 +19,6 @@ include_once $path_to_root . "/taxes/db/item_tax_types_db.inc";
 include_once __DIR__ . "/../vendor/autoload.php";
 
 use ksfraser\FrontAccounting\Square\Config\Settings;
-use ksfraser\FrontAccounting\Square\DAO\TransactionStagingDAO;
-use ksfraser\FrontAccounting\Square\DAO\ItemStagingDAO;
 use ksfraser\FrontAccounting\Square\Infrastructure\SquareClientFactory;
 use ksfraser\FrontAccounting\Square\Services\ImportService;
 use ksfraser\FrontAccounting\Common\Utils\FADateConverter;
@@ -42,12 +40,8 @@ if (!function_exists('sales_service_items_list_row')) {
 $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
 try {
     $settings = Settings::fromFADatabase($tablePrefix);
-    $transactionStagingDao = new TransactionStagingDAO($tablePrefix);
-    $itemStagingDao = new ItemStagingDAO($tablePrefix);
 } catch (\Exception $e) {
     $settings = new Settings();
-    $transactionStagingDao = new TransactionStagingDAO($tablePrefix);
-    $itemStagingDao = new ItemStagingDAO($tablePrefix);
     $error = _("Failed to load configuration: ") . $e->getMessage();
 }
 $accessToken = $settings->getAccessToken();
@@ -98,9 +92,25 @@ $error = '';
 try {
     $importService = new ImportService($tablePrefix, $settings, $client);
     $importService->ensureStagingTablesExist();
-    $statusCounts = $transactionStagingDao->getStatusCounts($env);
+    $gateway = $importService->getGateway();
+    $statusCounts = $gateway->getStatusCounts('square');
 } catch (Exception $e) {
     $statusCounts = [];
+}
+
+/**
+ * Extract Square-specific metadata from raw_json.
+ *
+ * @param array $trans ISU staging transaction array
+ * @return array Square metadata (location, environment, etc.)
+ */
+function getSquareMetadata(array $trans): array
+{
+    $rawJson = json_decode($trans['raw_json'] ?? '{}', true);
+    if (!is_array($rawJson)) {
+        return [];
+    }
+    return $rawJson['square'] ?? [];
 }
 
 $action = '';
@@ -117,12 +127,11 @@ $deleteId = (int)($_GET['delete'] ?? 0);
 
 if ($deleteId > 0) {
     try {
-        $transaction = $transactionStagingDao->getById($deleteId);
+        $transaction = $gateway->getById($deleteId);
         if ($transaction !== null) {
-            $itemStagingDao->deleteByTransactionId($transaction['transaction_id']);
-            $transactionStagingDao->delete($deleteId);
+            $gateway->delete($deleteId);
             $msg = _("Transaction deleted successfully.");
-            $statusCounts = $transactionStagingDao->getStatusCounts($env);
+            $statusCounts = $gateway->getStatusCounts('square');
         }
     } catch (Exception $e) {
         $error = _("Error deleting transaction: ") . $e->getMessage();
@@ -133,21 +142,15 @@ if ($action === 'save_edit') {
     $editId = (int)($_POST['edit_id'] ?? 0);
     if ($editId > 0) {
         try {
-            $data = [
-                'Date' => $_POST['edit_date'] ?? '',
-                'Time' => $_POST['edit_time'] ?? '',
-                'gross_sales' => (float)($_POST['edit_gross_sales'] ?? 0),
-                'discounts' => (float)($_POST['edit_discounts'] ?? 0),
-                'net_sales' => (float)($_POST['edit_net_sales'] ?? 0),
-                'tax' => (float)($_POST['edit_tax'] ?? 0),
-                'tip' => (float)($_POST['edit_tip'] ?? 0),
-                'total_collected' => (float)($_POST['edit_total_collected'] ?? 0),
+            $fields = [
                 'customer_name' => $_POST['edit_customer_name'] ?? '',
-                'location' => $_POST['edit_location'] ?? '',
-                'description' => $_POST['edit_description'] ?? '',
+                'total_amount' => (float)($_POST['edit_total_collected'] ?? 0),
+                'tax_amount' => (float)($_POST['edit_tax'] ?? 0),
+                'tip_amount' => (float)($_POST['edit_tip'] ?? 0),
+                'discount_amount' => (float)($_POST['edit_discounts'] ?? 0),
             ];
 
-            $transactionStagingDao->update($editId, $data);
+            $gateway->updateFields($editId, $fields);
             $msg = _("Transaction updated successfully.");
             $editId = 0;
         } catch (Exception $e) {
@@ -196,7 +199,7 @@ if ($action === 'o_import') {
                         . _(", Payments found: ") . $results['payments_found'];
                 }
 
-                $statusCounts = $transactionStagingDao->getStatusCounts($env);
+                $statusCounts = $gateway->getStatusCounts('square');
             } else {
                 $results = $importService->performImport(
                     $customer,
@@ -251,8 +254,6 @@ if ($action === 'o_import') {
         $error = _("No transactions selected for processing.");
     } else {
         try {
-            $customer = $transactionStagingDao->getByStatus('staged');
-
             foreach ($processIds as $stagingId) {
                 try {
                     $result = $importService->processStagedTransaction(
@@ -275,7 +276,7 @@ if ($action === 'o_import') {
                 }
             }
 
-            $statusCounts = $transactionStagingDao->getStatusCounts($env);
+            $statusCounts = $gateway->getStatusCounts('square');
             $msg = _("Processing complete. Processed: ") . $processedCount . _(", Failed: ") . $failedCount;
         } catch (Exception $e) {
             $error = _("Error: ") . $e->getMessage();
@@ -291,10 +292,9 @@ if (!empty($statusCounts)) {
 
     echo '<tr><td colspan="4" align="center">';
 
-    $stagedCount = $statusCounts[TransactionStagingDAO::STATUS_STAGED] ?? 0;
-    $importedCount = $statusCounts[TransactionStagingDAO::STATUS_IMPORTED] ?? 0;
-    $failedCount = $statusCounts[TransactionStagingDAO::STATUS_FAILED] ?? 0;
-    $matchedCount = $statusCounts[TransactionStagingDAO::STATUS_MATCHED] ?? 0;
+    $stagedCount = $statusCounts['staged'] ?? 0;
+    $importedCount = $statusCounts['imported'] ?? 0;
+    $failedCount = $statusCounts['failed'] ?? 0;
 
     echo '<div class="square-status-card status-staged">';
     echo '<div style="font-size: 1.5em; font-weight: bold;">' . $stagedCount . '</div>';
@@ -318,21 +318,20 @@ if (!empty($statusCounts)) {
 }
 
 if ($editId > 0) {
-    $editTransaction = $transactionStagingDao->getById($editId);
+    $editTransaction = $gateway->getById($editId);
     if ($editTransaction !== null) {
+        $editMeta = getSquareMetadata($editTransaction);
+        $editDate = $editTransaction['transaction_date'] ?? '';
+
         table_section_title(_("Edit Staged Transaction"));
         start_form(true);
         start_table(TABLESTYLE2, "width=60%");
 
-        echo '<tr><td class="label">' . _("Transaction ID:") . '</td><td>' . htmlspecialchars($editTransaction['transaction_id'] ?? '') . '</td></tr>';
-        echo '<tr><td class="label">' . _("Payment ID:") . '</td><td>' . htmlspecialchars($editTransaction['payment_id'] ?? '') . '</td></tr>';
+        echo '<tr><td class="label">' . _("Transaction ID:") . '</td><td>' . htmlspecialchars($editTransaction['source_transaction_id'] ?? '') . '</td></tr>';
+        echo '<tr><td class="label">' . _("Payment ID:") . '</td><td>' . htmlspecialchars($editTransaction['source_payment_id'] ?? '') . '</td></tr>';
 
         echo '<tr><td class="label">' . _("Date:") . '</td><td>';
-        date_cells('edit_date', $editTransaction['Date'] ?? '');
-        echo '</td></tr>';
-
-        echo '<tr><td class="label">' . _("Time:") . '</td><td>';
-        echo '<input type="text" name="edit_time" value="' . htmlspecialchars($editTransaction['Time'] ?? '') . '" size="10">';
+        date_cells('edit_date', $editDate);
         echo '</td></tr>';
 
         echo '<tr><td class="label">' . _("Customer Name:") . '</td><td>';
@@ -340,35 +339,23 @@ if ($editId > 0) {
         echo '</td></tr>';
 
         echo '<tr><td class="label">' . _("Location:") . '</td><td>';
-        echo '<input type="text" name="edit_location" value="' . htmlspecialchars($editTransaction['location'] ?? '') . '" size="30">';
-        echo '</td></tr>';
-
-        echo '<tr><td class="label">' . _("Gross Sales:") . '</td><td>';
-        echo '<input type="number" name="edit_gross_sales" value="' . htmlspecialchars((string)($editTransaction['gross_sales'] ?? 0)) . '" step="0.01" size="15">';
-        echo '</td></tr>';
-
-        echo '<tr><td class="label">' . _("Discounts:") . '</td><td>';
-        echo '<input type="number" name="edit_discounts" value="' . htmlspecialchars((string)($editTransaction['discounts'] ?? 0)) . '" step="0.01" size="15">';
-        echo '</td></tr>';
-
-        echo '<tr><td class="label">' . _("Net Sales:") . '</td><td>';
-        echo '<input type="number" name="edit_net_sales" value="' . htmlspecialchars((string)($editTransaction['net_sales'] ?? 0)) . '" step="0.01" size="15">';
-        echo '</td></tr>';
-
-        echo '<tr><td class="label">' . _("Tax:") . '</td><td>';
-        echo '<input type="number" name="edit_tax" value="' . htmlspecialchars((string)($editTransaction['tax'] ?? 0)) . '" step="0.01" size="15">';
-        echo '</td></tr>';
-
-        echo '<tr><td class="label">' . _("Tip:") . '</td><td>';
-        echo '<input type="number" name="edit_tip" value="' . htmlspecialchars((string)($editTransaction['tip'] ?? 0)) . '" step="0.01" size="15">';
+        echo '<input type="text" name="edit_location" value="' . htmlspecialchars($editMeta['location_name'] ?? '') . '" size="30">';
         echo '</td></tr>';
 
         echo '<tr><td class="label">' . _("Total Collected:") . '</td><td>';
-        echo '<input type="number" name="edit_total_collected" value="' . htmlspecialchars((string)($editTransaction['total_collected'] ?? 0)) . '" step="0.01" size="15">';
+        echo '<input type="number" name="edit_total_collected" value="' . htmlspecialchars((string)($editTransaction['total_amount'] ?? 0)) . '" step="0.01" size="15">';
         echo '</td></tr>';
 
-        echo '<tr><td class="label">' . _("Description:") . '</td><td>';
-        echo '<input type="text" name="edit_description" value="' . htmlspecialchars($editTransaction['description'] ?? '') . '" size="50">';
+        echo '<tr><td class="label">' . _("Tax:") . '</td><td>';
+        echo '<input type="number" name="edit_tax" value="' . htmlspecialchars((string)($editTransaction['tax_amount'] ?? 0)) . '" step="0.01" size="15">';
+        echo '</td></tr>';
+
+        echo '<tr><td class="label">' . _("Tip:") . '</td><td>';
+        echo '<input type="number" name="edit_tip" value="' . htmlspecialchars((string)($editTransaction['tip_amount'] ?? 0)) . '" step="0.01" size="15">';
+        echo '</td></tr>';
+
+        echo '<tr><td class="label">' . _("Discounts:") . '</td><td>';
+        echo '<input type="number" name="edit_discounts" value="' . htmlspecialchars((string)($editTransaction['discount_amount'] ?? 0)) . '" step="0.01" size="15">';
         echo '</td></tr>';
 
         end_table(1);
@@ -384,7 +371,7 @@ if ($editId > 0) {
 
         end_form();
 
-        $editItems = $itemStagingDao->getByTransactionId($editTransaction['transaction_id'] ?? '');
+        $editItems = $gateway->getLineItems($editId);
         if (!empty($editItems)) {
             table_section_title(_("Line Items"));
             start_table(TABLESTYLE, "width=90%");
@@ -394,19 +381,19 @@ if ($editId > 0) {
                 _("SKU"),
                 _("Qty"),
                 _("Unit Price"),
-                _("Net Sales"),
+                _("Total"),
                 _("Tax"),
             );
             table_header($th);
 
             foreach ($editItems as $item) {
                 echo '<tr>';
-                echo '<td>' . htmlspecialchars($item['name'] ?? $item['Item'] ?? '') . '</td>';
-                echo '<td>' . htmlspecialchars($item['sku'] ?? $item['stock_id'] ?? '') . '</td>';
+                echo '<td>' . htmlspecialchars($item['name'] ?? '') . '</td>';
+                echo '<td>' . htmlspecialchars($item['sku'] ?? '') . '</td>';
                 echo '<td align="right">' . htmlspecialchars((string)($item['quantity'] ?? 0)) . '</td>';
-                echo '<td align="right">' . number_format((float)($item['unit_price'] ?? $item['Price_Point_Name'] ?? 0), 2) . '</td>';
-                echo '<td align="right">' . number_format((float)($item['net_sales'] ?? 0), 2) . '</td>';
-                echo '<td align="right">' . number_format((float)($item['tax'] ?? 0), 2) . '</td>';
+                echo '<td align="right">' . number_format((float)($item['unit_price'] ?? 0), 2) . '</td>';
+                echo '<td align="right">' . number_format((float)($item['total_amount'] ?? 0), 2) . '</td>';
+                echo '<td align="right">' . number_format((float)($item['tax_amount'] ?? 0), 2) . '</td>';
                 echo '</tr>';
             }
 
@@ -417,10 +404,7 @@ if ($editId > 0) {
     }
 }
 
-$stagedTransactions = $transactionStagingDao->getByStatus(
-    TransactionStagingDAO::STATUS_STAGED,
-    $env
-);
+$stagedTransactions = $gateway->getByStatus('staged');
 
 if (!empty($stagedTransactions)) {
     table_section_title(_("Staged Transactions (Ready to Process)"));
@@ -429,7 +413,6 @@ if (!empty($stagedTransactions)) {
     $th = array(
         '',
         _("Date"),
-        _("Transaction ID"),
         _("Payment ID"),
         _("Location"),
         _("Customer"),
@@ -441,16 +424,18 @@ if (!empty($stagedTransactions)) {
     table_header($th);
 
     foreach ($stagedTransactions as $trans) {
+        $meta = getSquareMetadata($trans);
+        $transDate = $trans['transaction_date'] ?? '';
+
         echo '<tr>';
         echo '<td><input type="checkbox" name="process_ids[]" value="' . htmlspecialchars((string)$trans['id']) . '"></td>';
-        echo '<td>' . htmlspecialchars($trans['Date'] ?? '') . '</td>';
-        echo '<td>' . htmlspecialchars($trans['transaction_id'] ?? '') . '</td>';
-        echo '<td>' . htmlspecialchars($trans['payment_id'] ?? '') . '</td>';
-        echo '<td>' . htmlspecialchars($trans['location'] ?? '') . '</td>';
+        echo '<td>' . htmlspecialchars($transDate) . '</td>';
+        echo '<td>' . htmlspecialchars($trans['source_payment_id'] ?? $trans['source_transaction_id'] ?? '') . '</td>';
+        echo '<td>' . htmlspecialchars($meta['location_name'] ?? '') . '</td>';
         echo '<td>' . htmlspecialchars($trans['customer_name'] ?? '') . '</td>';
-        echo '<td align="right">' . number_format((float)($trans['total_collected'] ?? 0), 2) . '</td>';
-        echo '<td align="right">' . number_format((float)($trans['tax'] ?? 0), 2) . '</td>';
-        echo '<td align="right">' . number_format((float)($trans['tip'] ?? 0), 2) . '</td>';
+        echo '<td align="right">' . number_format((float)($trans['total_amount'] ?? 0), 2) . '</td>';
+        echo '<td align="right">' . number_format((float)($trans['tax_amount'] ?? 0), 2) . '</td>';
+        echo '<td align="right">' . number_format((float)($trans['tip_amount'] ?? 0), 2) . '</td>';
         echo '<td>';
         echo '<a href="?edit=' . htmlspecialchars((string)$trans['id']) . '">' . _("Edit") . '</a>';
         echo ' | ';

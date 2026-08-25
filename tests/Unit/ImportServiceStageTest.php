@@ -5,12 +5,11 @@ namespace ksfraser\FrontAccounting\Square\Tests\Unit\Services;
 
 use DateTimeImmutable;
 use ksfraser\FrontAccounting\Square\Config\Settings;
-use ksfraser\FrontAccounting\Square\DAO\TransactionStagingDAO;
-use ksfraser\FrontAccounting\Square\DAO\ItemStagingDAO;
 use ksfraser\FrontAccounting\Square\DAO\PaymentMatchDAO;
 use ksfraser\FrontAccounting\Square\DAO\SalesMatchDAO;
 use ksfraser\FrontAccounting\Square\DAO\SquareImportLogDAO;
 use ksfraser\FrontAccounting\Square\Services\ImportService;
+use ksfraser\FrontAccounting\Square\Staging\IsuStagingGateway;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -24,11 +23,8 @@ class ImportServiceStageTest extends TestCase
     /** @var ImportService */
     private $service;
 
-    /** @var \PHPUnit\Framework\MockObject\MockObject|TransactionStagingDAO */
-    private $transactionStagingDao;
-
-    /** @var \PHPUnit\Framework\MockObject\MockObject|ItemStagingDAO */
-    private $itemStagingDao;
+    /** @var \PHPUnit\Framework\MockObject\MockObject|IsuStagingGateway */
+    private $gateway;
 
     /** @var \PHPUnit\Framework\MockObject\MockObject|SquareImportLogDAO */
     private $importLogDao;
@@ -37,8 +33,7 @@ class ImportServiceStageTest extends TestCase
     {
         parent::setUp();
 
-        $this->transactionStagingDao = $this->createMock(TransactionStagingDAO::class);
-        $this->itemStagingDao = $this->createMock(ItemStagingDAO::class);
+        $this->gateway = $this->createMock(IsuStagingGateway::class);
         $this->importLogDao = $this->createMock(SquareImportLogDAO::class);
         $paymentMatchDao = $this->createMock(PaymentMatchDAO::class);
         $salesMatchDao = $this->createMock(SalesMatchDAO::class);
@@ -48,8 +43,7 @@ class ImportServiceStageTest extends TestCase
 
         $this->service = $this->newInstanceWithoutConstructor();
         $this->setPropertyValue($this->service, 'settings', $settings);
-        $this->setPropertyValue($this->service, 'transactionStagingDao', $this->transactionStagingDao);
-        $this->setPropertyValue($this->service, 'itemStagingDao', $this->itemStagingDao);
+        $this->setPropertyValue($this->service, 'gateway', $this->gateway);
         $this->setPropertyValue($this->service, 'squareImportLogDao', $this->importLogDao);
         $this->setPropertyValue($this->service, 'paymentMatchDao', $paymentMatchDao);
         $this->setPropertyValue($this->service, 'salesMatchDao', $salesMatchDao);
@@ -100,7 +94,7 @@ class ImportServiceStageTest extends TestCase
         $orderImporter->method('listPayments')->willReturn([$payment]);
         $this->setPropertyValue($this->service, 'orderImporter', $orderImporter);
 
-        $this->transactionStagingDao->expects($this->once())
+        $this->gateway->expects($this->once())
             ->method('exists')
             ->with('pay_100')
             ->willReturn(true);
@@ -138,7 +132,7 @@ class ImportServiceStageTest extends TestCase
         $orderImporter->method('listPayments')->willReturn([$payment]);
         $this->setPropertyValue($this->service, 'orderImporter', $orderImporter);
 
-        $this->transactionStagingDao->method('exists')->willReturn(false);
+        $this->gateway->method('exists')->willReturn(false);
 
         $results = $this->service->stageFromApi($from, $to, '', $locations);
 
@@ -160,7 +154,7 @@ class ImportServiceStageTest extends TestCase
         $orderImporter->method('listPayments')->willReturn([$payment]);
         $this->setPropertyValue($this->service, 'orderImporter', $orderImporter);
 
-        $this->transactionStagingDao->method('exists')->willReturn(false);
+        $this->gateway->method('exists')->willReturn(false);
 
         $results = $this->service->stageFromApi($from, $to, '', $locations);
 
@@ -184,15 +178,13 @@ class ImportServiceStageTest extends TestCase
         $payment->method('getTipMoney')->willReturn(null);
 
         $lineItem = $this->createMock(\Square\Models\OrderLineItem::class);
+        $lineItem->method('getUid')->willReturn('item_001');
         $lineItem->method('getName')->willReturn('Widget');
         $lineItem->method('getQuantity')->willReturn('2');
         $lineItem->method('getBasePriceMoney')->willReturn($this->money(2500, 'USD'));
-        $lineItem->method('getGrossSalesMoney')->willReturn($this->money(5000, 'USD'));
-        $lineItem->method('getTotalMoney')->willReturn($this->money(5000, 'USD'));
         $lineItem->method('getTotalTaxMoney')->willReturn(null);
         $lineItem->method('getTotalDiscountMoney')->willReturn(null);
         $lineItem->method('getCatalogObjectId')->willReturn(null);
-        $lineItem->method('getVariationTotalPriceMoney')->willReturn(null);
 
         $order = $this->createMock(\Square\Models\Order::class);
         $order->method('getId')->willReturn('ord_001');
@@ -211,9 +203,9 @@ class ImportServiceStageTest extends TestCase
             ->willReturn(['payment' => $payment, 'order' => $order]);
         $this->setPropertyValue($this->service, 'orderImporter', $orderImporter);
 
-        $this->transactionStagingDao->method('exists')->willReturn(false);
-        $this->transactionStagingDao->expects($this->once())
-            ->method('insert')
+        $this->gateway->method('exists')->willReturn(false);
+        $this->gateway->expects($this->once())
+            ->method('stageSquareOrder')
             ->willReturn(1);
 
         $results = $this->service->stageFromApi($from, $to, '', $locations);

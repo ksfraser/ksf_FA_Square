@@ -36,13 +36,17 @@ class TransactionRepositoryAdapter implements TransactionRepositoryInterface
         $this->dao = new TransactionStagingDAO($tablePrefix);
     }
 
-    /**
-     * Insert a new staged transaction.
-     *
-     * @param StagingTransaction $transaction The transaction to stage
-     * @return int The inserted row ID
-     * @since 2.4.5
-     */
+/**
+ * Adapter for Square Transaction DTO.
+ *
+ * @deprecated Use ksfraser/staging-dto StagingOrder/StagingPayment/StagingRefund via ISU hooks instead.
+ *             This adapter is maintained for backward compatibility only.
+ *             New code should create DTOs and call hook_invoke('ksf_FA_ImportStagingProcessing_UI', 'stageEntity', $dto).
+ *
+ * @package Ksfraser\FrontAccounting\Square\Staging
+ * @since 1.0.0
+ * @deprecated 1.1.0 Use StagingOrder/StagingPayment/StagingRefund DTOs via hooks
+ */
     public function insert(StagingTransaction $transaction): int
     {
         return $this->dao->insert($this->toSquareRow($transaction));

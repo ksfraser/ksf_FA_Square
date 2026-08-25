@@ -16,6 +16,11 @@ use DateTimeInterface;
  * - Original CSV fields from FA_ImportSquareUp
  * - API-specific fields (raw_json, environment, status tracking)
  *
+ * @deprecated 1.2.0 Use IsuStagingGateway via ImportService::getGateway() instead.
+ *             All staging operations now go through ISU (ksf_FA_ImportStagingProcessing).
+ *             This class accesses Square's proprietary staging table which will be removed.
+ * @see IsuStagingGateway
+ * @see ImportService::getGateway()
  * @UML Note: Class diagram in ProjectDocs/UML.md
  * @BABOK Related: Requirements analysis, Solution evaluation
  */

@@ -16,8 +16,6 @@ include_once $path_to_root . "/gl/includes/db/gl_db.inc";
 include_once __DIR__ . "/../vendor/autoload.php";
 
 use ksfraser\FrontAccounting\Square\Config\Settings;
-use ksfraser\FrontAccounting\Square\DAO\TransactionStagingDAO;
-use ksfraser\FrontAccounting\Square\DAO\ItemStagingDAO;
 use ksfraser\FrontAccounting\Square\DAO\SalesMatchDAO;
 use ksfraser\FrontAccounting\Square\DAO\PaymentMatchDAO;
 use ksfraser\FrontAccounting\Square\DAO\SquareImportLogDAO;
@@ -27,19 +25,12 @@ use ksfraser\FrontAccounting\Square\Infrastructure\SquareClientFactory;
 $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
 try {
     $settings = Settings::fromFADatabase($tablePrefix);
-    $transactionStagingDao = new TransactionStagingDAO($tablePrefix);
-    $itemStagingDao = new ItemStagingDAO($tablePrefix);
-    $salesMatchDao = new SalesMatchDAO($tablePrefix);
-    $paymentMatchDao = new PaymentMatchDAO($tablePrefix);
-    $squareImportLogDao = new SquareImportLogDAO($tablePrefix);
 } catch (\Exception $e) {
     $settings = new Settings();
-    $transactionStagingDao = new TransactionStagingDAO($tablePrefix);
-    $itemStagingDao = new ItemStagingDAO($tablePrefix);
-    $salesMatchDao = new SalesMatchDAO($tablePrefix);
-    $paymentMatchDao = new PaymentMatchDAO($tablePrefix);
-    $squareImportLogDao = new SquareImportLogDAO($tablePrefix);
 }
+$salesMatchDao = new SalesMatchDAO($tablePrefix);
+$paymentMatchDao = new PaymentMatchDAO($tablePrefix);
+$squareImportLogDao = new SquareImportLogDAO($tablePrefix);
 
 $help_context = "Review & Match Square/FA Transactions";
 page(_($help_context), false, false, "", "");
@@ -67,11 +58,28 @@ $customerFilter = (int)($_POST['customer_filter'] ?? 0);
 $matchType = $_POST['match_type'] ?? 'auto';
 
 $importService = null;
+$gateway = null;
 try {
     $squareClient = SquareClientFactory::create($settings);
     $importService = new ImportService($tablePrefix, $settings, $squareClient);
+    $gateway = $importService->getGateway();
 } catch (Exception $e) {
     $error = _("API Connection Error: ") . $e->getMessage();
+}
+
+/**
+ * Extract Square-specific metadata from raw_json.
+ *
+ * @param array $trans ISU staging transaction array
+ * @return array Square metadata (location, environment, etc.)
+ */
+function getSquareMetadata(array $trans): array
+{
+    $rawJson = json_decode($trans['raw_json'] ?? '{}', true);
+    if (!is_array($rawJson)) {
+        return [];
+    }
+    return $rawJson['square'] ?? [];
 }
 
 start_form(true);
@@ -127,7 +135,7 @@ if ($viewMode === 'date_gaps') {
         $lastImport = new DateTimeImmutable($lastImportDate);
         $today = new DateTimeImmutable();
         $gapStart = $lastImport->modify('+1 day');
-        
+
         if ($gapStart <= $today) {
             $gaps[] = [
                 'from_date' => $gapStart->format('Y-m-d'),
@@ -210,10 +218,9 @@ if ($viewMode === 'import_log') {
 if ($viewMode === 'match') {
     if (!$dateFrom || !$dateTo) {
         echo '<div class="message warning">' . _("Please select a date range to review matches.") . '</div>';
-    } else {
-        $squareTransactions = $transactionStagingDao->getByStatus(
-            TransactionStagingDAO::STATUS_STAGED,
-            $env,
+    } elseif ($gateway !== null) {
+        $squareTransactions = $gateway->getByStatus(
+            'staged',
             $dateFrom,
             $dateTo
         );
@@ -237,16 +244,16 @@ if ($viewMode === 'match') {
             table_header($th);
 
             foreach ($squareTransactions as $squareTrans) {
-                $squareId = $squareTrans['transaction_id'] ?? '';
-                $squareDate = $squareTrans['Date'] ?? '';
+                $squareId = $squareTrans['source_payment_id'] ?? $squareTrans['source_transaction_id'] ?? '';
+                $squareDate = $squareTrans['transaction_date'] ?? '';
                 $squareCustomer = $squareTrans['customer_name'] ?? '';
-                $squareAmount = $squareTrans['total_collected'] ?? 0;
+                $squareAmount = $squareTrans['total_amount'] ?? 0;
 
                 $faMatch = null;
                 $faStatus = 'unmatched';
                 $faLink = '';
 
-                if ($squareTrans['fa_invoice_no']) {
+                if (!empty($squareTrans['fa_invoice_no'])) {
                     $faStatus = 'matched';
                     $faMatch = $salesMatchDao->getByInvoiceNo((int)$squareTrans['fa_invoice_no'])[0] ?? null;
                 }
@@ -270,18 +277,18 @@ if ($viewMode === 'match') {
                 }
                 echo '</td>';
                 echo '<td>';
-                
+
                 if ($faStatus === 'matched') {
-                    echo '<span class="label success">✓ Matched</span>';
+                    echo '<span class="label success">&#10003; Matched</span>';
                 } else {
                     echo '<select name="match_square_' . htmlspecialchars($squareId) . '" class="match-select">';
                     echo '<option value="">-- Select FA Match --</option>';
-                    
-                    $sql = "SELECT t.*, d.name as customer_name 
+
+                    $sql = "SELECT t.*, d.name as customer_name
                             FROM {$tablePrefix}debtor_trans t
                             LEFT JOIN {$tablePrefix}debtors_master d ON t.debtor_no = d.debtor_no
-                            WHERE t.type = 10 
-                            AND t.tran_date >= '" . db_escape($dateFrom) . "' 
+                            WHERE t.type = 10
+                            AND t.tran_date >= '" . db_escape($dateFrom) . "'
                             AND t.tran_date <= '" . db_escape($dateTo) . "'";
                     if ($customerFilter > 0) {
                         $sql .= " AND t.debtor_no = " . (int)$customerFilter;
@@ -295,7 +302,7 @@ if ($viewMode === 'match') {
                         echo 'FA #' . $row['trans_no'] . ' - ' . htmlspecialchars($row['reference'] ?? '') . ' - ' . number_format((float)($row['ov_amount'] ?? 0), 2);
                         echo '</option>';
                     }
-                    
+
                     echo '</select>';
                 }
                 echo '</td>';
@@ -319,26 +326,29 @@ if ($viewMode === 'match') {
 }
 
 if ($viewMode === 'unmatched') {
-    $unmatchedSquare = $transactionStagingDao->getByStatus(
-        TransactionStagingDAO::STATUS_STAGED,
-        $env,
-        $dateFrom,
-        $dateTo
-    );
-
+    $unmatchedSquare = [];
     $unmatchedFA = [];
+
+    if ($gateway !== null) {
+        $unmatchedSquare = $gateway->getByStatus(
+            'staged',
+            $dateFrom ?: null,
+            $dateTo ?: null
+        );
+    }
+
     if ($dateFrom && $dateTo) {
-        $sql = "SELECT t.*, d.name as customer_name 
+        $sql = "SELECT t.*, d.name as customer_name
                 FROM {$tablePrefix}debtor_trans t
                 LEFT JOIN {$tablePrefix}debtors_master d ON t.debtor_no = d.debtor_no
-                WHERE t.type = 10 
-                AND t.tran_date >= '" . db_escape($dateFrom) . "' 
+                WHERE t.type = 10
+                AND t.tran_date >= '" . db_escape($dateFrom) . "'
                 AND t.tran_date <= '" . db_escape($dateTo) . "'";
         if ($customerFilter > 0) {
             $sql .= " AND t.debtor_no = " . (int)$customerFilter;
         }
         $sql .= " AND NOT EXISTS (
-            SELECT 1 FROM {$tablePrefix}ksf_import_square_sales 
+            SELECT 1 FROM {$tablePrefix}ksf_import_square_sales
             WHERE sales_invoice_no = t.trans_no
         ) ORDER BY t.tran_date DESC";
 
@@ -370,11 +380,12 @@ if ($viewMode === 'unmatched') {
     echo '<tr>';
     echo '<td colspan="4" style="background-color: #fff3cd;">';
     foreach ($unmatchedSquare as $square) {
+        $meta = getSquareMetadata($square);
         echo '<div style="margin-bottom: 10px; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">';
-        echo '<strong>Square: ' . htmlspecialchars($square['transaction_id'] ?? '') . '</strong><br>';
-        echo 'Date: ' . htmlspecialchars($square['Date'] ?? '') . ' | ';
+        echo '<strong>Square: ' . htmlspecialchars($square['source_payment_id'] ?? $square['source_transaction_id'] ?? '') . '</strong><br>';
+        echo 'Date: ' . htmlspecialchars($square['transaction_date'] ?? '') . ' | ';
         echo 'Customer: ' . htmlspecialchars($square['customer_name'] ?? '') . ' | ';
-        echo 'Amount: ' . number_format((float)($square['total_collected'] ?? 0), 2);
+        echo 'Amount: ' . number_format((float)($square['total_amount'] ?? 0), 2);
         echo '</div>';
     }
     echo '</td>';

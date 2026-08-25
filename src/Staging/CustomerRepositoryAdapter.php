@@ -159,12 +159,17 @@ class CustomerRepositoryAdapter implements CustomerRepositoryInterface
         return $counts;
     }
 
-    /**
-     * Convert a raw row to an ISU StagingCustomer model.
-     *
-     * @param array<string,mixed> $row
-     * @return StagingCustomer
-     */
+/**
+ * Adapter for Square Customer DTO.
+ *
+ * @deprecated Use ksfraser/staging-dto StagingCustomer via ISU hooks instead.
+ *             This adapter is maintained for backward compatibility only.
+ *             New code should create DTOs and call hook_invoke('ksf_FA_ImportStagingProcessing_UI', 'stageEntity', $dto).
+ *
+ * @package Ksfraser\FrontAccounting\Square\Staging
+ * @since 1.0.0
+ * @deprecated 1.1.0 Use StagingCustomer DTO via hooks
+ */
     private function toModel(array $row): StagingCustomer
     {
         $customer = new StagingCustomer($row['source'] ?? 'square_api');

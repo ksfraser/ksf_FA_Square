@@ -11,15 +11,13 @@ use ksfraser\FrontAccounting\Square\DAO\DebtorsMasterDAO;
 use ksfraser\FrontAccounting\Square\DAO\CustBranchDAO;
 use ksfraser\FrontAccounting\Square\DAO\SalesOrdersDAO;
 use ksfraser\FrontAccounting\Square\DAO\SquareImportLogDAO;
-use ksfraser\FrontAccounting\Square\DAO\TransactionStagingDAO;
-use ksfraser\FrontAccounting\Square\DAO\ItemStagingDAO;
 use ksfraser\FrontAccounting\Square\DAO\PaymentMatchDAO;
 use ksfraser\FrontAccounting\Square\DAO\SalesMatchDAO;
 use ksfraser\FrontAccounting\Square\DAO\PaymentsDAO;
 use ksfraser\FrontAccounting\Square\DAO\PaymentMappingDAO;
 use ksfraser\FrontAccounting\Square\DAO\SquareCustomerDAO;
 use ksfraser\FrontAccounting\Square\Pull\OrderImporter;
-use ksfraser\FrontAccounting\Square\Staging\StagingTableManager;
+use ksfraser\FrontAccounting\Square\Staging\IsuStagingGateway;
 use Square\Exceptions\ApiException;
 use Square\SquareClient;
 use Square\Models\Payment;
@@ -30,10 +28,11 @@ use Square\Models\OrderLineItem;
  * Service class to handle Square import logic with staging support.
  *
  * Supports two-step import flow:
- * 1. Stage: Pull from API/CSV → ksf_import_square_transactions + items
+ * 1. Stage: Pull from API/CSV → ISU staging tables (via hooks)
  * 2. Process: Review → Match/Create → FA invoices + payments
  *
- * Backward compatible with existing production data (ksf_import_square_* tables).
+ * All staging operations go through ISU (ksf_FA_ImportStagingProcessing)
+ * via IsuStagingGateway. Square does NOT have its own staging tables.
  *
  * @UML Note: Class diagram in ProjectDocs/UML.md
  * @BABOK Related: Requirements analysis, Solution evaluation
@@ -81,14 +80,9 @@ class ImportService
     private $squareImportLogDao;
 
     /**
-     * @var TransactionStagingDAO
+     * @var IsuStagingGateway
      */
-    private $transactionStagingDao;
-
-    /**
-     * @var ItemStagingDAO
-     */
-    private $itemStagingDao;
+    private $gateway;
 
     /**
      * @var PaymentMatchDAO
@@ -109,7 +103,8 @@ class ImportService
         string $tablePrefix,
         Settings $settings,
         SquareClient $client,
-        PaymentService $paymentService = null
+        PaymentService $paymentService = null,
+        IsuStagingGateway $gateway = null
     ) {
         $this->tablePrefix = $tablePrefix;
         $this->settings = $settings;
@@ -119,8 +114,7 @@ class ImportService
         $this->custBranchDao = new CustBranchDAO($tablePrefix);
         $this->salesOrdersDao = new SalesOrdersDAO($tablePrefix);
         $this->squareImportLogDao = new SquareImportLogDAO($tablePrefix);
-        $this->transactionStagingDao = new TransactionStagingDAO($tablePrefix);
-        $this->itemStagingDao = new ItemStagingDAO($tablePrefix);
+        $this->gateway = $gateway ?? new IsuStagingGateway();
         $this->paymentMatchDao = new PaymentMatchDAO($tablePrefix);
         $this->salesMatchDao = new SalesMatchDAO($tablePrefix);
         $this->paymentService = $paymentService !== null
@@ -144,15 +138,15 @@ class ImportService
     }
 
     /**
-     * Ensures all staging tables exist.
+     * Ensures staging tables exist.
+     *
+     * ISU manages its own tables. This method ensures ISU is initialized
+     * and Square's non-staging support tables exist.
      *
      * @return void
-     * @throws Exception
      */
     public function ensureStagingTablesExist(): void
     {
-        $this->transactionStagingDao->ensureTableExists();
-        $this->itemStagingDao->ensureTableExists();
         $this->paymentMatchDao->ensureTableExists();
         $this->salesMatchDao->ensureTableExists();
     }
@@ -164,7 +158,7 @@ class ImportService
      */
     public function getStagingStatusCounts(): array
     {
-        return $this->transactionStagingDao->getStatusCounts($this->settings->getEnvironment());
+        return $this->gateway->getStatusCounts('square');
     }
 
     /**
@@ -176,16 +170,11 @@ class ImportService
      * @return array
      */
     public function getStagedTransactions(
-        string $status = TransactionStagingDAO::STATUS_STAGED,
+        string $status = 'staged',
         ?string $fromDate = null,
         ?string $toDate = null
     ): array {
-        return $this->transactionStagingDao->getByStatus(
-            $status,
-            $this->settings->getEnvironment(),
-            $fromDate,
-            $toDate
-        );
+        return $this->gateway->getByStatus($status, $fromDate, $toDate);
     }
 
     /**
@@ -267,7 +256,7 @@ class ImportService
             foreach ($payments as $payment) {
                 $paymentId = $payment->getId();
 
-                if ($this->transactionStagingDao->exists($paymentId)) {
+                if ($this->gateway->exists($paymentId)) {
                     $results['errors'][] = _("Skipping (already staged): ") . $paymentId;
                     $results['skipped']++;
                     continue;
@@ -358,130 +347,71 @@ class ImportService
         $totalCollected = $totalMoney !== null ? $totalMoney->getAmount() / 100 : 0;
 
         $orderTaxMoney = $order->getTotalTaxMoney();
-        $orderDiscountMoney = $order->getTotalDiscountMoney();
 
-        $transactionData = [
-            'Date' => $dt->format('Y-m-d'),
-            'Time' => $dt->format('H:i:s'),
-            'Timezone' => $dt->getTimezone()->getName(),
-            'transaction_id' => $payment->getId(),
+        $paymentData = [
             'payment_id' => $payment->getId(),
             'square_order_id' => $order->getId(),
             'square_location_id' => $locationId,
             'location' => $locationName,
             'environment' => $environment,
-            'status' => TransactionStagingDAO::STATUS_STAGED,
-            'source' => TransactionStagingDAO::SOURCE_API,
+            'total_collected' => $totalCollected,
             'gross_sales' => $totalCollected,
             'net_sales' => $totalCollected,
-            'total_collected' => $totalCollected,
             'tax' => $orderTaxMoney !== null ? $orderTaxMoney->getAmount() / 100 : 0,
             'tip' => $tipMoney !== null ? $tipMoney->getAmount() / 100 : 0,
             'partial_refunds' => $refundedMoney !== null ? $refundedMoney->getAmount() / 100 : 0,
+            'currency' => $totalMoney !== null ? $totalMoney->getCurrency() : 'USD',
+            'created_at' => $dt->format('c'),
         ];
 
         $cardDetails = $payment->getCardDetails();
         if ($cardDetails !== null) {
             $card = $cardDetails->getCard();
             if ($card !== null) {
-                $transactionData['card_brand'] = $card->getCardBrand() ?? '';
+                $paymentData['card_brand'] = $card->getCardBrand() ?? '';
                 $last4 = $card->getLast4();
                 if ($last4 !== null) {
-                    $transactionData['PAN_suffix'] = (int)$last4;
+                    $paymentData['PAN_suffix'] = (int)$last4;
                 }
-                $transactionData['card'] = $totalCollected;
-                $transactionData['card_entry_methods'] = $cardDetails->getEntryMethod() ?? '';
+                $paymentData['card'] = $totalCollected;
+                $paymentData['card_entry_methods'] = $cardDetails->getEntryMethod() ?? '';
             }
         }
 
         $customerId = $payment->getCustomerId();
         if ($customerId !== null) {
-            $transactionData['square_customer_id'] = $customerId;
+            $paymentData['square_customer_id'] = $customerId;
         }
 
-        $transactionData['raw_json'] = json_encode([
-            'payment' => $this->paymentToArray($payment),
-            'order' => $this->orderToArray($order),
-        ]);
+        $lineItems = [];
+        $orderLineItems = $order->getLineItems();
+        if ($orderLineItems !== null) {
+            foreach ($orderLineItems as $item) {
+                $basePrice = $item->getBasePriceMoney();
+                $tax = $item->getTotalTaxMoney();
+                $discount = $item->getTotalDiscountMoney();
 
-        $stagingId = $this->transactionStagingDao->insert($transactionData);
-
-        $lineItems = $order->getLineItems();
-        if ($lineItems !== null) {
-            foreach ($lineItems as $item) {
-                $this->stageLineItem($item, $payment->getId(), $dt, $locationName);
+                $lineItems[] = [
+                    'source_id' => $item->getUid() ?? '',
+                    'transaction_source_id' => $payment->getId(),
+                    'sku' => $item->getCatalogObjectId() ?? '',
+                    'name' => $item->getName() ?? '',
+                    'description' => $item->getName() ?? '',
+                    'quantity' => (int)$item->getQuantity(),
+                    'unit_price' => $basePrice !== null ? $basePrice->getAmount() / 100 : 0,
+                    'discount' => $discount !== null ? $discount->getAmount() / 100 : 0,
+                    'tax' => $tax !== null ? $tax->getAmount() / 100 : 0,
+                ];
             }
         }
 
-        return $stagingId;
-    }
-
-    /**
-     * Stages a single line item.
-     *
-     * @param OrderLineItem $item
-     * @param string $paymentId
-     * @param DateTimeInterface $dt
-     * @param string $locationName
-     * @return int
-     * @throws Exception
-     */
-    private function stageLineItem(
-        OrderLineItem $item,
-        string $paymentId,
-        DateTimeInterface $dt,
-        string $locationName
-    ): int {
-        $basePrice = $item->getBasePriceMoney();
-        $grossSales = $item->getGrossSalesMoney();
-        $totalPrice = $item->getTotalMoney();
-        $tax = $item->getTotalTaxMoney();
-        $discount = $item->getTotalDiscountMoney();
-
-        $itemData = [
-            'Date' => $dt->format('Y-m-d'),
-            'Time' => $dt->format('H:i:s'),
-            'Timezone' => $dt->getTimezone()->getName(),
-            'transaction_id' => $paymentId,
-            'payment_id' => $paymentId,
-            'Item' => $item->getName() ?? '',
-            'name' => $item->getName() ?? '',
-            'quantity' => (int)$item->getQuantity(),
-            'location' => $locationName,
-            'gross_sales' => $grossSales !== null ? $grossSales->getAmount() / 100 : 0,
-            'net_sales' => $totalPrice !== null ? $totalPrice->getAmount() / 100 : 0,
-            'tax' => $tax !== null ? $tax->getAmount() / 100 : 0,
-            'discounts' => $discount !== null ? $discount->getAmount() / 100 : 0,
-            'unit_price' => $basePrice !== null ? $basePrice->getAmount() / 100 : 0,
-            'total_amount' => $totalPrice !== null ? $totalPrice->getAmount() / 100 : 0,
-            'discount_amount' => $discount !== null ? $discount->getAmount() / 100 : 0,
+        $orderData = [
+            'square_order_id' => $order->getId(),
         ];
 
-        $catalogObjectId = $item->getCatalogObjectId();
-        $variationId = $item->getVariationTotalPriceMoney();
+        $stagingId = $this->gateway->stageSquareOrder($paymentData, $orderData, $lineItems);
 
-        if ($catalogObjectId !== null) {
-            $itemData['square_catalog_object_id'] = $catalogObjectId;
-
-            try {
-                $catApi = $this->client->getCatalogApi();
-                $catResponse = $catApi->retrieveCatalogObject($catalogObjectId, false);
-                if ($catResponse->isSuccess()) {
-                    $catObj = $catResponse->getResult()->getObject();
-                    if ($catObj !== null) {
-                        $varData = $catObj->getItemVariationData();
-                        if ($varData !== null && $varData->getSku() !== null) {
-                            $sku = $varData->getSku();
-                            $itemData['sku'] = $sku;
-                            $itemData['stock_id'] = $sku;
-                        }
-                    }
-                }
-            } catch (Exception $e) {
-            }
-        }
-
-        return $this->itemStagingDao->insert($itemData);
+        return $stagingId;
     }
 
     /**
@@ -503,26 +433,16 @@ class ImportService
         string $adjustmentItem = '',
         string $tipsItem = ''
     ): array {
-        $tableName = $this->transactionStagingDao->getTableName();
-        $sql = "SELECT * FROM {$tableName} WHERE id = " . (int)$stagingId;
-        $result = \db_query($sql);
+        $trans = $this->gateway->getById($stagingId);
 
-        if ($result === false || \db_num_rows($result) === 0) {
+        if ($trans === null) {
             throw new Exception(_("Staged transaction not found: ") . $stagingId);
         }
 
-        $trans = \db_fetch_assoc($result);
-        if ($trans === false) {
-            throw new Exception(_("Failed to read staged transaction"));
-        }
-
-        $paymentId = $trans['payment_id'];
-        $transactionId = $trans['transaction_id'];
+        $paymentId = $trans['source_payment_id'] ?? $trans['source_transaction_id'] ?? '';
 
         if ($this->salesOrdersDao->orderExists($paymentId)) {
-            $this->transactionStagingDao->updateStatus($stagingId, TransactionStagingDAO::STATUS_IMPORTED, [
-                'error_log' => 'Already imported',
-            ]);
+            $this->gateway->updateStatus($stagingId, 'imported', ['error_log' => 'Already imported']);
             return ['success' => false, 'message' => _("Already imported")];
         }
 
@@ -540,14 +460,14 @@ class ImportService
             $branch = $branches[0];
         }
 
-        $items = $this->itemStagingDao->getByTransactionId($transactionId);
+        $items = $this->gateway->getLineItems($stagingId);
 
         $cart = new \Cart(ST_SALESINVOICE);
         $cart->customer_id = $customer['debtor_no'];
         $cart->customer_currency = $customer['curr_code'];
         $cart->Comments = 'Imported from Square: ' . $paymentId;
 
-        $transDate = $trans['Date'] ?? date('Y-m-d');
+        $transDate = $trans['transaction_date'] ?? date('Y-m-d');
         $cart->document_date = $transDate;
         $cart->due_date = $transDate;
 
@@ -559,33 +479,29 @@ class ImportService
         $cart->cust_ref = $paymentId;
 
         foreach ($items as $item) {
-            $sku = $item['sku'] ?? $item['stock_id'] ?? $item['Item'] ?? '';
+            $sku = $item['sku'] ?? '';
             $qty = (int)($item['quantity'] ?? 1);
-            $unitPrice = (float)($item['unit_price'] ?? $item['gross_sales'] ?? 0);
-
-            if ($qty > 0 && $unitPrice == 0 && isset($item['gross_sales']) && $item['gross_sales'] > 0) {
-                $unitPrice = (float)$item['gross_sales'] / $qty;
-            }
+            $unitPrice = (float)($item['unit_price'] ?? 0);
 
             $discount = 0;
-            $grossAmt = (float)($item['gross_sales'] ?? 0);
-            $discAmt = (float)($item['discounts'] ?? $item['discount_amount'] ?? 0);
+            $grossAmt = (float)($item['total_amount'] ?? 0);
+            $discAmt = (float)($item['discount_amount'] ?? 0);
             if ($grossAmt > 0 && $discAmt > 0) {
                 $discount = $discAmt / $grossAmt;
             }
 
-            if ($sku !== '') {
+            if ($sku !== '' && $qty > 0) {
                 add_to_order($cart, $sku, $qty, $unitPrice, $discount);
             }
         }
 
-        $tipAmount = (float)($trans['tip'] ?? 0);
+        $tipAmount = (float)($trans['tip_amount'] ?? 0);
         if ($tipAmount != 0 && $tipsItem !== '') {
             add_to_order($cart, $tipsItem, 1, $tipAmount, 0);
         }
 
         $total = $cart->get_trans_total();
-        $totalOrder = (float)($trans['total_collected'] ?? 0);
+        $totalOrder = (float)($trans['total_amount'] ?? 0);
         $adj = round($totalOrder - $total, 2);
 
         if ($adj != 0 && $adjustmentItem !== '') {
@@ -594,13 +510,12 @@ class ImportService
 
         $orderNo = $cart->write(1);
 
-        $this->transactionStagingDao->updateStatus($stagingId, TransactionStagingDAO::STATUS_IMPORTED, [
-            'fa_invoice_no' => $orderNo,
-            'fa_debtor_no' => $debtorNo,
-            'fa_branch_code' => $branch['branch_code'],
+        $this->gateway->updateStatus($stagingId, 'imported', [
+            'fa_invoice_no' => (string)$orderNo,
+            'fa_debtor_no' => (string)$debtorNo,
         ]);
 
-        $this->salesMatchDao->insertMatch($transactionId, $orderNo);
+        $this->salesMatchDao->insertMatch($paymentId, $orderNo);
 
         $this->recordSquarePayment($this->buildSquarePaymentFromTransaction($trans), $debtorNo);
 
@@ -609,8 +524,8 @@ class ImportService
             'fa_order_no' => (int)$orderNo,
             'fa_trans_type' => ST_SALESINVOICE,
             'customer_id' => (int)$debtorNo,
-            'order_total' => (float)($trans['total_collected'] ?? 0),
-            'order_date' => (string)($trans['tran_date'] ?? date('Y-m-d')),
+            'order_total' => (float)($trans['total_amount'] ?? 0),
+            'order_date' => (string)($trans['transaction_date'] ?? date('Y-m-d')),
             'currency' => (string)($trans['currency'] ?? ''),
         ]);
 
@@ -695,10 +610,10 @@ class ImportService
 
         $amountCents = isset($paymentData['amount']) ? (int)$paymentData['amount'] : 0;
         if ($amountCents <= 0) {
-            $amountCents = (int)round(((float)($trans['total_collected'] ?? 0)) * 100);
+            $amountCents = (int)round(((float)($trans['total_amount'] ?? 0)) * 100);
         }
 
-        $paymentId = (string)($trans['payment_id'] ?? '');
+        $paymentId = (string)($trans['source_payment_id'] ?? $trans['source_transaction_id'] ?? '');
 
         return [
             'id' => $paymentId,
@@ -762,8 +677,7 @@ class ImportService
         string $locationFilter,
         array $locations
     ): array {
-        $stagingManager = new StagingTableManager($this->tablePrefix);
-        $stagingManager->createStagingTables();
+        $this->ensureStagingTablesExist();
 
         $importResults = [
             'imported' => 0,
@@ -987,6 +901,16 @@ class ImportService
         }
 
         return $importResults;
+    }
+
+    /**
+     * Gets the ISU staging gateway.
+     *
+     * @return IsuStagingGateway
+     */
+    public function getGateway(): IsuStagingGateway
+    {
+        return $this->gateway;
     }
 
     /**

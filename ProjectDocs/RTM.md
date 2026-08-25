@@ -128,23 +128,31 @@
 
 ---
 
-## ISU Repository Adapters
+## ISU Repository Adapters — DEPRECATED
 
-| Req ID | Requirement Summary | Code File | Unit Test | Integration Test |
-|--------|--------------------|-----------|-----------|------------------|
-| **FR-SQUARE-ISU-001** | TransactionRepositoryAdapter implements TransactionRepositoryInterface | `src/Staging/TransactionRepositoryAdapter.php` | `tests/Unit/RepositoryAdapterTest.php` | `tests/Integration/RepositoryAdapterIntegrationTest.php` |
-| **FR-SQUARE-ISU-002** | CustomerRepositoryAdapter implements CustomerRepositoryInterface | `src/Staging/CustomerRepositoryAdapter.php` | `tests/Unit/RepositoryAdapterTest.php` | `tests/Integration/RepositoryAdapterIntegrationTest.php` |
-| **FR-SQUARE-ISU-003** | PaymentRepositoryAdapter implements PaymentRepositoryInterface | `src/Staging/PaymentRepositoryAdapter.php` | `tests/Unit/RepositoryAdapterTest.php` | `tests/Integration/RepositoryAdapterIntegrationTest.php` |
-| **FR-SQUARE-ISU-004** | LineItemRepositoryAdapter implements LineItemRepositoryInterface | `src/Staging/LineItemRepositoryAdapter.php` | `tests/Unit/RepositoryAdapterTest.php` | `tests/Integration/RepositoryAdapterIntegrationTest.php` |
-| **FR-SQUARE-ISU-005** | AuditLogRepositoryAdapter implements AuditLogRepositoryInterface | `src/Staging/AuditLogRepositoryAdapter.php` | `tests/Unit/RepositoryAdapterTest.php` | `tests/Integration/RepositoryAdapterIntegrationTest.php` |
+> **⚠️ DEPRECATED**: The repository adapter pattern is deprecated as of v2.5.0.
+> Square now uses hooks+DTO pattern. See **Hooks+DTO Integration** below.
 
-### Test Coverage Summary
+| Req ID | Requirement Summary | Code File | Status |
+|--------|--------------------|-----------|--------|
+| **FR-SQUARE-ISU-001** | ~~TransactionRepositoryAdapter implements TransactionRepositoryInterface~~ | `src/Staging/TransactionRepositoryAdapter.php` | ⚠️ Deprecated |
+| **FR-SQUARE-ISU-002** | ~~CustomerRepositoryAdapter implements CustomerRepositoryInterface~~ | `src/Staging/CustomerRepositoryAdapter.php` | ⚠️ Deprecated |
+| **FR-SQUARE-ISU-003** | ~~PaymentRepositoryAdapter implements PaymentRepositoryInterface~~ | `src/Staging/PaymentRepositoryAdapter.php` | ⚠️ Deprecated |
+| **FR-SQUARE-ISU-004** | ~~LineItemRepositoryAdapter implements LineItemRepositoryInterface~~ | `src/Staging/LineItemRepositoryAdapter.php` | ⚠️ Deprecated |
+| **FR-SQUARE-ISU-005** | ~~AuditLogRepositoryAdapter implements AuditLogRepositoryInterface~~ | `src/Staging/AuditLogRepositoryAdapter.php` | ⚠️ Deprecated |
 
-| Adapter | Unit Tests | Integration Tests | Total Assertions |
-|---------|-----------|-------------------|-----------------|
-| TransactionRepositoryAdapter | 2 | 17 | 25 |
-| CustomerRepositoryAdapter | 1 | 9 | 15 |
-| PaymentRepositoryAdapter | 1 | 11 | 17 |
-| LineItemRepositoryAdapter | 1 | 7 | 11 |
-| AuditLogRepositoryAdapter | 1 | 4 | 6 |
-| **Total** | **6** | **48** | **74** |
+---
+
+## Hooks+DTO Integration (Current)
+
+| Req ID | Requirement Summary | Code File | Status |
+|--------|--------------------|-----------|--------|
+| **FR-SQ-020-001** | Square creates StagingOrder DTO for POS transactions | `src/Staging/SquareToDtoMapper.php` | 🔄 Planned |
+| **FR-SQ-020-002** | Square creates StagingInvoice DTO for remote invoices | `src/Staging/SquareToDtoMapper.php` | 🔄 Planned |
+| **FR-SQ-020-003** | Square creates StagingPayment DTO for payment records | `src/Staging/SquareToDtoMapper.php` | 🔄 Planned |
+| **FR-SQ-020-004** | Square creates StagingCustomer DTO for customer profiles | `src/Staging/SquareToDtoMapper.php` | 🔄 Planned |
+| **FR-SQ-020-005** | Square creates StagingLineItem DTO for line items | `src/Staging/SquareToDtoMapper.php` | 🔄 Planned |
+| **FR-SQ-020-006** | Square calls ISU `stageEntity` hook with DTOs | `src/Staging/SquareImportService.php` | 🔄 Planned |
+| **FR-SQ-020-007** | Square calls ISU `stagingExists` hook to check duplicates | `src/Staging/SquareImportService.php` | 🔄 Planned |
+| **FR-SQ-020-008** | Square depends on `ksfraser/staging-dto` package | `composer.json` | 🔄 Planned |
+| **FR-SQ-020-009** | Square does NOT do DB operations directly | Architecture | 🔄 Planned |

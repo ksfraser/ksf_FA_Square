@@ -104,12 +104,17 @@ class AuditLogRepositoryAdapter implements AuditLogRepositoryInterface
         return $counts;
     }
 
-    /**
-     * Execute a SQL query and return all rows.
-     *
-     * @param string $sql
-     * @return array<int,array<string,mixed>>
-     */
+/**
+ * Adapter for Square AuditLog DTO.
+ *
+ * @deprecated Use ksfraser/staging-dto StagingNote via ISU hooks instead.
+ *             This adapter is maintained for backward compatibility only.
+ *             New code should create DTOs and call hook_invoke('ksf_FA_ImportStagingProcessing_UI', 'stageEntity', $dto).
+ *
+ * @package Ksfraser\FrontAccounting\Square\Staging
+ * @since 1.0.0
+ * @deprecated 1.1.0 Use StagingNote DTO via hooks
+ */
     private function fetchRows(string $sql): array
     {
         $result = \db_query($sql);

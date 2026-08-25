@@ -11,6 +11,11 @@ use DateTimeInterface;
  *
  * Line items for staged transactions. Backward compatible with FA_ImportSquareUp.
  *
+ * @deprecated 1.2.0 Use IsuStagingGateway via ImportService::getGateway() instead.
+ *             All staging operations now go through ISU (ksf_FA_ImportStagingProcessing).
+ *             Line items are now managed by ISU's staging_line_items table.
+ * @see IsuStagingGateway::getLineItems()
+ * @see IsuStagingGateway::stageSquareOrder()
  * @UML Note: Class diagram in ProjectDocs/UML.md
  * @BABOK Related: Requirements analysis, Solution evaluation
  */

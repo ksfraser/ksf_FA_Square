@@ -95,8 +95,8 @@ class ImportServicePaymentTest extends TestCase
         // Arrange
         $service = $this->newInstanceWithoutConstructor();
         $trans = [
-            'payment_id' => 'pay_123',
-            'total_collected' => 50.00,
+            'source_payment_id' => 'pay_123',
+            'total_amount' => 50.00,
             'currency' => '',
             'raw_json' => json_encode([
                 'payment' => ['id' => 'pay_123', 'amount' => 5000, 'currency' => 'USD', 'source_type' => 'CARD'],
@@ -123,8 +123,8 @@ class ImportServicePaymentTest extends TestCase
         // Arrange
         $service = $this->newInstanceWithoutConstructor();
         $trans = [
-            'payment_id' => 'pay_123',
-            'total_collected' => 99.50,
+            'source_payment_id' => 'pay_123',
+            'total_amount' => 99.50,
             'raw_json' => '',
         ];
 

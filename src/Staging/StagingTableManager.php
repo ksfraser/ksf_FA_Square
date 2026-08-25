@@ -3,6 +3,15 @@ declare(strict_types=1);
 
 namespace ksfraser\FrontAccounting\Square\Staging;
 
+/**
+ * Manages Square's proprietary staging tables.
+ *
+ * @deprecated 1.2.0 Use IsuStagingGateway via ImportService::getGateway() instead.
+ *             ISU (ksf_FA_ImportStagingProcessing) manages all staging tables.
+ *             This class creates Square-specific tables that will be removed.
+ * @see IsuStagingGateway
+ * @see ImportService::getGateway()
+ */
 class StagingTableManager
 {
     /**

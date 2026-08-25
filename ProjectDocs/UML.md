@@ -573,9 +573,12 @@ FA stock_moves ──> LocationMapper ──> CatalogExporter ──> Square Inv
 
 ---
 
-## ISU Repository Adapter Layer (v2.4.5)
+## ISU Repository Adapter Layer (v2.4.5) — DEPRECATED
 
-### Class Diagram: ISU Adapters
+> **⚠️ DEPRECATED**: The repository adapter pattern is deprecated as of v2.5.0.
+> Square now uses hooks+DTO pattern. See **Hooks+DTO Integration** below.
+
+### Class Diagram: ISU Adapters (Deprecated)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐

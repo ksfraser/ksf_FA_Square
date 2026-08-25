@@ -440,29 +440,41 @@ src/
 | 2.0 | 2026-08-20 | KSFraser | Consolidated: removed duplicates, added FR-SQ-011 to FR-SQ-015 |
 | 2.1 | 2026-08-20 | KSFraser | Added FR-SQ-016 (ISU config absorption), FR-SQ-017 (staging ownership), FR-SQ-018 (absorbed fields) |
 | 2.2 | 2026-08-23 | KSFraser | Added FR-SQ-019 (ISU Repository Adapter Layer), FR-SQUARE-ISU-001 through 005, NFR-ISU-001 through 004 |
+| 2.3 | 2026-08-24 | KSFraser | Deprecated FR-SQ-019 adapters, added FR-SQ-020 (Hooks+DTO Integration) |
 
 ---
 
-### FR-SQ-019: ISU Repository Adapter Layer
+### FR-SQ-019: ISU Repository Adapter Layer — DEPRECATED
 
-**Description**: Square provides adapter classes that implement ISU's repository
-interfaces, enabling ISU's StagingService to process Square data through the
-standard contract. Each adapter bridges Square's proprietary data format to ISU's
-normalized models.
+> **⚠️ DEPRECATED**: This section describes the deprecated adapter pattern.
+> Square now uses hooks+DTO pattern (`ksfraser/staging-dto` package).
+> See **FR-SQ-020** for the current architecture.
 
 | ID | Requirement | Implementation | Status |
 |----|-------------|----------------|--------|
-| FR-SQUARE-ISU-001 | TransactionRepositoryAdapter implements TransactionRepositoryInterface | `src/Staging/TransactionRepositoryAdapter.php` | ✅ |
-| FR-SQUARE-ISU-002 | CustomerRepositoryAdapter implements CustomerRepositoryInterface | `src/Staging/CustomerRepositoryAdapter.php` | ✅ |
-| FR-SQUARE-ISU-003 | PaymentRepositoryAdapter implements PaymentRepositoryInterface | `src/Staging/PaymentRepositoryAdapter.php` | ✅ |
-| FR-SQUARE-ISU-004 | LineItemRepositoryAdapter implements LineItemRepositoryInterface | `src/Staging/LineItemRepositoryAdapter.php` | ✅ |
-| FR-SQUARE-ISU-005 | AuditLogRepositoryAdapter implements AuditLogRepositoryInterface | `src/Staging/AuditLogRepositoryAdapter.php` | ✅ |
+| FR-SQUARE-ISU-001 | ~~TransactionRepositoryAdapter implements TransactionRepositoryInterface~~ | `src/Staging/TransactionRepositoryAdapter.php` | ⚠️ Deprecated |
+| FR-SQUARE-ISU-002 | ~~CustomerRepositoryAdapter implements CustomerRepositoryInterface~~ | `src/Staging/CustomerRepositoryAdapter.php` | ⚠️ Deprecated |
+| FR-SQUARE-ISU-003 | ~~PaymentRepositoryAdapter implements PaymentRepositoryInterface~~ | `src/Staging/PaymentRepositoryAdapter.php` | ⚠️ Deprecated |
+| FR-SQUARE-ISU-004 | ~~LineItemRepositoryAdapter implements LineItemRepositoryInterface~~ | `src/Staging/LineItemRepositoryAdapter.php` | ⚠️ Deprecated |
+| FR-SQUARE-ISU-005 | ~~AuditLogRepositoryAdapter implements AuditLogRepositoryInterface~~ | `src/Staging/AuditLogRepositoryAdapter.php` | ⚠️ Deprecated |
 
-### Non-Functional Requirements for ISU Adapters
+---
 
-| ID | Requirement | Rationale |
-|----|-------------|-----------|
-| NFR-ISU-001 | Backward compatible with existing Square staging data | Production data in ksf_import_square_transactions |
-| NFR-ISU-002 | PHP 7.3 compatible (no PHP 8+ features) | FA 2.4.x target platform |
-| NFR-ISU-003 | Use FA's db_* functions, not PDO | FA's db_query() doesn't support prepared statements |
-| NFR-ISU-004 | Square-specific fields preserved in raw_json/attributes | ISU models don't know Square fields |
+### FR-SQ-020: Hooks+DTO Integration (Current)
+
+**Description**: Square creates DTOs from `ksfraser/staging-dto` package and
+calls ISU hooks. ISU handles all DB operations and FA entity creation. Square
+does NOT do DB operations directly.
+
+| ID | Requirement | Implementation | Status |
+|----|-------------|----------------|--------|
+| FR-SQ-020-001 | Square shall create StagingOrder DTO for POS transactions | `src/Staging/SquareToDtoMapper.php` | 🔄 Planned |
+| FR-SQ-020-002 | Square shall create StagingInvoice DTO for remote invoices | `src/Staging/SquareToDtoMapper.php` | 🔄 Planned |
+| FR-SQ-020-003 | Square shall create StagingPayment DTO for payment records | `src/Staging/SquareToDtoMapper.php` | 🔄 Planned |
+| FR-SQ-020-004 | Square shall create StagingCustomer DTO for customer profiles | `src/Staging/SquareToDtoMapper.php` | 🔄 Planned |
+| FR-SQ-020-005 | Square shall create StagingLineItem DTO for line items | `src/Staging/SquareToDtoMapper.php` | 🔄 Planned |
+| FR-SQ-020-006 | Square shall call ISU `stageEntity` hook with DTOs | `src/Staging/SquareImportService.php` | 🔄 Planned |
+| FR-SQ-020-007 | Square shall call ISU `stagingExists` hook to check duplicates | `src/Staging/SquareImportService.php` | 🔄 Planned |
+| FR-SQ-020-008 | Square shall depend on `ksfraser/staging-dto` package | `composer.json` | 🔄 Planned |
+| FR-SQ-020-009 | Square shall NOT do DB operations directly | Architecture | 🔄 Planned |
+| FR-SQ-020-010 | Square shall set DTO version in constructor | `ksfraser/staging-dto` | 🔄 Planned |

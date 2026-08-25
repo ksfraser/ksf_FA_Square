@@ -547,71 +547,31 @@ See `AGENTS_MODULE_COMMUNICATION_ADDENDUM.md` for the complete pattern that can 
 
 ---
 
-## BABOK Alignment: ISU Repository Adapters (v2.4.5)
+## BABOK Alignment: ISU Repository Adapters (v2.4.5) — DEPRECATED
 
-### Business Requirements
+> **⚠️ DEPRECATED**: The repository adapter pattern is deprecated as of v2.5.0.
+> Square now uses hooks+DTO pattern (`ksfraser/staging-dto` package) for ISU
+> integration. Adapter classes are marked `@deprecated` and will be removed in v3.0.0.
+> See **BABOK Alignment: Hooks+DTO Integration** below for the current architecture.
+
+### Business Requirements (Deprecated)
 
 | ID | Business Requirement | BABOK Task | Rationale |
 |----|---------------------|------------|-----------|
-| BR-SQ-020 | Standardize Square staging on ISU repository interfaces | Define Design Options | Enables ISU's StagingService to process Square data polymorphically |
-| BR-SQ-021 | Enable ISU to consume Square transaction/customer/payment data | Recommend Solution | Single processing pipeline across all import sources |
+| BR-SQ-020 | Standardize Square staging on ISU repository interfaces | Define Design Options | ~~Enables ISU's StagingService to process Square data polymorphically~~ |
+| BR-SQ-021 | Enable ISU to consume Square transaction/customer/payment data | Recommend Solution | ~~Single processing pipeline across all import sources~~ |
 
-### Functional Requirements Traceability
+### Functional Requirements Traceability (Deprecated)
 
 | FR | Business Requirement | Stakeholder Need | Solution |
 |----|---------------------|-----------------|----------|
-| FR-SQUARE-ISU-001 | BR-SQ-020 | ISU processes Square transactions | TransactionRepositoryAdapter bridges Square DAO to ISU StagingTransaction |
-| FR-SQUARE-ISU-002 | BR-SQ-020 | ISU processes Square customers | CustomerRepositoryAdapter maps ISU StagingCustomer to staging_customers table |
-| FR-SQUARE-ISU-003 | BR-SQ-020 | ISU processes Square payments | PaymentRepositoryAdapter maps ISU StagingPayment to staging_payments table |
-| FR-SQUARE-ISU-004 | BR-SQ-020 | ISU processes Square line items | LineItemRepositoryAdapter uses EAV for Square-specific attributes |
-| FR-SQUARE-ISU-005 | BR-SQ-020 | Unified audit trail across sources | AuditLogRepositoryAdapter writes to ISU staging_log table |
+| FR-SQUARE-ISU-001 | BR-SQ-020 | ~~ISU processes Square transactions~~ | ~~TransactionRepositoryAdapter bridges Square DAO to ISU StagingTransaction~~ |
+| FR-SQUARE-ISU-002 | BR-SQ-020 | ~~ISU processes Square customers~~ | ~~CustomerRepositoryAdapter maps ISU StagingCustomer to staging_customers table~~ |
+| FR-SQUARE-ISU-003 | BR-SQ-020 | ~~ISU processes Square payments~~ | ~~PaymentRepositoryAdapter maps ISU StagingPayment to staging_payments table~~ |
+| FR-SQUARE-ISU-004 | BR-SQ-020 | ~~ISU processes Square line items~~ | ~~LineItemRepositoryAdapter uses EAV for Square-specific attributes~~ |
+| FR-SQUARE-ISU-005 | BR-SQ-020 | ~~Unified audit trail across sources~~ | ~~AuditLogRepositoryAdapter writes to ISU staging_log table~~ |
 
-### Stakeholder Analysis
-
-| Stakeholder | Need | How Addressed | Risk |
-|-------------|------|---------------|------|
-| FA Administrator | Single import dashboard | All sources visible in ISU UI | Low: ISU provides unified view |
-| Developer | Maintainable adapter layer | One adapter per entity type, testable in isolation | Low: unit + integration tests |
-| Finance | Consistent data format | ISU models normalize source-specific fields | Medium: field mapping drift |
-
-### Design Decisions
-
-| Decision | Rationale | Alternatives Considered |
-|----------|-----------|------------------------|
-| Adapter pattern (ISU interfaces) | Polymorphic access; ISU never imports Square-specific code | Direct DAO coupling (tight), abstract base class (less flexible) |
-| Use db_escape() not prepared statements | FA's db_query() doesn't support parameterized queries | PDO (requires FA core changes, incompatible with PHP 7.3 FA) |
-| db_escape($val, true) for nullable columns | FA's db_escape(null) returns '' not SQL NULL; datetime columns reject '' | Modify FA core db_escape (too invasive) |
-| Remove unused ksf_ModulesDAO parameter | Dead code; adapters use FA global db_* functions | Keep for future use (YAGNI) |
-| Square-specific fields in raw_json/attributes | ISU models don't know Square fields; EAV preserves extensibility | Extend ISU models (violates Open/Closed) |
-
-### Design: Adapter Architecture
-
-```
-ISU Module (ksf_FA_ImportStagingProcessing)
-├── Contracts/
-│   ├── TransactionRepositoryInterface
-│   ├── CustomerRepositoryInterface
-│   ├── PaymentRepositoryInterface
-│   ├── LineItemRepositoryInterface
-│   └── AuditLogRepositoryInterface
-└── Models/
-    ├── StagingTransaction
-    ├── StagingCustomer
-    ├── StagingPayment
-    └── StagingLineItem
-
-Square Module (ksf_FA_Square)
-├── Staging/
-│   ├── TransactionRepositoryAdapter ──implements──> TransactionRepositoryInterface
-│   ├── CustomerRepositoryAdapter ────implements──> CustomerRepositoryInterface
-│   ├── PaymentRepositoryAdapter ─────implements──> PaymentRepositoryInterface
-│   ├── LineItemRepositoryAdapter ────implements──> LineItemRepositoryInterface
-│   └── AuditLogRepositoryAdapter ────implements──> AuditLogRepositoryInterface
-└── DAO/
-    └── TransactionStagingDAO (used by TransactionRepositoryAdapter)
-```
-
-### Bugs Found During Integration Testing
+### Bugs Found During Integration Testing (Historical)
 
 | Bug | Root Cause | Fix |
 |-----|-----------|-----|
@@ -619,6 +579,53 @@ Square Module (ksf_FA_Square)
 | Customer/Payment/LineItem/AuditLog inserts fail | `db_query($sql, $params)` — FA has no prepared statements | Replaced with `db_escape()` |
 | NULL datetime values produce '' not SQL NULL | `db_escape(null)` returns `''` not `NULL` | Added `$nullify = true` for nullable columns |
 | Payment/Transaction `toModel()` crash | Models require `$source` in constructor | Pass `$row['source']` to constructor |
+
+---
+
+## BABOK Alignment: Hooks+DTO Integration (v2.5+)
+
+### Business Requirements
+
+| ID | Business Requirement | BABOK Task | Rationale |
+|----|---------------------|------------|-----------|
+| BR-SQ-020 | Standardize Square staging on ISU hooks+DTO pattern | Define Design Options | Square creates DTOs and calls ISU hooks; ISU handles all DB operations |
+| BR-SQ-021 | Enable ISU to consume Square transaction/customer/payment data | Recommend Solution | Single processing pipeline across all import sources |
+
+### Functional Requirements Traceability
+
+| FR | Business Requirement | Stakeholder Need | Solution |
+|----|---------------------|-----------------|----------|
+| FR-SQ-020-001 | BR-SQ-020 | ISU processes Square orders | Square creates `StagingOrder` DTO, calls `stageEntity` hook |
+| FR-SQ-020-002 | BR-SQ-020 | ISU processes Square invoices | Square creates `StagingInvoice` DTO, calls `stageEntity` hook |
+| FR-SQ-020-003 | BR-SQ-020 | ISU processes Square payments | Square creates `StagingPayment` DTO, calls `stageEntity` hook |
+| FR-SQ-020-004 | BR-SQ-020 | ISU processes Square customers | Square creates `StagingCustomer` DTO, calls `stageEntity` hook |
+| FR-SQ-020-005 | BR-SQ-020 | ISU processes Square line items | Square creates `StagingLineItem` DTO, calls `stageEntity` hook |
+| FR-SQ-020-006 | BR-SQ-020 | Check if Square transaction exists in staging | Square creates `StagingExistsQuery`, calls `stagingExists` hook |
+
+### Design: Hooks+DTO Architecture
+
+```
+Square Module (ksf_FA_Square)
+├── src/Staging/
+│   ├── SquareToDtoMapper.php    — Maps Square API data to DTOs
+│   └── SquareImportService.php  — Calls ISU hooks with DTOs
+├── hooks.php                    — Calls ISU hooks
+
+ISU Module (ksf_FA_ImportStagingProcessing)
+├── hooks.php                    — Exposes stageEntity, stagingExists hooks
+├── src/Services/
+│   └── StagingService.php       — Handles DTO processing, DB operations
+
+Shared Package (ksfraser/staging-dto)
+├── src/
+│   ├── StagingEntity.php        — Abstract base
+│   ├── StagingOrder.php         — POS orders
+│   ├── StagingInvoice.php       — Remote invoices
+│   ├── StagingPayment.php       — Payment records
+│   ├── StagingCustomer.php      — Customer profiles
+│   ├── StagingLineItem.php      — Line items
+│   └── ... (22 DTOs total)
+```
 
 ---
 

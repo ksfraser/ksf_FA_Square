@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "ea32429e12f177daf598620bbb5e1e49",
+    "content-hash": "cde62fe62559bff88f52f546f20c5878",
     "packages": [
         {
             "name": "apimatic/core",
@@ -737,7 +737,7 @@
             "dist": {
                 "type": "path",
                 "url": "../ksf_FA_ImportStagingProcessing",
-                "reference": "b8bbc5840619086e933a0c001286f97920a76ec4"
+                "reference": "2c23644376b324489c462be6f494a915550634e2"
             },
             "require": {
                 "ext-json": "*",
@@ -745,6 +745,7 @@
                 "ksfraser/exceptions": "^1.3",
                 "ksfraser/file": "dev-main",
                 "ksfraser/ksf-modules-dao": "^0.3",
+                "ksfraser/staging-dto": "dev-main",
                 "ksfraser/traits": "dev-main",
                 "php": ">=7.3"
             },
@@ -883,6 +884,45 @@
                 "source": "https://github.com/ksfraser/ksf_ModulesDAO/tree/v0.3.5"
             },
             "time": "2026-08-15T00:35:14+00:00"
+        },
+        {
+            "name": "ksfraser/staging-dto",
+            "version": "dev-main",
+            "dist": {
+                "type": "path",
+                "url": "../ksf_staging_dto",
+                "reference": "d66c98d1a09ae58dc0137b501663eed6d968aa5d"
+            },
+            "require": {
+                "php": ">=7.3"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^9.6"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Ksfraser\\StagingDto\\": "src/"
+                }
+            },
+            "autoload-dev": {
+                "psr-4": {
+                    "Ksfraser\\StagingDto\\Tests\\": "tests/"
+                }
+            },
+            "license": [
+                "proprietary"
+            ],
+            "authors": [
+                {
+                    "name": "KSFraser",
+                    "email": "ksfraser@example.com"
+                }
+            ],
+            "description": "Data Transfer Objects for ISU staging integration",
+            "transport-options": {
+                "relative": true
+            }
         },
         {
             "name": "ksfraser/traits",
@@ -3766,7 +3806,8 @@
     "minimum-stability": "dev",
     "stability-flags": {
         "ksfraser/traits": 20,
-        "ksfraser/file": 20
+        "ksfraser/file": 20,
+        "ksfraser/staging-dto": 20
     },
     "prefer-stable": true,
     "prefer-lowest": false,

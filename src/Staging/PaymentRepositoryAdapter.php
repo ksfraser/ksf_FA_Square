@@ -223,12 +223,17 @@ class PaymentRepositoryAdapter implements PaymentRepositoryInterface
         return $counts;
     }
 
-    /**
-     * Convert a raw row to an ISU StagingPayment model.
-     *
-     * @param array<string,mixed> $row
-     * @return StagingPayment
-     */
+/**
+ * Adapter for Square Payment DTO.
+ *
+ * @deprecated Use ksfraser/staging-dto StagingPayment via ISU hooks instead.
+ *             This adapter is maintained for backward compatibility only.
+ *             New code should create DTOs and call hook_invoke('ksf_FA_ImportStagingProcessing_UI', 'stageEntity', $dto).
+ *
+ * @package Ksfraser\FrontAccounting\Square\Staging
+ * @since 1.0.0
+ * @deprecated 1.1.0 Use StagingPayment DTO via hooks
+ */
     private function toModel(array $row): StagingPayment
     {
         $payment = new StagingPayment($row['source'] ?? 'square_api');
