@@ -210,18 +210,33 @@ class hooks_ksf_FA_Square extends hooks {
 	function install_options($app) {
 		global $path_to_root;
 
-    switch($app->id) {
-			case 'orders':
-        $app->add_rapp_function(2, _('Square Dashboard'),
-          $path_to_root.'/modules/'.$this->module_name.'/pages/dashboard.php', 'SA_ksf_FA_SquareVIEW');
-        $app->add_rapp_function(2, _('Square Configuration'),
-          $path_to_root.'/modules/'.$this->module_name.'/pages/config.php', 'SA_ksf_FA_SquareMANAGE');
-        $app->add_rapp_function(2, _('Import Square Orders'),
-          $path_to_root.'/modules/'.$this->module_name.'/pages/import.php', 'SA_ksf_FA_SquareMANAGE');
-        $app->add_rapp_function(2, _('Export to Square'),
-          $path_to_root.'/modules/'.$this->module_name.'/pages/export.php', 'SA_ksf_FA_SquareMANAGE');
-    }
+        $hasExternal = false;
+        foreach ($app->modules as $mod) {
+            if ($mod->name === _("External")) {
+                $hasExternal = true;
+                break;
+            }
+        }
+        if (!$hasExternal) {
+            $app->add_module(_("External"));
+        }
 
+        $externalLevel = 3;
+        foreach ($app->modules as $idx => $mod) {
+            if ($mod->name === _("External")) {
+                $externalLevel = $idx;
+                break;
+            }
+        }
+
+        $app->add_rapp_function($externalLevel, _('Square Dashboard'),
+          $path_to_root.'/modules/'.$this->module_name.'/pages/dashboard.php', 'SA_ksf_FA_SquareVIEW');
+        $app->add_rapp_function($externalLevel, _('Square Configuration'),
+          $path_to_root.'/modules/'.$this->module_name.'/pages/config.php', 'SA_ksf_FA_SquareMANAGE');
+        $app->add_rapp_function($externalLevel, _('Import Square Orders'),
+          $path_to_root.'/modules/'.$this->module_name.'/pages/import.php', 'SA_ksf_FA_SquareMANAGE');
+        $app->add_rapp_function($externalLevel, _('Export to Square'),
+          $path_to_root.'/modules/'.$this->module_name.'/pages/export.php', 'SA_ksf_FA_SquareMANAGE');
 	}
   /**//**
   * Install Composer dependencies
