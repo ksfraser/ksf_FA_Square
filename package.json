@@ -1,0 +1,12 @@
+{
+  "name": "ksf-fa-square-e2e",
+  "description": "Playwright E2E harness for ksf_FA_Square (UAT localhost:8080)",
+  "private": true,
+  "scripts": {
+    "test:e2e": "playwright test --config tests/E2E/playwright.config.js",
+    "test:e2e:report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.44.0"
+  }
+}
