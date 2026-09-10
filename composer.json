@@ -47,6 +47,11 @@
             "ksfraser\\FrontAccounting\\Square\\Tests\\": "tests/"
         }
     },
+    "config": {
+        "platform": {
+            "php": "7.4.33"
+        }
+    },
     "scripts": {
         "test": "phpunit"
     }
