@@ -194,7 +194,7 @@ class hooks_ksf_FA_Square extends hooks {
 */
     function activate_extension($company, $check_only=true) {
         if (file_exists(dirname(__FILE__) . '/sql/install.sql')) {
-            $updates = array('install.sql' => array($this->module_name));
+            $updates = array('install.sql' => array('square'));
             return $this->update_databases($company, $updates, $check_only);
         }
       try {
