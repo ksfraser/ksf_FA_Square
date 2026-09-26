@@ -124,6 +124,13 @@ class CustomerService implements CustomerServiceInterface
     {
         $this->validateSquareCustomerData($squareCustomer);
 
+        // Call custom hook for Customer Custom Attributes (Staging module defines DTO/responds)
+        $attributesData = [
+            'source_customer_id' => $squareCustomer->getId(),
+            'attributes' => $squareCustomer->getCustomAttributes() ?? [],
+        ];
+        \hook_invoke_all('stage_customer_attributes', $attributesData);
+
         try {
             // Check if debtor already exists in FA
             $existingDebtor = $this->findDebtorByEmail($squareCustomer->getEmailAddress());
