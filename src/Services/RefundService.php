@@ -107,6 +107,17 @@ class RefundService implements RefundServiceInterface
                 'created_at' => date('Y-m-d H:i:s'),
             ]);
 
+            // Call custom hook for Refund Processing (Staging module defines DTO/responds)
+            $refundData = [
+                'source_refund_id' => $refund->getId(),
+                'source_payment_id' => $payment->getId(),
+                'amount' => $amountInCents,
+                'currency' => $payment->getAmountMoney()->getCurrency(),
+                'reason' => $reason,
+                'status' => 'created',
+            ];
+            \hook_invoke_all('stage_refund', $refundData);
+
             return $refund;
         } catch (ApiException $e) {
             throw new RefundProcessingException(
