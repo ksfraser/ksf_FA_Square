@@ -520,4 +520,18 @@ class InventoryAnalyticsService
     {
         return $this->tablePrefix . 'sales';
     }
+
+    public function storeStaffAnalyticsDirect(array $staffAnalyticsData): void
+    {
+        $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
+        $tableName = $tablePrefix . 'ksf_square_analytics';
+        $sql = "INSERT INTO {$tableName} (source, metric_type, metric_value, recorded_at, extra) VALUES (?, ?, ?, ?, ?)";
+        \db_query($sql, [
+            $staffAnalyticsData['source'] ?? 'square_staff',
+            $staffAnalyticsData['metric_type'] ?? 'staff_analytics',
+            $staffAnalyticsData['metric_value'] ?? 0,
+            $staffAnalyticsData['recorded_at'] ?? date('Y-m-d H:i:s'),
+            $staffAnalyticsData['extra'] ?? json_encode($staffAnalyticsData['links'] ?? []),
+        ]);
+    }
 }
