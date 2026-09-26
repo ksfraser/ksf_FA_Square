@@ -21,3 +21,17 @@ CREATE TABLE IF NOT EXISTS 0_square_customer_mappings (
     PRIMARY KEY (fa_debtor_no),
     KEY idx_square_customer_id (square_customer_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Square Analytics Table (direct storage, not native FA insertion, not staging)
+CREATE TABLE IF NOT EXISTS 0_ksf_square_analytics (
+    id INT(11) NOT NULL AUTO_INCREMENT,
+    source VARCHAR(32) NOT NULL DEFAULT 'square',
+    metric_type VARCHAR(32) NOT NULL DEFAULT 'sales',
+    metric_value DECIMAL(15,2) DEFAULT 0.00,
+    extra LONGTEXT DEFAULT NULL COMMENT 'JSON details: links, filters, comparison data',
+    recorded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (id),
+    KEY idx_source (source),
+    KEY idx_metric_type (metric_type),
+    KEY idx_recorded_at (recorded_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
