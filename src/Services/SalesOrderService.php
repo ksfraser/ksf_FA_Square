@@ -71,7 +71,7 @@ class SalesOrderService implements SalesOrderServiceInterface
             $this->validateSquareOrder($squareOrder);
             
             // Get or create customer
-            $customer = $this->customerService->syncCustomerToSquare(
+            $customer = $this->customerService->syncCustomerFromSquareToFA(
                 $this->buildSquareCustomerModel($squareOrder['customer'])
             );
             

@@ -114,7 +114,7 @@ class CustomerServiceTest extends TestCase
             ->willReturn(1);
         
         // Act
-        $result = $this->customerService->syncCustomerFromFA($debtorData);
+        $result = $this->customerService->syncCustomerFromFAToSquare($debtorData);
         
         // Assert
         $this->assertInstanceOf(Customer::class, $result);
@@ -126,7 +126,7 @@ class CustomerServiceTest extends TestCase
     /**
      * @test
      */
-    public function syncCustomerFromFAFailsWithInvalidData(): void
+    public function syncCustomerFromFAToSquareFailsWithInvalidData(): void
     {
         $this->expectException(CustomerSyncException::class);
         $this->expectExceptionMessage("Customer name is required");
@@ -138,13 +138,13 @@ class CustomerServiceTest extends TestCase
         ];
         
         // Act
-        $this->customerService->syncCustomerFromFA($debtorData);
+        $this->customerService->syncCustomerFromFAToSquare($debtorData);
     }
 
     /**
      * @test
      */
-    public function syncCustomerFromFAFailsWithNoContactInfo(): void
+    public function syncCustomerFromFAToSquareFailsWithNoContactInfo(): void
     {
         $this->expectException(CustomerSyncException::class);
         $this->expectExceptionMessage("Either email or phone is required for customer sync");
@@ -156,7 +156,7 @@ class CustomerServiceTest extends TestCase
         ];
         
         // Act
-        $this->customerService->syncCustomerFromFA($debtorData);
+        $this->customerService->syncCustomerFromFAToSquare($debtorData);
     }
 
     /**
@@ -199,7 +199,7 @@ class CustomerServiceTest extends TestCase
             ->willReturn(1);
         
         // Act
-        $result = $this->customerService->syncCustomerToSquare($mockSquareCustomer);
+        $result = $this->customerService->syncCustomerFromSquareToFA($mockSquareCustomer);
         
         // Assert
         $this->assertIsArray($result);

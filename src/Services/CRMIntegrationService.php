@@ -120,7 +120,7 @@ class CRMIntegrationService implements CRMIntegrationInterface
     /**
      * Synchronizes a Square customer from FrontAccounting.
      * 
-     * Wraps syncCustomerToSquare and returns a summary result with the
+     * Wraps syncCustomerFromSquareToFA and returns a summary result with the
      * matched or created customer ID.
      * 
      * @param array $squareCustomer Square customer data
@@ -130,7 +130,7 @@ class CRMIntegrationService implements CRMIntegrationInterface
     public function syncCustomerFromSquare(array $squareCustomer): array
     {
         try {
-            $result = $this->syncCustomerToSquare($squareCustomer);
+            $result = $this->syncCustomerFromSquareToFA($squareCustomer);
 
             return [
                 'success' => true,
@@ -148,7 +148,7 @@ class CRMIntegrationService implements CRMIntegrationInterface
      * @return array FA debtor data
      * @throws CRMIntegrationException on failure
      */
-    public function syncCustomerToSquare(array $squareCustomer): array
+    public function syncCustomerFromSquareToFA(array $squareCustomer): array
     {
         try {
             // Validate Square customer data

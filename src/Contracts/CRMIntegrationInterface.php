@@ -46,5 +46,5 @@ interface CRMIntegrationInterface
      * @return array FA debtor data
      * @throws CRMIntegrationException on failure
      */
-    public function syncCustomerToSquare(array $squareCustomer): array;
+    public function syncCustomerFromSquareToFA(array $squareCustomer): array;
 }

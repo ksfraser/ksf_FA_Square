@@ -272,7 +272,7 @@ class CRMIntegrationServiceTest extends TestCase
     /**
      * @test
      */
-    public function syncCustomerToSquareWithExistingMatch(): void
+    public function syncCustomerFromSquareToFAWithExistingMatch(): void
     {
         // Arrange
         $squareCustomer = [
@@ -317,7 +317,7 @@ class CRMIntegrationServiceTest extends TestCase
             ->willReturn(true);
         
         // Act
-        $result = $this->crmService->syncCustomerToSquare($squareCustomer);
+        $result = $this->crmService->syncCustomerFromSquareToFA($squareCustomer);
         
         // Assert
         $this->assertEquals(123, $result['debtor_no']);
@@ -327,7 +327,7 @@ class CRMIntegrationServiceTest extends TestCase
     /**
      * @test
      */
-    public function syncCustomerToSquareCreatesNewDebtor(): void
+    public function syncCustomerFromSquareToFACreatesNewDebtor(): void
     {
         // Arrange
         $squareCustomer = [
@@ -379,7 +379,7 @@ class CRMIntegrationServiceTest extends TestCase
             ->willReturn(1);
         
         // Act
-        $result = $this->crmService->syncCustomerToSquare($squareCustomer);
+        $result = $this->crmService->syncCustomerFromSquareToFA($squareCustomer);
         
         // Assert
         $this->assertEquals(123, $result['debtor_no']);
@@ -389,7 +389,7 @@ class CRMIntegrationServiceTest extends TestCase
     /**
      * @test
      */
-    public function syncCustomerToSquareFailsWithInvalidEmail(): void
+    public function syncCustomerFromSquareToFAFailsWithInvalidEmail(): void
     {
         $this->expectException(CRMIntegrationException::class);
         $this->expectExceptionMessage("Invalid email format: invalid-email");
@@ -403,7 +403,7 @@ class CRMIntegrationServiceTest extends TestCase
         ];
         
         // Act
-        $this->crmService->syncCustomerToSquare($squareCustomer);
+        $this->crmService->syncCustomerFromSquareToFA($squareCustomer);
     }
 
     /**
@@ -453,7 +453,7 @@ class CRMIntegrationServiceTest extends TestCase
             ->willReturn(true);
         
         // Act
-        $result = $this->crmService->syncCustomerToSquare($squareCustomer);
+        $result = $this->crmService->syncCustomerFromSquareToFA($squareCustomer);
         
         // Assert
         $this->assertEquals(123, $result['debtor_no']);

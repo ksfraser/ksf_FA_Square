@@ -20,7 +20,7 @@ interface CustomerServiceInterface
      * @return \Square\Models\Customer Created/updated Square customer
      * @throws \ksfraser\FrontAccounting\Square\Exceptions\CustomerSyncException
      */
-    public function syncCustomerFromFA(array $debtor): \Square\Models\Customer;
+    public function syncCustomerFromFAToSquare(array $debtor): \Square\Models\Customer;
 
     /**
      * Syncs a Square customer to FrontAccounting debtor.
@@ -29,7 +29,7 @@ interface CustomerServiceInterface
      * @return array Created/updated FA debtor
      * @throws \ksfraser\FrontAccounting\Square\Exceptions\CustomerSyncException
      */
-    public function syncCustomerToSquare(\Square\Models\Customer $squareCustomer): array;
+    public function syncCustomerFromSquareToFA(\Square\Models\Customer $squareCustomer): array;
 
     /**
      * Finds a Square customer by email address.

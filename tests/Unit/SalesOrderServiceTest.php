@@ -135,7 +135,7 @@ class SalesOrderServiceTest extends TestCase
         
         // Mock customer service
         $this->mockCustomerService->expects($this->once())
-            ->method('syncCustomerToSquare')
+            ->method('syncCustomerFromSquareToFA')
             ->with($this->callback(function ($customer) {
                 return $customer instanceof \Square\Models\Customer
                     && $customer->getId() === 'cus_123'
@@ -590,7 +590,7 @@ class SalesOrderServiceTest extends TestCase
         
         // Mock customer service
         $this->mockCustomerService->expects($this->once())
-            ->method('syncCustomerToSquare')
+            ->method('syncCustomerFromSquareToFA')
             ->willReturn($customer);
         
         // Mock tax service

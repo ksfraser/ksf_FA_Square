@@ -134,3 +134,8 @@ class YourRequest
     }
 }
 ```
+
+--- Update 2026-09-26 ---
+- Customer interface renamed: syncCustomerFromFAToSquare / syncCustomerFromSquareToFA.
+- syncCustomerFromSquareToFA now stages through Import Staging (StagingCustomerDAO) instead of direct debtor insert/update, supporting review/matching before final debtor creation (coordinates with ksf_FA_ImportStagingProcessing).
+- PHPUnit: 309 tests pass; 2 skipped (GD extension missing for CatalogExporter image tests).
