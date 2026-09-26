@@ -6,8 +6,6 @@ namespace ksfraser\FrontAccounting\Square\Services;
 use Square\SquareClient;
 use ksfraser\FrontAccounting\Square\DAO\DebtorsMasterDAO;
 use ksfraser\FrontAccounting\Square\DAO\SquareCustomerDAO;
-use ksfraser\FrontAccounting\ImportStaging\DAO\StagingCustomerDAO;
-use ksfraser\FrontAccounting\ImportStaging\Models\StagingCustomer;
 use ksfraser\FrontAccounting\Square\Contracts\CustomerServiceInterface;
 use ksfraser\FrontAccounting\Square\Exceptions\CustomerSyncException;
 use ksfraser\FrontAccounting\Square\Exceptions\CustomerNotFoundException;
@@ -46,8 +44,6 @@ class CustomerService implements CustomerServiceInterface
      */
     private $squareCustomerDao;
 
-    private $stagingCustomerDao;
-
     /**
      * @var array
      */
@@ -79,13 +75,11 @@ class CustomerService implements CustomerServiceInterface
     public function __construct(
         SquareClient $client, 
         DebtorsMasterDAO $debtorDao, 
-        SquareCustomerDAO $squareCustomerDao,
-        ?StagingCustomerDAO $stagingCustomerDao = null
+        SquareCustomerDAO $squareCustomerDao
     ) {
         $this->client = $client;
         $this->debtorDao = $debtorDao;
         $this->squareCustomerDao = $squareCustomerDao;
-        $this->stagingCustomerDao = $stagingCustomerDao;
     }
 
     /**
@@ -377,18 +371,6 @@ class CustomerService implements CustomerServiceInterface
      */
     private function createDebtor(Customer $squareCustomer): array
     {
-        // Stage customer for review/matching instead of direct debtor creation
-        if ($this->stagingCustomerDao) {
-            $stagingCustomer = new StagingCustomer('square');
-            $stagingCustomer->setSourceCustomerId($squareCustomer->getId());
-            $stagingCustomer->setName(trim(($squareCustomer->getGivenName() ?? '') . ' ' . ($squareCustomer->getFamilyName() ?? '')));
-            $stagingCustomer->setEmail($squareCustomer->getEmailAddress() ?? '');
-            $stagingCustomer->setPhone($squareCustomer->getPhoneNumber() ?? '');
-            $stagingCustomer->setStatus('staged');
-            $stagingCustomer->setRawJson(json_encode($squareCustomer));
-            $this->stagingCustomerDao->insert($stagingCustomer);
-        }
-
         $debtorData = [
             'name' => trim(($squareCustomer->getGivenName() ?? '') . ' ' . ($squareCustomer->getFamilyName() ?? '')),
             'email' => $squareCustomer->getEmailAddress() ?? '',
@@ -396,11 +378,17 @@ class CustomerService implements CustomerServiceInterface
             'debtor_ref' => 'square_' . $squareCustomer->getId(),
         ];
 
-        // Only insert debtor if not using staging (e.g. low-volume identified customer)
-        if (!$this->stagingCustomerDao) {
-            $debtorNo = $this->debtorDao->insertDebtor($debtorData);
-            $debtorData['debtor_no'] = $debtorNo;
-        }
+        // Call custom hook passing DTO (Staging module defines DTO, responds to hook)
+        $stageData = [
+            'source' => 'square',
+            'source_customer_id' => $squareCustomer->getId(),
+            'name' => $debtorData['name'],
+            'email' => $debtorData['email'],
+            'phone' => $debtorData['phone'],
+            'raw_json' => json_encode($squareCustomer),
+            'status' => 'staged',
+        ];
+        \hook_invoke_all('stage_customer_data', $stageData);
 
         return $debtorData;
     }
@@ -420,27 +408,17 @@ class CustomerService implements CustomerServiceInterface
             'phone' => $squareCustomer->getPhoneNumber() ?? '',
         ];
 
-        // Update staging record if exists
-        if ($this->stagingCustomerDao) {
-            $existingStaged = $this->stagingCustomerDao->findBySource('square', $squareCustomer->getId());
-            if ($existingStaged) {
-                $existingStaged->setStatus('updated');
-                $existingStaged->setName($updateData['name']);
-                $existingStaged->setEmail($updateData['email']);
-                $existingStaged->setPhone($updateData['phone']);
-                $existingStaged->setRawJson(json_encode($squareCustomer));
-                $this->stagingCustomerDao->updateBySource($existingStaged);
-            } else {
-                $staged = new StagingCustomer('square');
-                $staged->setSourceCustomerId($squareCustomer->getId());
-                $staged->setName($updateData['name']);
-                $staged->setEmail($updateData['email']);
-                $staged->setPhone($updateData['phone']);
-                $staged->setStatus('staged');
-                $staged->setRawJson(json_encode($squareCustomer));
-                $this->stagingCustomerDao->insert($staged);
-            }
-        }
+        // Call custom hook for staging/update (Staging module responds, defines DTO)
+        $stageData = [
+            'source' => 'square',
+            'source_customer_id' => $squareCustomer->getId(),
+            'name' => $updateData['name'],
+            'email' => $updateData['email'],
+            'phone' => $updateData['phone'],
+            'status' => 'updated',
+            'raw_json' => json_encode($squareCustomer),
+        ];
+        \hook_invoke_all('stage_customer_data', $stageData);
 
         $this->debtorDao->updateDebtor($existingDebtor['debtor_no'], $updateData);
 
