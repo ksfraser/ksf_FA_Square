@@ -372,4 +372,23 @@ class SalesAnalyticsService
     {
         return $this->tablePrefix . 'sales_details';
     }
+
+    /**
+     * Stores analytics data directly in Square analytics table (not native FA).
+     *
+     * @param array $analyticsData Analytics array
+     */
+    public function storeAnalyticsDirect(array $analyticsData): void
+    {
+        // Direct storage in 0_ksf_square_analytics (per architecture: no native FA insertion)
+        $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
+        $tableName = $tablePrefix . 'ksf_square_analytics';
+        $sql = "INSERT INTO {$tableName} (source, metric_type, metric_value, recorded_at) VALUES (?, ?, ?, ?)";
+        \db_query($sql, [
+            $analyticsData['source'] ?? 'square',
+            $analyticsData['metric_type'] ?? 'sales',
+            $analyticsData['metric_value'] ?? 0,
+            $analyticsData['recorded_at'] ?? date('Y-m-d H:i:s'),
+        ]);
+    }
 }
