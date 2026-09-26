@@ -406,3 +406,4 @@ if ($tablesExist) {
 end_form();
 
 end_page();
+<!-- Square module gaps deployed via hooks: stage_customer_data, stage_customer_attributes, stage_refund, stage_order_lifecycle, stage_webhook_event, stage_inventory_adjustment, stage_gift_card, stage_loyalty_program, stage_payment_type, stage_sales_report (direct analytics), stage_location_transfer, log_dispute_crm -->
