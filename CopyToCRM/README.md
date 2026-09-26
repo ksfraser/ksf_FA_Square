@@ -10,3 +10,8 @@ Contents:
 - BABOK requirements (FR-05 reporting gaps)
 - Report definitions (sales comparison, customer analytics, product performance)
 - Mapping specs for CRM integration
+
+Gift Cards & Loyalty
+--------------------
+- Gift Cards: Square allows GC sales + registration. Payment type tracking needed in Staging (stage_payment_type hook) so future GC module can decrement balance immediately (prevent double-spend online/store).
+- Loyalty: Resides in CRM (not native FA tables). Data source for analytics: 0_ksf_square_analytics. CopyToCRM/README contains mapping specs.

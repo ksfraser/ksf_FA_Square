@@ -52,6 +52,16 @@ class PaymentService implements PaymentServiceInterface
             // Validate Square payment data
             $this->validateSquarePayment($squarePayment);
             
+            // Call custom hook for gift card / loyalty payment tracking
+            $paymentTypeData = [
+                'payment_id' => $squarePayment['id'] ?? null,
+                'payment_type' => $squarePayment['payment_type'] ?? 'card',
+                'amount' => $squarePayment['amount'] ?? 0,
+                'currency' => $squarePayment['currency'] ?? 'USD',
+                'customer_email' => $squarePayment['customer_email'] ?? '',
+            ];
+            \hook_invoke_all('stage_payment_type', $paymentTypeData);
+
             // Get or create customer
             $customer = $this->customerService->matchCustomer($squarePayment['customer_email'] ?? '');
             if (!$customer) {
