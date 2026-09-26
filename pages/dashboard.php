@@ -135,3 +135,4 @@ if ($hasRows) {
 }
 
 end_page();
+<!-- Admin action links for Square gap hooks: Sales (stage_order_lifecycle), Inventory (stage_inventory_adjustment), Banking/GL (direct analytics / stage_payment_type) -->

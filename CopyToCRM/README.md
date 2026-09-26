@@ -21,3 +21,9 @@ Disputes Management
 - Square disputes (chargebacks) tracked via hook log_dispute_crm.
 - Not native FA insertion; resides in CRM module (CopyToCRM mapping specs included).
 - Evidence tracking and dispute workflow coordinated with CRM.
+
+Banking (GL) Actions
+--------------------
+- Square payments/staging tracked via stage_payment_type hook.
+- Direct analytics in 0_ksf_square_analytics for sales comparison.
+- GL account mappings managed via Square module admin (config.php -> Import Settings / GL Accounts).
