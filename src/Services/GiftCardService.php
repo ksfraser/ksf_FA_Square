@@ -29,16 +29,17 @@ class GiftCardService
         ];
         \hook_invoke_all('stage_loyalty_program', $hookData);
     }
-    public function processB2BInvoice(array $invoiceData): void
+    public function processMultiLocationTransfer(array $transferData): void
     {
         $hookData = [
-            'invoice_id' => $invoiceData['id'] ?? null,
-            'customer_id' => $invoiceData['customer_id'] ?? null,
-            'amount_due' => $invoiceData['amount_due'] ?? 0,
-            'currency' => $invoiceData['currency'] ?? 'USD',
-            'status' => $invoiceData['status'] ?? 'pending',
-            'due_date' => $invoiceData['due_date'] ?? null,
+            'location_from' => $transferData['from_location'] ?? null,
+            'location_to' => $transferData['to_location'] ?? null,
+            'item_code' => $transferData['item_code'] ?? null,
+            'quantity' => $transferData['quantity'] ?? 0,
+            'transfer_type' => 'inventory',
         ];
-        \hook_invoke_all('stage_invoice_b2b', $hookData);
+        \hook_invoke_all('stage_location_transfer', $hookData);
     }
+
 }
+
