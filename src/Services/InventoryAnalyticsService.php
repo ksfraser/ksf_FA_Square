@@ -62,6 +62,14 @@ class InventoryAnalyticsService
             ];
         }
         
+        // Call custom hook for Inventory Management (Staging module defines DTO/responds)
+        $inventoryData = [
+            'table_name' => $tableName,
+            'filters' => $filters,
+            'summary' => $summary,
+        ];
+        \hook_invoke_all('stage_inventory_adjustment', $inventoryData);
+
         // Category distribution
         $categorySql = "SELECT 
             category,
