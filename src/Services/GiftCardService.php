@@ -29,4 +29,16 @@ class GiftCardService
         ];
         \hook_invoke_all('stage_loyalty_program', $hookData);
     }
+    public function processB2BInvoice(array $invoiceData): void
+    {
+        $hookData = [
+            'invoice_id' => $invoiceData['id'] ?? null,
+            'customer_id' => $invoiceData['customer_id'] ?? null,
+            'amount_due' => $invoiceData['amount_due'] ?? 0,
+            'currency' => $invoiceData['currency'] ?? 'USD',
+            'status' => $invoiceData['status'] ?? 'pending',
+            'due_date' => $invoiceData['due_date'] ?? null,
+        ];
+        \hook_invoke_all('stage_invoice_b2b', $hookData);
+    }
 }
