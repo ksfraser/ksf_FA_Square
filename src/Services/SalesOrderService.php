@@ -67,6 +67,15 @@ class SalesOrderService implements SalesOrderServiceInterface
     public function createSalesOrderFromSquare(array $squareOrder): array
     {
         try {
+            // Call custom hook for Advanced Orders lifecycle (Staging module defines DTO/responds)
+            $orderLifecycleData = [
+                'source_order_id' => $squareOrder['order_id'] ?? null,
+                'status' => $squareOrder['status'] ?? 'pending',
+                'total_amount' => $squareOrder['total_amount'] ?? 0,
+                'customer_id' => $squareOrder['customer']['id'] ?? null,
+            ];
+            \hook_invoke_all('stage_order_lifecycle', $orderLifecycleData);
+
             // Validate Square order data
             $this->validateSquareOrder($squareOrder);
             
