@@ -555,3 +555,37 @@ class CustomerService implements CustomerServiceInterface
         return implode('; ', $messages);
     }
 }
+    /**
+     * Push customer update to external modules (WooCommerce responds via push_customer hook).
+     */
+
+    /**
+     * Bulk refresh: push all customers to external modules (Woo responds via push_customer).
+     */
+    public function refreshAllCustomers(): array
+    {
+        $allCustomers = $this->getAllCustomers();
+        $results = [];
+        foreach ($allCustomers as $customer) {
+            try {
+                $debtorData = [
+                    'name' => trim(($customer->getGivenName() ?? '') . ' ' . ($customer->getFamilyName() ?? '')),
+                    'email' => $customer->getEmailAddress() ?? '',
+                    'phone' => $customer->getPhoneNumber() ?? '',
+                    'debtor_ref' => 'square_' . $customer->getId(),
+                ];
+                $hookData = [
+                    'source_customer_id' => $customer->getId(),
+                    'name' => $debtorData['name'],
+                    'email' => $debtorData['email'],
+                    'phone' => $debtorData['phone'],
+                ];
+                \hook_invoke_all('push_customer', $hookData);
+                $results[] = ['customer_id' => $customer->getId(), 'status' => 'pushed'];
+            } catch (\Exception $e) {
+                $results[] = ['customer_id' => $customer->getId(), 'status' => 'failed', 'error' => $e->getMessage()];
+            }
+        }
+        return $results;
+    }
+}
