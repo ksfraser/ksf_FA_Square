@@ -124,13 +124,6 @@ class CustomerService implements CustomerServiceInterface
     {
         $this->validateSquareCustomerData($squareCustomer);
 
-        // Call custom hook for Customer Custom Attributes (Staging module defines DTO/responds)
-        $attributesData = [
-            'source_customer_id' => $squareCustomer->getId(),
-            'attributes' => $squareCustomer->getCustomAttributes() ?? [],
-        ];
-        \hook_invoke_all('stage_customer_attributes', $attributesData);
-
         try {
             // Check if debtor already exists in FA
             $existingDebtor = $this->findDebtorByEmail($squareCustomer->getEmailAddress());
@@ -554,13 +547,9 @@ class CustomerService implements CustomerServiceInterface
         
         return implode('; ', $messages);
     }
-}
-    /**
-     * Push customer update to external modules (WooCommerce responds via push_customer hook).
-     */
 
     /**
-     * Bulk refresh: push all customers to external modules (Woo responds via push_customer).
+     * Bulk refresh: push all customers to external modules (Woo responds via push_customer hook).
      */
     public function refreshAllCustomers(): array
     {
@@ -568,17 +557,11 @@ class CustomerService implements CustomerServiceInterface
         $results = [];
         foreach ($allCustomers as $customer) {
             try {
-                $debtorData = [
+                $hookData = [
+                    'source_customer_id' => $customer->getId(),
                     'name' => trim(($customer->getGivenName() ?? '') . ' ' . ($customer->getFamilyName() ?? '')),
                     'email' => $customer->getEmailAddress() ?? '',
                     'phone' => $customer->getPhoneNumber() ?? '',
-                    'debtor_ref' => 'square_' . $customer->getId(),
-                ];
-                $hookData = [
-                    'source_customer_id' => $customer->getId(),
-                    'name' => $debtorData['name'],
-                    'email' => $debtorData['email'],
-                    'phone' => $debtorData['phone'],
                 ];
                 \hook_invoke_all('push_customer', $hookData);
                 $results[] = ['customer_id' => $customer->getId(), 'status' => 'pushed'];
