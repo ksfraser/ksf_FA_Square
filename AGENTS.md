@@ -279,3 +279,4 @@ BLUE. The recipe applies `default.css.<fa_theme>` → `default.css` (never edits
 the variants). Container mounts were historically split across
 `podman/ksf-compose.yaml` vs the ansible role's `frontaccounting-container.yml`;
 the two recipes currently differ — reconcile before trusting either as source
+of truth.
