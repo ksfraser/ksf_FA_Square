@@ -27,7 +27,6 @@
         "ksfraser/ksf-modules-dao": "^0.3",
         "ksfraser/contact-dto": "^0.1",
         "ksfraser/ksf-fa-common": "*",
-        "ksfraser/import-staging": "*",
         "ksfraser/staging-dto": "^0.0.1"
     },
     "require-dev": {
