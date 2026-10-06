@@ -121,7 +121,7 @@ class WebhookManagementController
                 $updatedSubscription->setId($id);
                 $updatedSubscription->setNotificationUrl($url);
                 $updatedSubscription->setEventTypes(array_map(function($event) {
-                    return \Square\Models\WebhookEventType::from($event);
+                    return \ksfraser\FrontAccounting\Square\Models\WebhookEventType::from($event);
                 }, $events));
                 $updatedSubscription->setEnabled($isActive);
                 
@@ -417,7 +417,7 @@ function display_subscriptions_list(array $subscriptions): void
         
         foreach ($subscriptions as $subscription) {
             $events = implode(', ', array_map(function($event) {
-                return \Square\Models\WebhookEventType::name($event);
+                return \ksfraser\FrontAccounting\Square\Models\WebhookEventType::name($event);
             }, $subscription->getEventTypes()));
             
             row(
@@ -510,7 +510,7 @@ function display_webhook_subscription(\Square\Models\WebhookSubscription $subscr
     row(_("Subscription ID"), $subscription->getId());
     row(_("URL"), $subscription->getNotificationUrl());
     row(_("Events"), implode(', ', array_map(function($event) {
-        return \Square\Models\WebhookEventType::name($event);
+        return \ksfraser\FrontAccounting\Square\Models\WebhookEventType::name($event);
     }, $subscription->getEventTypes())));
     row(_("Status"), $subscription->getEnabled() ? _("Active") : _("Inactive"));
     row(_("Created"), $subscription->getCreatedAt());

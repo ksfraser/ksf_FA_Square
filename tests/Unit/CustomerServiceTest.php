@@ -176,36 +176,38 @@ class CustomerServiceTest extends TestCase
         $this->mockDebtorDao->method('getByEmail')
             ->with('john@example.com')
             ->willReturn(null);
-        
-        // Mock debtor creation
-        $this->mockDebtorDao->expects($this->once())
-            ->method('insertDebtor')
-            ->with([
-                'name' => 'John Doe',
-                'email' => 'john@example.com',
-                'phone' => '1234567890',
-                'debtor_ref' => 'square_cus_123456',
-            ])
-            ->willReturn(123);
-        
-        // Mock mapping creation
-        $this->mockSquareCustomerDao->expects($this->once())
-            ->method('insertMapping')
-            ->with($this->callback(function ($data) {
-                return $data['fa_debtor_no'] === 123
-                    && $data['square_customer_id'] === 'cus_123456'
-                    && is_string($data['sync_at'] ?? null);
-            }))
-            ->willReturn(1);
-        
+
+        // Since 6b970e2 a new Square customer is NOT written to the FA
+        // debtor table directly. CustomerService stages it by broadcasting
+        // stage_customer_data and lets Import Staging own persistence, so the
+        // debtor DAO and the Square mapping DAO must stay untouched.
+        $this->mockDebtorDao->expects($this->never())
+            ->method('insertDebtor');
+        $this->mockSquareCustomerDao->expects($this->never())
+            ->method('insertMapping');
+
         // Act
+        $GLOBALS['ksf_test_broadcasts'] = [];
         $result = $this->customerService->syncCustomerFromSquareToFA($mockSquareCustomer);
-        
-        // Assert
+
+        // Assert: the staged payload, not a persisted FA row
         $this->assertIsArray($result);
-        $this->assertEquals(123, $result['debtor_no']);
         $this->assertEquals('John Doe', $result['name']);
         $this->assertEquals('john@example.com', $result['email']);
+        $this->assertEquals('square_cus_123456', $result['debtor_ref']);
+
+        $staged = null;
+        foreach ($GLOBALS['ksf_test_broadcasts'] as $broadcast) {
+            if ($broadcast[0] === 'stage_customer_data') {
+                $staged = $broadcast[1];
+            }
+        }
+        $this->assertIsArray($staged, 'stage_customer_data was not broadcast');
+        $this->assertEquals('square', $staged['source']);
+        $this->assertEquals('cus_123456', $staged['source_customer_id']);
+        $this->assertEquals('John Doe', $staged['name']);
+        $this->assertEquals('john@example.com', $staged['email']);
+        $this->assertEquals('staged', $staged['status']);
     }
 
     /**

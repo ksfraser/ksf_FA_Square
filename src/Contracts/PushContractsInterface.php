@@ -11,10 +11,3 @@ interface PushContractsInterface
     public function pushSales(array $salesData): void;
     public function pushGiftCard(array $giftCardData): void;
 }
-
-interface BulkRefreshInterface
-{
-    public function refreshAllCustomers(): array;
-    public function refreshAllItems(): array;
-    public function refreshAllOrders(): array;
-}

@@ -1,20 +1,5 @@
 <?php
 
-namespace {
-    if (!function_exists('hook_invoke_all')) {
-        /**
-         * Neutral test double for FrontAccounting's hook_invoke_all().
-         *
-         * Records the broadcast name and payload so tests can assert the
-         * order_imported event fired with the correct data.
-         */
-        function hook_invoke_all($method, &$data, $opts = null)
-        {
-            $GLOBALS['ksf_test_broadcasts'][] = [$method, $data, $opts];
-        }
-    }
-}
-
 namespace ksfraser\FrontAccounting\Square\Tests\Unit\Services {
 
 use ksfraser\FrontAccounting\Square\Services\ImportService;

@@ -10,7 +10,7 @@ use ksfraser\FrontAccounting\Square\Exceptions\WebhookCreationException;
 use ksfraser\FrontAccounting\Square\Exceptions\WebhookValidationException;
 use Square\Models\CreateWebhookSubscriptionRequest;
 use Square\Models\WebhookSubscription;
-use Square\Models\WebhookEventType;
+use ksfraser\FrontAccounting\Square\Models\WebhookEventType;
 use Square\Exceptions\ApiException;
 
 /**

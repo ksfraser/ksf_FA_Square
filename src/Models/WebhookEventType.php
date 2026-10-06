@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Square\Models;
+namespace ksfraser\FrontAccounting\Square\Models;
 
 class WebhookEventType
 {
