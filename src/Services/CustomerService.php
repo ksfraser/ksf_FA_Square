@@ -117,8 +117,8 @@ class CustomerService implements CustomerServiceInterface
      * Syncs a Square customer into FrontAccounting via Import Staging.
      *
      * An existing FA debtor is updated directly. A new customer is NOT written
-     * to FA: it is staged through ksf_FA_ImportStagingProcessing and only
-     * becomes a debtor after review, via CRM's CREATE_CUSTOMER responder.
+     * to FA: it is staged through ksf_FA_ImportStagingProcessing, and only ISU
+     * (after human review) may create the FA debtor.
      *
      * @param Customer $squareCustomer Square customer data
      * @return array Updated debtor, or a staging reference with status='staged'
@@ -373,8 +373,8 @@ class CustomerService implements CustomerServiceInterface
      * Stages a Square customer for review instead of creating an FA debtor.
      *
      * Square must never write a debtor directly: staging + human review is the
-     * contract (ksf_FA_ImportStagingProcessing owns the staging tables, and CRM's
-     * CREATE_CUSTOMER responder owns debtor/branch/contact creation). This method
+     * contract (ksf_FA_ImportStagingProcessing owns the staging tables, and only ISU,
+     * after review, may create the FA debtor/branch/contact). This method
      * therefore returns a *staging reference*, never a debtor record.
      *
      * The previous implementation built a debtor array locally, broadcast
@@ -597,73 +597,45 @@ class CustomerService implements CustomerServiceInterface
         return implode('; ', $messages);
     }
 
-    /**
-     * Bulk refresh: hand every Square customer to CRM for FA-side creation.
-     *
-     * CREATE_CUSTOMER is a request/response hook owned by ksf_FA_CRM, which
-     * creates the debtor, branch and default contact (person). This method
-     * reports what the responder actually returned. It previously fired a
-     * 'push_customer' broadcast that no module listens for and recorded
-     * 'pushed' unconditionally, which asserted success for work never done.
-     *
-     * @return array Per-customer outcome: status pushed|no_responder|failed
-     */
-    public function refreshAllCustomers(): array
-    {
-        $allCustomers = $this->getAllCustomers();
-        $results = [];
-
-        foreach ($allCustomers as $customer) {
-            $request = [
-                'action' => 'create_customer',
-                'source' => 'square_api',
-                'source_customer_id' => $customer->getId(),
-                'first_name' => $customer->getGivenName() ?? '',
-                'last_name' => $customer->getFamilyName() ?? '',
-                'name' => trim(($customer->getGivenName() ?? '') . ' ' . ($customer->getFamilyName() ?? '')),
-                'email' => $customer->getEmailAddress() ?? '',
-                'phone' => $customer->getPhoneNumber() ?? '',
-            ];
-
-            if (!function_exists('hook_invoke')) {
-                $results[] = [
-                    'customer_id' => $customer->getId(),
-                    'status' => 'no_responder',
-                    'error' => 'hook_invoke() not available',
-                ];
-                continue;
-            }
-
-            try {
-                $response = hook_invoke('ksf_FA_CRM', 'CREATE_CUSTOMER', $request);
-
-                if ($response === null || empty($response['success'])) {
-                    $results[] = [
-                        'customer_id' => $customer->getId(),
-                        'status' => 'no_responder',
-                        'error' => !empty($request['error'])
-                            ? (string)$request['error']
-                            : 'ksf_FA_CRM does not implement CREATE_CUSTOMER yet',
-                    ];
-                    continue;
-                }
-
-                $results[] = [
-                    'customer_id' => $customer->getId(),
-                    'status' => 'pushed',
-                    'fa_debtor_no' => $response['fa_debtor_no'] ?? null,
-                    'branch_code' => $response['branch_code'] ?? null,
-                    'contact_id' => $response['contact_id'] ?? null,
-                ];
-            } catch (\Exception $e) {
-                $results[] = [
-                    'customer_id' => $customer->getId(),
-                    'status' => 'failed',
-                    'error' => $e->getMessage(),
-                ];
-            }
-        }
-
-        return $results;
-    }
+/**
+       * Bulk refresh: stage every Square customer for ISU review.
+       *
+       * Square must NEVER create FA customers directly -- only ISU, after human
+       * review, may create the debtor/branch/contact. This method therefore hands
+       * every Square customer to ISU's STAGE_ENTITY responder (via the same
+       * stageCustomerForReview() path used by incremental sync) and reports the
+       * per-customer staging outcome. It previously called CRM's CREATE_CUSTOMER
+       * responder, which is forbidden: FAR creation is exclusively ISU's job.
+       *
+       * @return array Per-customer outcome: status staged|failed
+       */
+      public function refreshAllCustomers(): array
+      {
+          $allCustomers = $this->getAllCustomers();
+          $results = [];
+  
+          foreach ($allCustomers as $customer) {
+              try {
+                  $reference = $this->stageCustomerForReview($customer);
+  
+                  $results[] = [
+                      'customer_id' => $customer->getId(),
+                      'status' => $reference['status'],
+                      'staging_id' => $reference['staging_id'],
+                      'source' => $reference['source'],
+                      'source_customer_id' => $reference['source_customer_id'],
+                      'email' => $reference['email'],
+                      'fa_debtor_no' => null,
+                  ];
+              } catch (\Exception $e) {
+                  $results[] = [
+                      'customer_id' => $customer->getId(),
+                      'status' => 'failed',
+                      'error' => $e->getMessage(),
+                  ];
+              }
+          }
+  
+          return $results;
+      }
 }

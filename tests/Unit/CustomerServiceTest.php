@@ -327,6 +327,142 @@ $dto = $invocation[2];
     }
 
     /**
+     * Bulk refresh must STAGE every Square customer for ISU review.
+     *
+     * Square must never create FA customers directly. refreshAllCustomers()
+     * previously called CRM's CREATE_CUSTOMER responder; the only legal FAR
+     * creation path is ISU after human review, so the bulk path now uses the
+     * same STAGE_ENTITY staging used by incremental sync.
+     *
+     * @BABOK Related: UT-SQUARE-004-001-005
+     */
+    public function testRefreshAllCustomersStagesEveryCustomer(): void
+    {
+        $mockCustomer1 = $this->createMock(Customer::class);
+        $mockCustomer1->method('getId')->willReturn('cus_101');
+        $mockCustomer1->method('getGivenName')->willReturn('Ada');
+        $mockCustomer1->method('getFamilyName')->willReturn('Lovelace');
+        $mockCustomer1->method('getEmailAddress')->willReturn('ada@example.com');
+        $mockCustomer1->method('getPhoneNumber')->willReturn('');
+
+        $mockCustomer2 = $this->createMock(Customer::class);
+        $mockCustomer2->method('getId')->willReturn('cus_102');
+        $mockCustomer2->method('getGivenName')->willReturn('Grace');
+        $mockCustomer2->method('getFamilyName')->willReturn('Hopper');
+        $mockCustomer2->method('getEmailAddress')->willReturn('grace@example.com');
+        $mockCustomer2->method('getPhoneNumber')->willReturn('');
+
+        $mockApi = $this->createMock(\Square\Apis\CustomersApi::class);
+        $mockResult = $this->createMock(\Square\Http\ApiResponse::class);
+        $mockResult->method('isSuccess')->willReturn(true);
+        $mockListResult = $this->createMock(\Square\Models\ListCustomersResponse::class);
+        $mockListResult->method('getCustomers')->willReturn([$mockCustomer1, $mockCustomer2]);
+        $mockResult->method('getResult')->willReturn($mockListResult);
+        $mockApi->method('listCustomers')->willReturn($mockResult);
+        $this->mockSquareClient->method('getCustomersApi')->willReturn($mockApi);
+
+        $GLOBALS['ksf_test_invocations'] = [];
+        $GLOBALS['ksf_test_invoke_writes']['ksf_FA_ImportStagingProcessing::STAGE_ENTITY'] = [
+            'success' => true,
+            'result' => ['id' => 42, 'stagingId' => 42, 'status' => 'staged'],
+        ];
+
+        $results = $this->customerService->refreshAllCustomers();
+
+        $this->assertCount(2, $results);
+        foreach ($results as $result) {
+            $this->assertEquals('staged', $result['status']);
+            $this->assertEquals(42, $result['staging_id']);
+            $this->assertEquals('square_api', $result['source']);
+            $this->assertNull($result['fa_debtor_no']);
+        }
+
+        // Every customer crossed the boundary as a StagingCustomer DTO.
+        $stageCount = 0;
+        foreach ($GLOBALS['ksf_test_invocations'] as $call) {
+            if ($call[0] === 'ksf_FA_ImportStagingProcessing' && $call[1] === 'STAGE_ENTITY') {
+                $this->assertInstanceOf(\Ksfraser\StagingDto\StagingCustomer::class, $call[2]);
+                $stageCount++;
+            }
+        }
+        $this->assertEquals(2, $stageCount);
+    }
+
+    /**
+     * Bulk refresh must NEVER call CRM to create a customer; only ISU may.
+     *
+     * @BABOK Related: UT-SQUARE-004-001-006
+     */
+    public function testRefreshAllCustomersNeverInvokesCreateCustomer(): void
+    {
+        $mockCustomer = $this->createMock(Customer::class);
+        $mockCustomer->method('getId')->willReturn('cus_201');
+        $mockCustomer->method('getGivenName')->willReturn('Ada');
+        $mockCustomer->method('getFamilyName')->willReturn('Lovelace');
+        $mockCustomer->method('getEmailAddress')->willReturn('ada@example.com');
+        $mockCustomer->method('getPhoneNumber')->willReturn('');
+
+        $mockApi = $this->createMock(\Square\Apis\CustomersApi::class);
+        $mockResult = $this->createMock(\Square\Http\ApiResponse::class);
+        $mockResult->method('isSuccess')->willReturn(true);
+        $mockListResult = $this->createMock(\Square\Models\ListCustomersResponse::class);
+        $mockListResult->method('getCustomers')->willReturn([$mockCustomer]);
+        $mockResult->method('getResult')->willReturn($mockListResult);
+        $mockApi->method('listCustomers')->willReturn($mockResult);
+        $this->mockSquareClient->method('getCustomersApi')->willReturn($mockApi);
+
+        $GLOBALS['ksf_test_invocations'] = [];
+        $GLOBALS['ksf_test_invoke_writes']['ksf_FA_ImportStagingProcessing::STAGE_ENTITY'] = [
+            'success' => true,
+            'result' => ['id' => 7, 'stagingId' => 7, 'status' => 'staged'],
+        ];
+
+        $this->customerService->refreshAllCustomers();
+
+        foreach ($GLOBALS['ksf_test_invocations'] as $call) {
+            $this->assertNotSame('ksf_FA_CRM', $call[0], 'Square must never call CRM to create a customer');
+            $this->assertNotSame('CREATE_CUSTOMER', $call[1], 'FAR creation is exclusively ISU\'s job');
+        }
+    }
+
+    /**
+     * A staging failure in the bulk path is reported per customer, not fatal.
+     *
+     * @BABOK Related: UT-SQUARE-004-001-007
+     */
+    public function testRefreshAllCustomersReportsStagingFailuresPerCustomer(): void
+    {
+        $mockCustomer = $this->createMock(Customer::class);
+        $mockCustomer->method('getId')->willReturn('cus_301');
+        $mockCustomer->method('getGivenName')->willReturn('Alan');
+        $mockCustomer->method('getFamilyName')->willReturn('Turing');
+        $mockCustomer->method('getEmailAddress')->willReturn('alan@example.com');
+        $mockCustomer->method('getPhoneNumber')->willReturn('');
+
+        $mockApi = $this->createMock(\Square\Apis\CustomersApi::class);
+        $mockResult = $this->createMock(\Square\Http\ApiResponse::class);
+        $mockResult->method('isSuccess')->willReturn(true);
+        $mockListResult = $this->createMock(\Square\Models\ListCustomersResponse::class);
+        $mockListResult->method('getCustomers')->willReturn([$mockCustomer]);
+        $mockResult->method('getResult')->willReturn($mockListResult);
+        $mockApi->method('listCustomers')->willReturn($mockResult);
+        $this->mockSquareClient->method('getCustomersApi')->willReturn($mockApi);
+
+        $GLOBALS['ksf_test_invoke_writes']['ksf_FA_ImportStagingProcessing::STAGE_ENTITY'] = [
+            'error' => 'Unauthorized',
+            'success' => false,
+        ];
+
+        $this->mockDebtorDao->expects($this->never())->method('insertDebtor');
+
+        $results = $this->customerService->refreshAllCustomers();
+
+        $this->assertCount(1, $results);
+        $this->assertEquals('failed', $results[0]['status']);
+        $this->assertStringContainsString('Unauthorized', $results[0]['error']);
+    }
+
+    /**
      * @test
      */
     public function canFindCustomerByEmailSuccessfully(): void
