@@ -44,6 +44,15 @@ class IsuStagingGateway
         $query = new \Ksfraser\StagingDto\StagingExistsQuery('square', $sourcePaymentId, 'transaction');
         $data = $query;
         hook_invoke(self::HOOK_MODULE, 'STAGING_EXISTS', $data);
+
+        // $data still holds the DTO when ISU is inactive or a responder fails to
+        // replace it, so re-check before reading offsets. See AGENTS_ARCH.md
+        // §11.2: STAGING_EXISTS/STAGE_ENTITY receive a DTO by reference and
+        // replace $data with a response array.
+        if (!is_array($data)) {
+            return false;
+        }
+
         return !empty($data['result']['exists']);
     }
 
@@ -97,7 +106,10 @@ class IsuStagingGateway
 
         $data = $dto;
         hook_invoke(self::HOOK_MODULE, 'STAGE_ENTITY', $data);
-        $stagingId = (int)($data['result']['stagingId'] ?? 0);
+
+        // See exists() and AGENTS_ARCH.md §11.2: a DTO input must come back as
+        // a replaced array. Anything else means no responder ran.
+        $stagingId = is_array($data) ? (int)($data['result']['stagingId'] ?? 0) : 0;
 
         if ($stagingId > 0) {
             $this->storeSquareMetadata($stagingId, $paymentData, $orderData);

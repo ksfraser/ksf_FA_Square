@@ -93,11 +93,34 @@ if (!function_exists('hook_invoke_all')) {
 }
 
 if (!function_exists('hook_invoke')) {
+    /**
+     * Recording double for FA's targeted hook dispatch.
+     *
+     * $data is passed by reference exactly as FA does. ISU's DTO-input
+     * responders REPLACE $data with a response array (they cannot write offsets
+     * onto a StagingEntity), so this double does the same when a test scripts
+     * a reply via $GLOBALS['ksf_test_invoke_writes'].
+     */
     function hook_invoke($ext, $method, &$data, $opts = null)
     {
+        $GLOBALS['ksf_test_invocations'][] = [$ext, $method, $data, $opts];
+
+        $key = $ext . '::' . $method;
+
+        if (isset($GLOBALS['ksf_test_invoke_writes'][$key])) {
+            $data = $GLOBALS['ksf_test_invoke_writes'][$key];
+        }
+
+        if (isset($GLOBALS['ksf_test_invoke_returns'][$key])) {
+            return $GLOBALS['ksf_test_invoke_returns'][$key];
+        }
+
         return null;
     }
 }
 
-// Reset the broadcast recorder between tests.
+// Reset the recorders between tests.
 $GLOBALS['ksf_test_broadcasts'] = [];
+$GLOBALS['ksf_test_invocations'] = [];
+$GLOBALS['ksf_test_invoke_returns'] = [];
+$GLOBALS['ksf_test_invoke_writes'] = [];

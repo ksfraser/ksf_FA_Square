@@ -114,10 +114,14 @@ class CustomerService implements CustomerServiceInterface
     }
 
     /**
-     * Syncs a Square customer to FrontAccounting debtor.
+     * Syncs a Square customer into FrontAccounting via Import Staging.
+     *
+     * An existing FA debtor is updated directly. A new customer is NOT written
+     * to FA: it is staged through ksf_FA_ImportStagingProcessing and only
+     * becomes a debtor after review, via CRM's CREATE_CUSTOMER responder.
      *
      * @param Customer $squareCustomer Square customer data
-     * @return array Created/updated FA debtor
+     * @return array Updated debtor, or a staging reference with status='staged'
      * @throws CustomerSyncException If sync fails
      */
     public function syncCustomerFromSquareToFA(Customer $squareCustomer): array
@@ -131,10 +135,12 @@ class CustomerService implements CustomerServiceInterface
             if ($existingDebtor) {
                 // Update existing debtor
                 return $this->updateDebtor($existingDebtor, $squareCustomer);
-            } else {
-                // Create new debtor
-                return $this->createDebtor($squareCustomer);
             }
+
+            // New customer: stage for review rather than creating the debtor here.
+            return $this->stageCustomerForReview($squareCustomer);
+        } catch (CustomerSyncException $e) {
+            throw $e;
         } catch (\Exception $e) {
             throw new CustomerSyncException(
                 "FA error syncing customer from Square: " . $e->getMessage()
@@ -364,37 +370,92 @@ class CustomerService implements CustomerServiceInterface
     }
 
     /**
-     * Creates a new FA debtor from Square customer.
+     * Stages a Square customer for review instead of creating an FA debtor.
+     *
+     * Square must never write a debtor directly: staging + human review is the
+     * contract (ksf_FA_ImportStagingProcessing owns the staging tables, and CRM's
+     * CREATE_CUSTOMER responder owns debtor/branch/contact creation). This method
+     * therefore returns a *staging reference*, never a debtor record.
+     *
+     * The previous implementation built a debtor array locally, broadcast
+     * 'stage_customer_data' to nobody, and returned that unsaved array as though
+     * it were a created debtor -- so syncCustomerFromSquareToFA() reported
+     * success for a debtor that did not exist.
      *
      * @param Customer $squareCustomer Square customer
-     * @return array Created debtor
+     * @return array Staging reference: status, staging_id, source_customer_id
+     * @throws CustomerSyncException If staging cannot be attempted
      */
-    private function createDebtor(Customer $squareCustomer): array
+    private function stageCustomerForReview(Customer $squareCustomer): array
     {
-        $debtorData = [
-            'name' => trim(($squareCustomer->getGivenName() ?? '') . ' ' . ($squareCustomer->getFamilyName() ?? '')),
-            'email' => $squareCustomer->getEmailAddress() ?? '',
-            'phone' => $squareCustomer->getPhoneNumber() ?? '',
-            'debtor_ref' => 'square_' . $squareCustomer->getId(),
-        ];
+        $firstName = $squareCustomer->getGivenName() ?? '';
+        $lastName = $squareCustomer->getFamilyName() ?? '';
 
-        // Call custom hook passing DTO (Staging module defines DTO, responds to hook)
-        $stageData = [
-            'source' => 'square',
-            'source_customer_id' => $squareCustomer->getId(),
-            'name' => $debtorData['name'],
-            'email' => $debtorData['email'],
-            'phone' => $debtorData['phone'],
-            'raw_json' => json_encode($squareCustomer),
+        $dto = new \Ksfraser\StagingDto\StagingCustomer(
+            'square',
+            $squareCustomer->getId(),
+            $squareCustomer->getEmailAddress() ?? '',
+            $squareCustomer->getPhoneNumber() ?? '',
+            $firstName,
+            $lastName
+        );
+
+        return $this->stageCustomerDto($dto);
+    }
+
+    /**
+     * Hands a StagingCustomer DTO to ISU and returns the staging reference.
+     *
+     * @param \Ksfraser\StagingDto\StagingCustomer $dto Customer DTO
+     * @return array Staging reference
+     * @throws CustomerSyncException If ISU is absent or rejects the payload
+     */
+    private function stageCustomerDto(\Ksfraser\StagingDto\StagingCustomer $dto): array
+    {
+        if (!function_exists('hook_invoke')) {
+            throw new CustomerSyncException(
+                'Import Staging unavailable: hook_invoke() not loaded, cannot stage customer'
+            );
+        }
+
+        // ISU's STAGE_ENTITY responder requires a StagingEntity instance and
+        // replaces $data wholesale with a response array (it cannot write
+        // offsets onto a DTO). Guard anyway: an older or misbehaving responder
+        // must not turn into "Cannot use object of type ... as array".
+        $data = $dto;
+        hook_invoke('ksf_FA_ImportStagingProcessing', 'STAGE_ENTITY', $data);
+
+        if (!is_array($data)) {
+            throw new CustomerSyncException(
+                'Import Staging did not return a response for STAGE_ENTITY'
+            );
+        }
+
+        if (!empty($data['error'])) {
+            throw new CustomerSyncException(
+                'Import Staging rejected customer: ' . (string)$data['error']
+            );
+        }
+
+        $result = $data['result'] ?? [];
+
+        return [
             'status' => 'staged',
+            'staging_id' => isset($result['id']) ? (int)$result['id'] : 0,
+            'source' => 'square',
+            'source_customer_id' => $dto->getSourceId(),
+            'email' => $dto->getEmail(),
+            'fa_debtor_no' => null,
         ];
-        \hook_invoke_all('stage_customer_data', $stageData);
-
-        return $debtorData;
     }
 
     /**
      * Updates an existing FA debtor.
+     *
+     * Updating a debtor that already exists in FA is allowed: the
+     * stage-and-review rule governs *creation*, not amendment of a record a
+     * user already owns. The previous dead 'stage_customer_data' broadcast was
+     * removed here because no module listens for it.
      *
      * @param array $existingDebtor Existing debtor
      * @param Customer $squareCustomer Square customer
@@ -407,18 +468,6 @@ class CustomerService implements CustomerServiceInterface
             'email' => $squareCustomer->getEmailAddress() ?? '',
             'phone' => $squareCustomer->getPhoneNumber() ?? '',
         ];
-
-        // Call custom hook for staging/update (Staging module responds, defines DTO)
-        $stageData = [
-            'source' => 'square',
-            'source_customer_id' => $squareCustomer->getId(),
-            'name' => $updateData['name'],
-            'email' => $updateData['email'],
-            'phone' => $updateData['phone'],
-            'status' => 'updated',
-            'raw_json' => json_encode($squareCustomer),
-        ];
-        \hook_invoke_all('stage_customer_data', $stageData);
 
         $this->debtorDao->updateDebtor($existingDebtor['debtor_no'], $updateData);
 
@@ -549,26 +598,72 @@ class CustomerService implements CustomerServiceInterface
     }
 
     /**
-     * Bulk refresh: push all customers to external modules (Woo responds via push_customer hook).
+     * Bulk refresh: hand every Square customer to CRM for FA-side creation.
+     *
+     * CREATE_CUSTOMER is a request/response hook owned by ksf_FA_CRM, which
+     * creates the debtor, branch and default contact (person). This method
+     * reports what the responder actually returned. It previously fired a
+     * 'push_customer' broadcast that no module listens for and recorded
+     * 'pushed' unconditionally, which asserted success for work never done.
+     *
+     * @return array Per-customer outcome: status pushed|no_responder|failed
      */
     public function refreshAllCustomers(): array
     {
         $allCustomers = $this->getAllCustomers();
         $results = [];
+
         foreach ($allCustomers as $customer) {
-            try {
-                $hookData = [
-                    'source_customer_id' => $customer->getId(),
-                    'name' => trim(($customer->getGivenName() ?? '') . ' ' . ($customer->getFamilyName() ?? '')),
-                    'email' => $customer->getEmailAddress() ?? '',
-                    'phone' => $customer->getPhoneNumber() ?? '',
+            $request = [
+                'action' => 'create_customer',
+                'source' => 'square',
+                'source_customer_id' => $customer->getId(),
+                'first_name' => $customer->getGivenName() ?? '',
+                'last_name' => $customer->getFamilyName() ?? '',
+                'name' => trim(($customer->getGivenName() ?? '') . ' ' . ($customer->getFamilyName() ?? '')),
+                'email' => $customer->getEmailAddress() ?? '',
+                'phone' => $customer->getPhoneNumber() ?? '',
+            ];
+
+            if (!function_exists('hook_invoke')) {
+                $results[] = [
+                    'customer_id' => $customer->getId(),
+                    'status' => 'no_responder',
+                    'error' => 'hook_invoke() not available',
                 ];
-                \hook_invoke_all('push_customer', $hookData);
-                $results[] = ['customer_id' => $customer->getId(), 'status' => 'pushed'];
+                continue;
+            }
+
+            try {
+                $response = hook_invoke('ksf_FA_CRM', 'CREATE_CUSTOMER', $request);
+
+                if ($response === null || empty($response['success'])) {
+                    $results[] = [
+                        'customer_id' => $customer->getId(),
+                        'status' => 'no_responder',
+                        'error' => !empty($request['error'])
+                            ? (string)$request['error']
+                            : 'ksf_FA_CRM does not implement CREATE_CUSTOMER yet',
+                    ];
+                    continue;
+                }
+
+                $results[] = [
+                    'customer_id' => $customer->getId(),
+                    'status' => 'pushed',
+                    'fa_debtor_no' => $response['fa_debtor_no'] ?? null,
+                    'branch_code' => $response['branch_code'] ?? null,
+                    'contact_id' => $response['contact_id'] ?? null,
+                ];
             } catch (\Exception $e) {
-                $results[] = ['customer_id' => $customer->getId(), 'status' => 'failed', 'error' => $e->getMessage()];
+                $results[] = [
+                    'customer_id' => $customer->getId(),
+                    'status' => 'failed',
+                    'error' => $e->getMessage(),
+                ];
             }
         }
+
         return $results;
     }
 }
