@@ -392,7 +392,7 @@ class CustomerService implements CustomerServiceInterface
         $lastName = $squareCustomer->getFamilyName() ?? '';
 
         $dto = new \Ksfraser\StagingDto\StagingCustomer(
-            'square',
+            'square_api',
             $squareCustomer->getId(),
             $squareCustomer->getEmailAddress() ?? '',
             $squareCustomer->getPhoneNumber() ?? '',
@@ -441,8 +441,8 @@ class CustomerService implements CustomerServiceInterface
 
         return [
             'status' => 'staged',
-            'staging_id' => isset($result['id']) ? (int)$result['id'] : 0,
-            'source' => 'square',
+            'staging_id' => isset($result['stagingId']) ? (int)$result['stagingId'] : 0,
+            'source' => 'square_api',
             'source_customer_id' => $dto->getSourceId(),
             'email' => $dto->getEmail(),
             'fa_debtor_no' => null,
@@ -616,7 +616,7 @@ class CustomerService implements CustomerServiceInterface
         foreach ($allCustomers as $customer) {
             $request = [
                 'action' => 'create_customer',
-                'source' => 'square',
+                'source' => 'square_api',
                 'source_customer_id' => $customer->getId(),
                 'first_name' => $customer->getGivenName() ?? '',
                 'last_name' => $customer->getFamilyName() ?? '',

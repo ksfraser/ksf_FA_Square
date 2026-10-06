@@ -214,8 +214,8 @@ class CustomerServiceTest extends TestCase
 
         // Assert: a staging reference, not a fabricated debtor
         $this->assertIsArray($result);
-        $this->assertEquals('staged', $result['status']);
-        $this->assertEquals('square', $result['source']);
+$this->assertEquals('staged', $result['status']);
+          $this->assertEquals('square_api', $result['source']);
         $this->assertEquals('cus_123456', $result['source_customer_id']);
         $this->assertEquals('john@example.com', $result['email']);
         $this->assertEquals(77, $result['staging_id']);
@@ -236,8 +236,8 @@ class CustomerServiceTest extends TestCase
             'ISU requires a StagingEntity DTO instance'
         );
 
-        $dto = $invocation[2];
-        $this->assertEquals('square', $dto->getSource());
+$dto = $invocation[2];
+          $this->assertEquals('square_api', $dto->getSource());
         $this->assertEquals('cus_123456', $dto->getSourceId());
         $this->assertEquals('John', $dto->getFirstName());
         $this->assertEquals('Doe', $dto->getLastName());
