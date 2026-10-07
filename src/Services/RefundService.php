@@ -107,16 +107,7 @@ class RefundService implements RefundServiceInterface
                 'created_at' => date('Y-m-d H:i:s'),
             ]);
 
-            // Call custom hook for Refund Processing (Staging module defines DTO/responds)
-            $refundData = [
-                'source_refund_id' => $refund->getId(),
-                'source_payment_id' => $payment->getId(),
-                'amount' => $amountInCents,
-                'currency' => $payment->getAmountMoney()->getCurrency(),
-                'reason' => $reason,
-                'status' => 'created',
-            ];
-            \hook_invoke_all('stage_refund', $refundData);
+            $this->stageRefund($refund->getId(), $payment->getId(), $amountInCents, $payment, $reason);
 
             return $refund;
         } catch (ApiException $e) {
@@ -406,4 +397,78 @@ class RefundService implements RefundServiceInterface
         
         return implode('; ', $messages);
     }
+
+    /**
+     * Stage a refund through ISU's staging capability.
+     *
+     * This used to hook_invoke_all('stage_refund', $rawArray), on the assumption
+     * that "the staging module responds". It never did: ISU's only staging
+     * entry point is the STAGE_ENTITY capability, and that responder REQUIRES a
+     * \Ksfraser\StagingDto\StagingEntity instance -- a raw array is rejected with
+     * 'stageEntity requires a StagingEntity DTO instance'. Because a broadcast is
+     * fire-and-forget the rejection was discarded, so refunds were never staged
+     * and nothing reported it.
+     *
+     * StagingRefund is one of the DTO types ISU's DtoAdapter actually supports,
+     * so this path can genuinely work. Dispatched by capability, not by naming
+     * ISU, so a replacement stager can take over.
+     *
+     * $amountInCents is Square's native minor-unit integer; the staging layer
+     * stores decimal amounts (see ImportService, which divides by 100 for the
+     * same reason).
+     *
+     * A staging failure must NOT fail the refund. The refund is already created
+     * in Square and logged to the import log by this point; this only records it
+     * for later FA processing.
+     *
+     * @param string $refundId
+     * @param string $paymentId
+     * @param int    $amountInCents
+     * @param Payment $payment
+     * @param string $reason
+     * @return int Staging ID, or 0 if not staged
+     */
+    private function stageRefund(
+        $refundId,
+        $paymentId,
+        $amountInCents,
+        Payment $payment,
+        $reason
+    ): int {
+        if (!class_exists('\Ksfraser\StagingDto\StagingRefund')) {
+            error_log('Square: staging-dto StagingRefund unavailable; refund not staged');
+            return 0;
+        }
+
+        $data = new \Ksfraser\StagingDto\StagingRefund(
+            'square',
+            (string)$refundId,
+            ((float)$amountInCents) / 100,
+            $payment->getAmountMoney()->getCurrency(),
+            'staged',
+            'card',
+            (string)$paymentId,
+            (string)$reason,
+            date('Y-m-d H:i:s')
+        );
+
+        $response = function_exists('hook_invoke_first')
+            ? hook_invoke_first('STAGE_ENTITY', $data)
+            : (function_exists('hook_invoke_all') ? hook_invoke_all('STAGE_ENTITY', $data) : null);
+
+        // A DTO-input responder REPLACES $data with a response array.
+        $reply = (is_array($response) && isset($response[0]) && is_array($response[0]))
+            ? $response[0]
+            : (is_array($data) ? $data : []);
+
+        if (!empty($reply['error'])) {
+            error_log('Square: refund staging rejected: ' . (string)$reply['error']);
+            return 0;
+        }
+
+        $result = $reply['result'] ?? [];
+
+        return isset($result['stagingId']) ? (int)$result['stagingId'] : 0;
+    }
+
 }
