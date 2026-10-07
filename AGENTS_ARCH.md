@@ -52,6 +52,35 @@ property must be defaulted.
 
 ### 2.1 Namespace convention (canonical, no variations)
 
+**The prefix decides the namespace. Check the directory name first.**
+
+| Module directory | Namespace | Meaning |
+|---|---|---|
+| `ksf_FA_<Module>` | `ksfraser\FrontAccounting\<Module>\` | an FA module |
+| `ksf_<Module>` | `ksfraser\<Module>\` | standalone business logic, not attached to FA |
+
+A module is an FA module because it is **named** `ksf_FA_*` and ships an FA
+`hooks.php` — not because of what it integrates with. WooCommerce is the case
+that gets this wrong, because there are two distinct things that can be built:
+
+- `ksf_FA_Woocommerce` — a WooCommerce integration **inside FA**. It stages into
+  FA's tables and lives in the FA module tree, so:
+  `ksfraser\FrontAccounting\Woocommerce\`.
+- `ksf_Woo*` — WooCommerce code **not attached to FA** (standalone REST clients,
+  a Woo plugin, sync tooling). These are `ksf_*`, so: `ksfraser\Woocommerce\`.
+
+The `FrontAccounting\` segment is not cosmetic. Dropping it from an FA module
+makes the namespace read as though the module were part of WooCommerce itself or
+shipped with WooCommerce upstream, which is exactly the impression to avoid:
+these are private KSF modules. Conversely, an FA-attached Woo module **must**
+keep the `FrontAccounting\` segment, because that is what marks it as living
+inside FA rather than beside it.
+
+If you are unsure which bucket a module falls in, look at the directory name and
+whether it has a `hooks.php` — do not infer it from the third-party system the
+module talks to.
+
+
 An FA module named `ksf_FA_<Module>` uses exactly:
 
 ```
