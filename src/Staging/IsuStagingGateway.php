@@ -28,7 +28,48 @@ namespace ksfraser\FrontAccounting\Square\Staging;
  */
 class IsuStagingGateway
 {
-    private const HOOK_MODULE = 'ksf_FA_ImportStagingProcessing';
+    /**
+     * Capability names, dispatched NOT by module.
+     *
+     * These were previously sent with hook_invoke(self::HOOK_MODULE, ...), which
+     * hardcoded 'ksf_FA_ImportStagingProcessing' into Square. That defeats the
+     * point of the staging layer: a replacement stager (a different ISU build, or
+     * another module implementing the same contract) could not take over without
+     * Square being edited.
+     *
+     * hook_invoke_first is correct here, not hook_invoke_all: staging is a
+     * request/response round trip (Square needs the stagingId back), and exactly
+     * one module owns staging. hook_invoke_first walks the active modules and
+     * stops at the first real answer, so a module that merely observes STAGE_ENTITY
+     * and returns null does not intercept it.
+     */
+    private const CAP_STAGE_ENTITY = 'STAGE_ENTITY';
+    private const CAP_STAGING_EXISTS = 'STAGING_EXISTS';
+
+    /**
+     * Invoke a staging capability, tolerating either dispatcher being present.
+     *
+     * @param string $capability
+     * @param mixed       $data DTO by reference; a responder replaces it with a response
+     * @param array|null  $opts
+     * @return array|null
+     */
+    private function invokeCapability(string $capability, &$data, $opts = null)
+    {
+        if (function_exists('hook_invoke_first')) {
+            return hook_invoke_first($capability, $data, $opts);
+        }
+
+        // Older FA, or a stripped test harness.
+        if (function_exists('hook_invoke_all')) {
+            $merged = hook_invoke_all($capability, $data, $opts);
+            if (is_array($merged) && isset($merged[0]) && is_array($merged[0])) {
+                return $merged[0];
+            }
+        }
+
+        return null;
+    }
 
     /**
      * Check if a transaction is already staged by source payment ID.
@@ -43,7 +84,7 @@ class IsuStagingGateway
         }
         $query = new \Ksfraser\StagingDto\StagingExistsQuery('square', $sourcePaymentId, 'transaction');
         $data = $query;
-        hook_invoke(self::HOOK_MODULE, 'STAGING_EXISTS', $data);
+        $this->invokeCapability(self::CAP_STAGING_EXISTS, $data);
 
         // $data still holds the DTO when ISU is inactive or a responder fails to
         // replace it, so re-check before reading offsets. See AGENTS_ARCH.md
@@ -105,7 +146,7 @@ class IsuStagingGateway
         );
 
         $data = $dto;
-        hook_invoke(self::HOOK_MODULE, 'STAGE_ENTITY', $data);
+        $this->invokeCapability(self::CAP_STAGE_ENTITY, $data);
 
         // See exists() and AGENTS_ARCH.md §11.2: a DTO input must come back as
         // a replaced array. Anything else means no responder ran.
@@ -173,7 +214,7 @@ class IsuStagingGateway
             return null;
         }
         $data = ['id' => $id, 'entity_type' => 'transaction'];
-        hook_invoke(self::HOOK_MODULE, 'respondToCapabilityRequest', $data, [
+        $this->invokeCapability('respondToCapabilityRequest', $data, [
             'request' => 'staging:getById',
             'id' => $id,
             'entity_type' => 'transaction',
@@ -194,7 +235,7 @@ class IsuStagingGateway
         }
         $this->deleteLineItemsByTransaction($id);
         $data = ['id' => $id, 'entity_type' => 'transaction'];
-        hook_invoke(self::HOOK_MODULE, 'respondToCapabilityRequest', $data, [
+        $this->invokeCapability('respondToCapabilityRequest', $data, [
             'request' => 'staging:delete',
             'id' => $id,
             'entity_type' => 'transaction',
@@ -213,7 +254,7 @@ class IsuStagingGateway
             return;
         }
         $data = ['staging_id' => $stagingId];
-        hook_invoke(self::HOOK_MODULE, 'respondToCapabilityRequest', $data, [
+        $this->invokeCapability('respondToCapabilityRequest', $data, [
             'request' => 'staging:deleteLineItemsByTransaction',
             'staging_id' => $stagingId,
         ]);
@@ -231,7 +272,7 @@ class IsuStagingGateway
             return [];
         }
         $data = ['source' => $source];
-        hook_invoke(self::HOOK_MODULE, 'respondToCapabilityRequest', $data, [
+        $this->invokeCapability('respondToCapabilityRequest', $data, [
             'request' => 'staging:getStatusCounts',
             'source' => $source,
         ]);
@@ -262,7 +303,7 @@ class IsuStagingGateway
             $filters['to_date'] = $toDate;
         }
         $data = ['filters' => $filters];
-        hook_invoke(self::HOOK_MODULE, 'respondToCapabilityRequest', $data, [
+        $this->invokeCapability('respondToCapabilityRequest', $data, [
             'request' => 'staging:getStagedTransactions',
             'filters' => $filters,
         ]);
@@ -286,7 +327,7 @@ class IsuStagingGateway
             $this->updateFields($id, $extraFields);
         }
         $data = ['id' => $id, 'status' => $status];
-        hook_invoke(self::HOOK_MODULE, 'respondToCapabilityRequest', $data, [
+        $this->invokeCapability('respondToCapabilityRequest', $data, [
             'request' => 'staging:updateStatus',
             'id' => $id,
             'status' => $status,
@@ -306,7 +347,7 @@ class IsuStagingGateway
             return;
         }
         $data = ['id' => $id, 'fields' => $fields, 'entity_type' => 'transaction'];
-        hook_invoke(self::HOOK_MODULE, 'respondToCapabilityRequest', $data, [
+        $this->invokeCapability('respondToCapabilityRequest', $data, [
             'request' => 'staging:updateFields',
             'id' => $id,
             'fields' => $fields,
@@ -326,7 +367,7 @@ class IsuStagingGateway
             return [];
         }
         $data = ['staging_id' => $stagingId];
-        hook_invoke(self::HOOK_MODULE, 'respondToCapabilityRequest', $data, [
+        $this->invokeCapability('respondToCapabilityRequest', $data, [
             'request' => 'staging:getItemsByTransaction',
             'staging_id' => $stagingId,
         ]);

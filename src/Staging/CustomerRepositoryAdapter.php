@@ -164,7 +164,9 @@ class CustomerRepositoryAdapter implements CustomerRepositoryInterface
  *
  * @deprecated Use ksfraser/staging-dto StagingCustomer via ISU hooks instead.
  *             This adapter is maintained for backward compatibility only.
- *             New code should create DTOs and call hook_invoke('ksf_FA_ImportStagingProcessing_UI', 'stageEntity', $dto).
+ *             New code should create DTOs and dispatch the STAGE_ENTITY capability
+             * (hook_invoke_first('STAGE_ENTITY', $dto)), which is what IsuStagingGateway does.
+             * Do NOT target a named stager module: the stager must stay swappable.
  *
  * @package Ksfraser\FrontAccounting\Square\Staging
  * @since 1.0.0

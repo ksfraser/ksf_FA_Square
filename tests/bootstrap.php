@@ -117,6 +117,51 @@ if (!function_exists('hook_invoke')) {
 
         return null;
     }
+    /**
+     * Recording double for FA's hook_invoke_first().
+     *
+     * Production code dispatches by CAPABILITY, so the scripted-reply key is the
+     * bare method name ('STAGE_ENTITY'). The legacy '<module>::<method>' key is
+     * still honoured so tests written before the capability-dispatch change keep
+     * working.
+     *
+     * Mirrors FA semantics: walk the scripted providers in order and stop at the
+     * first non-null reply; a provider that declines leaves $data untouched.
+     */
+    function hook_invoke_first($method, &$data, $opts = null)
+    {
+        $GLOBALS['ksf_test_invocations'][] = ['(first)', $method, $data, $opts];
+
+        $providers = isset($GLOBALS['ksf_test_invoke_providers'][$method])
+            ? $GLOBALS['ksf_test_invoke_providers'][$method]
+            : ['ksf_FA_ImportStagingProcessing'];
+
+        foreach ($providers as $provider) {
+            $key   = $provider . '::' . $method;
+            $reply = null;
+
+            if (isset($GLOBALS['ksf_test_invoke_writes'][$key])) {
+                $reply = $GLOBALS['ksf_test_invoke_writes'][$key];
+            } elseif (isset($GLOBALS['ksf_test_invoke_writes'][$method])) {
+                $reply = $GLOBALS['ksf_test_invoke_writes'][$method];
+            }
+
+            if ($reply !== null) {
+                // A DTO-input responder REPLACES $data wholesale.
+                $data = $reply;
+
+                if (isset($GLOBALS['ksf_test_invoke_returns'][$key])) {
+                    return $GLOBALS['ksf_test_invoke_returns'][$key];
+                }
+
+                return $reply;
+            }
+        }
+
+        return null;
+    }
+
+
 }
 
 // Reset the recorders between tests.
@@ -124,3 +169,4 @@ $GLOBALS['ksf_test_broadcasts'] = [];
 $GLOBALS['ksf_test_invocations'] = [];
 $GLOBALS['ksf_test_invoke_returns'] = [];
 $GLOBALS['ksf_test_invoke_writes'] = [];
+$GLOBALS['ksf_test_invoke_providers'] = [];

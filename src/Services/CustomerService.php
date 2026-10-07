@@ -412,18 +412,31 @@ class CustomerService implements CustomerServiceInterface
      */
     private function stageCustomerDto(\Ksfraser\StagingDto\StagingCustomer $dto): array
     {
-        if (!function_exists('hook_invoke')) {
+        if (!function_exists('hook_invoke_first') && !function_exists('hook_invoke_all')) {
             throw new CustomerSyncException(
-                'Import Staging unavailable: hook_invoke() not loaded, cannot stage customer'
+                'Import Staging unavailable: no hook dispatcher loaded, cannot stage customer'
             );
         }
 
-        // ISU's STAGE_ENTITY responder requires a StagingEntity instance and
-        // replaces $data wholesale with a response array (it cannot write
-        // offsets onto a DTO). Guard anyway: an older or misbehaving responder
-        // must not turn into "Cannot use object of type ... as array".
+        // Dispatched by CAPABILITY, not by module name. This previously called
+        // hook_invoke('ksf_FA_ImportStagingProcessing', 'STAGE_ENTITY', ...),
+        // hardcoding Square's choice of stager into Square -- a replacement
+        // stager could not take over without Square being edited.
+        //
+        // hook_invoke_first is correct here, not hook_invoke_all: staging is a
+        // request/response round trip (the stagingId comes back) with a single
+        // owner, so a module that merely OBSERVES STAGE_ENTITY and returns null
+        // must not intercept it.
+        //
+        // The responder requires a StagingEntity instance and replaces $data
+        // wholesale with a response array (it cannot write offsets onto a DTO),
+        // so re-check is_array() before reading offsets -- see AGENTS_ARCH.md
+        // §11.2. That guard also covers a responder that declines and leaves the
+        // DTO in place.
         $data = $dto;
-        hook_invoke('ksf_FA_ImportStagingProcessing', 'STAGE_ENTITY', $data);
+        $reply = function_exists('hook_invoke_first')
+            ? hook_invoke_first('STAGE_ENTITY', $data)
+            : hook_invoke_all('STAGE_ENTITY', $data);
 
         if (!is_array($data)) {
             throw new CustomerSyncException(
@@ -437,7 +450,10 @@ class CustomerService implements CustomerServiceInterface
             );
         }
 
-        $result = $data['result'] ?? [];
+        // hook_invoke_first returns the response itself; the hook_invoke_all
+        // fallback merges it as the first element.
+        $response = (is_array($reply) && isset($reply[0]) && is_array($reply[0])) ? $reply[0] : $data;
+        $result = $response['result'] ?? [];
 
         return [
             'status' => 'staged',

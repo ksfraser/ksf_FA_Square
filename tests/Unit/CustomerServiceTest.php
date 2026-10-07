@@ -229,14 +229,21 @@ $this->assertEquals('staged', $result['status']);
             }
         }
         $this->assertNotNull($invocation, 'STAGE_ENTITY was not invoked');
-        $this->assertEquals('ksf_FA_ImportStagingProcessing', $invocation[0]);
+        // STAGE_ENTITY must be dispatched BY CAPABILITY. The recorder tags a
+        // capability dispatch '(first)' because no module was named; if Square
+        // ever hardcodes a stager again this assertion catches it.
+        $this->assertSame(
+            '(first)',
+            $invocation[0],
+            'STAGE_ENTITY must be dispatched by capability, not to a named module'
+        );
         $this->assertInstanceOf(
             \Ksfraser\StagingDto\StagingCustomer::class,
             $invocation[2],
             'ISU requires a StagingEntity DTO instance'
         );
 
-$dto = $invocation[2];
+        $dto = $invocation[2];
           $this->assertEquals('square_api', $dto->getSource());
         $this->assertEquals('cus_123456', $dto->getSourceId());
         $this->assertEquals('John', $dto->getFirstName());
@@ -380,7 +387,7 @@ $dto = $invocation[2];
         // Every customer crossed the boundary as a StagingCustomer DTO.
         $stageCount = 0;
         foreach ($GLOBALS['ksf_test_invocations'] as $call) {
-            if ($call[0] === 'ksf_FA_ImportStagingProcessing' && $call[1] === 'STAGE_ENTITY') {
+            if ($call[1] === 'STAGE_ENTITY' && in_array($call[0], ['(first)', '(all)'], true)) {
                 $this->assertInstanceOf(\Ksfraser\StagingDto\StagingCustomer::class, $call[2]);
                 $stageCount++;
             }
