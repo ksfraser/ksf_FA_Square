@@ -848,6 +848,82 @@ $data = [
 - Use `class_exists()` guard before using other modules' classes
 - Log errors, don't throw (hook methods must be fault-tolerant)
 
+### 11.1 Staging: what can actually be staged (learned 2026-10)
+
+**The staging DTO package is NOT the contract. `DtoAdapter` is.**
+
+`ksfraser/staging-dto` ships 23 DTO types, but ISU's
+`ksfraser\FrontAccounting\ImportStaging\Services\DtoAdapter::stageEntity()`
+dispatches on exactly **nine** and throws
+`InvalidArgumentException('Unsupported DTO type: ...')` for everything else:
+
+| Stagingable | In the package but NOT stageable |
+|---|---|
+| `StagingOrder` | `StagingCoupon`, `StagingDiscount`, `StagingInventory` |
+| `StagingInvoice` | `StagingLineItem` (child of another DTO only) |
+| `StagingPayment` | `StagingLoyaltyAccount` / `LoyaltyProgram` / `LoyaltyReward` |
+| `StagingRefund` | `StagingNote`, `StagingShipment`, `StagingTax` |
+| `StagingSubscription` | `StagingTransaction` (internal) |
+| `StagingCustomer` | `StagingEntity` (abstract base) |
+| `StagingProduct`, `StagingProductVariant` | `StagingExistsQuery` / `StagingExistsResult` (internal) |
+| `StagingCategory` | |
+
+Adding a DTO type is therefore **not** enough to make something stageable: the
+adapter needs a dispatch branch, a mapper method, and somewhere to put the row.
+**Check the adapter, not the package.**
+
+**The staging entry point is the `STAGE_*` capability family only**, and its
+responder requires a `StagingEntity` instance:
+
+```php
+if (!$data instanceof \Ksfraser\StagingDto\StagingEntity) {
+    $data = ['error' => 'stageEntity requires a StagingEntity DTO instance', 'success' => false];
+    return null;
+}
+```
+
+Three traps this creates. All three shipped; all are now guarded by tests.
+
+1. **A raw array can never stage** — and because `hook_invoke_all` is
+   fire-and-forget, the rejection is discarded, so the caller believes it staged
+   and nothing was written. Square had seven such broadcasts, Woo had four.
+2. **`hook_invoke_all` cannot substitute for `hook_invoke_first`.** Its return is
+   `array_merge_recursive()` of every provider's reply, so unwrapping `[0]` picks
+   whichever module is first in the registry rather than the one that answered.
+   Never write an `_all` fallback for a DTO capability. (`hook_invoke_first` has
+   existed since FA 2.3 — `hooks.inc` breaks on `isset($result)` — so such a
+   fallback is unreachable anyway.)
+3. **A duplicate DTO type is a live hazard, not a hypothetical.** If the working
+   path already stages the record, "fixing" a dead event by building the obvious
+   DTO creates a second row; ISU dedupes on `source` + `source_payment_id`, so
+   the two race and the winner is arbitrary. Square shipped two such traps:
+   `stage_payment_type` (→ `StagingPayment`) and `stage_order_lifecycle`
+   (→ `StagingOrder`), both duplicating what
+   `IsuStagingGateway::stageSquareOrder()` already stages. **Before implementing
+   any staging event, check whether the working path already covers it.**
+
+Square's `stage_refund` was the one dead event genuinely implementable
+(`StagingRefund` is stageable) and it now works.
+
+Money amounts: Square reports **minor units** (cents). Divide by 100 before
+building a DTO — the staging layer stores decimals, as `ImportService` does.
+
+#### Guard tests for the above
+
+- `ksf_FA_Square/tests/Unit/NoRawArrayStagingBroadcastTest.php` — no
+  `hook_invoke_all` to a DTO capability; no `stage_*`/`log_*` broadcast lacking a
+  responder.
+- `ksf_FA_Square/tests/Unit/NoHardcodedStagerTest.php` — no production file
+  names a stager module.
+- `ksf_FA_Woocommerce/tests/Unit/Staging/StagingResponseNotDiscardedTest.php` — a
+  rejected staging call must report `staged => false`, never look successful.
+
+Both Square guards strip comments with `token_get_all`. **When doing that, emit
+`$token[1]` for every non-comment array token.** A stray `continue` drops all
+`T_STRING` tokens, so function names never reach the regex and the guard passes
+everything silently. Both guards were broken exactly that way and had to be
+fixed — verify a guard fails when you reintroduce a violation.
+
 ## 12. FA module packaging
 
 - `_init/config` file is **gzip-compressed** `Key: Value` lines (`Name:`, `Version:`,
