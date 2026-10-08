@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Integration suite config.
+
+  It is SEPARATE from phpunit.xml on purpose. phpunit.xml bootstraps
+  tests/bootstrap.php, which declares recording doubles for db_escape/db_query so
+  the Unit suite can run without a database. tests/Integration/bootstrap_db.php
+  declares REAL implementations of the same functions against a live MariaDB.
+
+  Loading both in one process is a fatal:
+    Cannot redeclare db_escape() (previously declared in tests/bootstrap.php)
+
+  PHPUnit takes a single bootstrap per config file, so the Integration suite gets
+  its own. Do not merge these.
+
+  Run with:
+    FA_PATH_TO_ROOT=../ksf_Infrastructure/FA/2.4.3 \
+    FA_DB_HOST=127.0.0.1 FA_DB_PORT=3307 FA_DB_USER=... FA_DB_PASS=... \
+    php vendor/bin/phpunit -c phpunit.integration.xml
+
+  Or inside the container, where config_db.php is already correct:
+    podman exec ksfii_app-fa sh -lc \
+      'cd /var/www/html/modules/ksf_FA_Square && php vendor/bin/phpunit -c phpunit.integration.xml'
+-->
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.6/phpunit.xsd"
+         bootstrap="tests/Integration/bootstrap_db.php"
+         colors="true"
+         verbose="true">
+    <testsuites>
+        <testsuite name="Integration">
+            <directory>tests/Integration</directory>
+        </testsuite>
+    </testsuites>
+</phpunit>

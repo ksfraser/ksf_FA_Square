@@ -7,16 +7,37 @@ declare(strict_types=1);
  * Runs inside the ksf-fa container against the real MariaDB.
  * Tests CRUD operations for all 5 adapter classes.
  *
- * Usage:
- *   podman exec ksf-fa php /var/www/html/modules/ksf_FA_Square/tests/Integration/RepositoryAdapterIntegrationTest.php
+ * Runs from the host too. Paths are resolved relative to this file so the suite
+ * is not tied to the container's mount point; the FA root and DB credentials come
+ * from bootstrap_db.php, which honours FA_PATH_TO_ROOT / FA_DB_HOST /
+ * FA_DB_PORT / FA_DB_USER / FA_DB_PASS.
+ *
+ * Usage (in-container):
+ *   podman exec ksfii_app-fa php /var/www/html/modules/ksf_FA_Square/tests/Integration/RepositoryAdapterIntegrationTest.php
+ *
+ * Usage (from the host):
+ *   FA_PATH_TO_ROOT=../ksf_Infrastructure/FA/2.4.3 FA_DB_HOST=127.0.0.1 \
+ *   FA_DB_PORT=3307 FA_DB_PASS=... php tests/Integration/RepositoryAdapterIntegrationTest.php
  *
  * @BABOK Related: FR-SQUARE-ISU-ADAPTER
  */
 
-// Bootstrap DB functions and autoloaders
-require_once '/var/www/html/modules/ksf_FA_Square/tests/Integration/bootstrap_db.php';
-require_once '/var/www/html/modules/ksf_FA_ImportStagingProcessing/vendor/autoload.php';
-require_once '/var/www/html/modules/ksf_FA_Square/vendor/autoload.php';
+// Bootstrap DB functions and autoloaders. __DIR__ keeps these resolvable from
+// any checkout location; the absolute /var/www/html paths made the suite
+// impossible to run outside the container.
+require_once __DIR__ . '/bootstrap_db.php';
+
+// Sibling modules live alongside this one, both inside the container
+// (/var/www/html/modules/*) and in the dev checkout (../*).
+$moduleRoot = dirname(__DIR__, 3);
+foreach (array(
+    $moduleRoot . '/ksf_FA_ImportStagingProcessing/vendor/autoload.php',
+    $moduleRoot . '/ksf_FA_Square/vendor/autoload.php',
+) as $autoload) {
+    if (file_exists($autoload)) {
+        require_once $autoload;
+    }
+}
 
 use ksfraser\FrontAccounting\ImportStaging\Models\StagingTransaction;
 use ksfraser\FrontAccounting\ImportStaging\Models\StagingCustomer;
