@@ -67,14 +67,19 @@ class SalesOrderService implements SalesOrderServiceInterface
     public function createSalesOrderFromSquare(array $squareOrder): array
     {
         try {
-            // Call custom hook for Advanced Orders lifecycle (Staging module defines DTO/responds)
-            $orderLifecycleData = [
-                'source_order_id' => $squareOrder['order_id'] ?? null,
-                'status' => $squareOrder['status'] ?? 'pending',
-                'total_amount' => $squareOrder['total_amount'] ?? 0,
-                'customer_id' => $squareOrder['customer']['id'] ?? null,
-            ];
-            \hook_invoke_all('stage_order_lifecycle', $orderLifecycleData);
+            // Deliberately NOT staged, despite this looking implementable.
+            //
+            // This used to broadcast a raw array to 'stage_order_lifecycle',
+            // which no module implements. The payload maps onto StagingOrder,
+            // which ISU's DtoAdapter DOES support -- so the naive fix would have
+            // worked and created a second staging order for the same Square
+            // order, duplicating the one IsuStagingGateway::stageSquareOrder()
+            // already creates with its line items.
+            //
+            // Order *status transitions* are a genuinely different thing from
+            // creating an order. If that lifecycle needs tracking it belongs on
+            // the existing staged order (a status update), not as a second
+            // staging record.
 
             // Validate Square order data
             $this->validateSquareOrder($squareOrder);

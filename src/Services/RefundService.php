@@ -452,9 +452,17 @@ class RefundService implements RefundServiceInterface
             date('Y-m-d H:i:s')
         );
 
-        $response = function_exists('hook_invoke_first')
-            ? hook_invoke_first('STAGE_ENTITY', $data)
-            : (function_exists('hook_invoke_all') ? hook_invoke_all('STAGE_ENTITY', $data) : null);
+        // No hook_invoke_all fallback here. It cannot serve a DTO capability:
+        // the broadcast return is the array_merge_recursive() of every
+        // provider's reply, which cannot be read as one response. FA 2.4.3's
+        // includes/hooks.inc has provided hook_invoke_first() since 2.3, so the
+        // fallback could never be the live path anyway.
+        if (!function_exists('hook_invoke_first')) {
+            error_log('Square: hook_invoke_first unavailable; refund not staged');
+            return 0;
+        }
+
+        $response = hook_invoke_first('STAGE_ENTITY', $data);
 
         // A DTO-input responder REPLACES $data with a response array.
         $reply = (is_array($response) && isset($response[0]) && is_array($response[0]))

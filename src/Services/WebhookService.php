@@ -273,14 +273,15 @@ class WebhookService implements WebhookServiceInterface
             throw new WebhookValidationException("Invalid webhook event structure");
         }
 
-        // Call custom hook for Webhook Enhancement (Staging module defines DTO/responds)
-        $webhookData = [
-            'event_id' => $eventId,
-            'event_type' => $eventType,
-            'created_at' => $createdAt,
-            'raw_data' => $eventData,
-        ];
-        \hook_invoke_all('stage_webhook_event', $webhookData);
+        // Not staged. This used to broadcast a raw array to 'stage_webhook_event',
+        // which no module implements, so it was discarded while appearing to work.
+        //
+        // StagingDto\StagingNote exists and is the natural fit for an audit
+        // record like this, but ISU's DtoAdapter does not support it (only 9
+        // types are stageable), so a responder would raise 'Unsupported DTO
+        // type'. Note also that webhook events are already persisted by Square's
+        // own audit log (AuditLogRepositoryAdapter), so this payload was partly
+        // redundant anyway. Deliberately not faked.
 
         // Process the event based on type
         switch ($eventType) {

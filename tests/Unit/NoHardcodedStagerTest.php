@@ -67,7 +67,13 @@ class NoHardcodedStagerTest extends TestCase
                 if ($token[0] === T_COMMENT || $token[0] === T_DOC_COMMENT) {
                     // Keep newlines so token positions/line numbers survive.
                     $out .= str_repeat("\n", substr_count($token[1], "\n"));
+                    continue;
                 }
+                // Keep every OTHER multi-char token. Names such as
+                // 'hook_invoke' arrive as T_STRING and must be emitted, or the
+                // regex can never match a function name and this guard silently
+                // passes everything.
+                $out .= $token[1];
                 continue;
             }
             $out .= $token;

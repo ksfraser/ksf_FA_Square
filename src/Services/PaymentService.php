@@ -52,15 +52,21 @@ class PaymentService implements PaymentServiceInterface
             // Validate Square payment data
             $this->validateSquarePayment($squarePayment);
             
-            // Call custom hook for gift card / loyalty payment tracking
-            $paymentTypeData = [
-                'payment_id' => $squarePayment['id'] ?? null,
-                'payment_type' => $squarePayment['payment_type'] ?? 'card',
-                'amount' => $squarePayment['amount'] ?? 0,
-                'currency' => $squarePayment['currency'] ?? 'USD',
-                'customer_email' => $squarePayment['customer_email'] ?? '',
-            ];
-            \hook_invoke_all('stage_payment_type', $paymentTypeData);
+            // Deliberately NOT staged, despite this looking implementable.
+            //
+            // This used to broadcast a raw array to 'stage_payment_type', which
+            // no module implements. Unlike the other dead events, this one
+            // MUST NOT simply be wired up: the payload maps cleanly onto
+            // StagingPayment, which ISU's DtoAdapter does support -- so the
+            // naive fix would have worked, and created a SECOND staging payment
+            // for the same Square payment. The payment is already staged once,
+            // with its line items, by IsuStagingGateway::stageSquareOrder().
+            //
+            // That duplicate is a live hazard, not a hypothetical: ISU dedupes on
+            // source + source_payment_id, so the two records would race and the
+            // winner would be arbitrary. If gift-card / loyalty payment *types*
+            // genuinely need tracking, that has to be a distinct concept from a
+            // payment -- a question for the payment model, not a hook rename.
 
             // Get or create customer
             $customer = $this->customerService->matchCustomer($squarePayment['customer_email'] ?? '');

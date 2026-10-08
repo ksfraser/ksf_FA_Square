@@ -62,13 +62,16 @@ class InventoryAnalyticsService
             ];
         }
         
-        // Call custom hook for Inventory Management (Staging module defines DTO/responds)
-        $inventoryData = [
-            'table_name' => $tableName,
-            'filters' => $filters,
-            'summary' => $summary,
-        ];
-        \hook_invoke_all('stage_inventory_adjustment', $inventoryData);
+        // Deliberately not staged.
+        //
+        // This used to broadcast a raw array to 'stage_inventory_adjustment',
+        // which no module implements. Beyond being dead, the event name was
+        // actively wrong: the payload is an ANALYTICS READ (total_items,
+        // total_value, out_of_stock, low_stock, average/min/max quantity), not
+        // an adjustment. Staging it as StagingInventory would have written
+        // summary statistics into the inventory staging table as if they were
+        // stock movements, which is exactly the kind of corruption the staging
+        // layer exists to prevent. Analytics belong in a report, not in staging.
 
         // Category distribution
         $categorySql = "SELECT 

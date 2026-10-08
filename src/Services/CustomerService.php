@@ -434,9 +434,16 @@ class CustomerService implements CustomerServiceInterface
         // §11.2. That guard also covers a responder that declines and leaves the
         // DTO in place.
         $data = $dto;
-        $reply = function_exists('hook_invoke_first')
-            ? hook_invoke_first('STAGE_ENTITY', $data)
-            : hook_invoke_all('STAGE_ENTITY', $data);
+        // hook_invoke_first only: a broadcast cannot serve a DTO capability,
+        // because its return is the array_merge_recursive() of every provider's
+        // reply rather than one response. Present in FA since 2.3.
+        if (!function_exists('hook_invoke_first')) {
+            throw new CustomerSyncException(
+                'Import Staging unavailable: hook_invoke_first not loaded, cannot stage customer'
+            );
+        }
+
+        $reply = hook_invoke_first('STAGE_ENTITY', $data);
 
         if (!is_array($data)) {
             throw new CustomerSyncException(
