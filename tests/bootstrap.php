@@ -10,15 +10,11 @@ if (!file_exists($autoload)) {
 
 require_once $autoload;
 
-// FA-faithful db_escape() stub. Real FrontAccounting db_escape() returns the
-// escaped value already wrapped in single quotes (e.g. db_escape('hi') -> 'hi').
-// The famock stub only does addslashes(), so define ours first; famock's
-// function_exists guard will then skip its own definition.
-if (!function_exists('db_escape')) {
-    function db_escape($value = "") {
-        return "'" . addslashes((string)$value) . "'";
-    }
-}
+// db_escape() comes from famock (ksfraser/famock >= 0.10.5), which returns the
+// value already wrapped in single quotes, exactly like FA's real db_escape().
+// Do NOT re-declare it here: every DAO in src/ calls it bare
+// ("WHERE name = " . db_escape($name)), so a local override that disagrees
+// with FA silently produces invalid SQL in tests.
 
 // Load FA function stubs from famock package
 $famockDir = __DIR__ . '/../vendor/ksfraser/famock/php';

@@ -4,12 +4,16 @@
          bootstrap="tests/bootstrap.php"
          colors="true"
          verbose="true">
+    <!-- Unit only. The Integration suite is run separately with
+         `phpunit -c phpunit.integration.xml`, which uses
+         tests/Integration/bootstrap_db.php as its bootstrap and talks to a real
+         FA database. Listing both here loaded that live-DB bridge on top of
+         tests/bootstrap.php's famock stubs, and the two both declare db_escape()
+         (and db_query(), db_fetch_assoc(), ...), so every run died with
+         "Cannot redeclare db_escape()". -->
     <testsuites>
         <testsuite name="Unit">
             <directory>tests/Unit</directory>
-        </testsuite>
-        <testsuite name="Integration">
-            <directory>tests/Integration</directory>
         </testsuite>
     </testsuites>
     <filter>
