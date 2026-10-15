@@ -34,6 +34,14 @@ class CustomerServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Reset the FA hook doubles. These are globals, so without this a
+        // scripted responder reply leaks into the next test and a test can
+        // pass for the wrong reason.
+        $GLOBALS['ksf_test_broadcasts'] = [];
+        $GLOBALS['ksf_test_invocations'] = [];
+        $GLOBALS['ksf_test_invoke_returns'] = [];
+        $GLOBALS['ksf_test_invoke_writes'] = [];
         
         // Mock Square client
         $this->mockSquareClient = $this->createMock(\Square\SquareClient::class);
@@ -177,37 +185,288 @@ class CustomerServiceTest extends TestCase
             ->with('john@example.com')
             ->willReturn(null);
 
-        // Since 6b970e2 a new Square customer is NOT written to the FA
-        // debtor table directly. CustomerService stages it by broadcasting
-        // stage_customer_data and lets Import Staging own persistence, so the
-        // debtor DAO and the Square mapping DAO must stay untouched.
+        // A new Square customer is never written to the FA debtor table by
+        // Square. It is handed to Import Staging as a StagingCustomer DTO via
+        // hook_invoke('ksf_FA_ImportStagingProcessing', 'STAGE_ENTITY', $dto),
+        // so the debtor DAO and the Square mapping DAO must stay untouched.
         $this->mockDebtorDao->expects($this->never())
             ->method('insertDebtor');
         $this->mockSquareCustomerDao->expects($this->never())
             ->method('insertMapping');
 
+        // Script ISU's reply. ISU replaces $data wholesale (it receives a DTO), so
+        // the double writes back a response array rather than adding a key.
+        $GLOBALS['ksf_test_invocations'] = [];
+        $GLOBALS['ksf_test_invoke_writes']['ksf_FA_ImportStagingProcessing::STAGE_ENTITY'] = [
+            'success' => true,
+            'result' => [
+                'id' => 77,
+                'stagingId' => 77,
+                'status' => 'staged',
+                '_event' => 'ENTITY_STAGED',
+                '_module' => 'ksf_FA_ImportStagingProcessing',
+                '_dto_type' => 'StagingCustomer',
+            ],
+        ];
+
         // Act
-        $GLOBALS['ksf_test_broadcasts'] = [];
         $result = $this->customerService->syncCustomerFromSquareToFA($mockSquareCustomer);
 
-        // Assert: the staged payload, not a persisted FA row
+        // Assert: a staging reference, not a fabricated debtor
         $this->assertIsArray($result);
-        $this->assertEquals('John Doe', $result['name']);
+$this->assertEquals('staged', $result['status']);
+          $this->assertEquals('square_api', $result['source']);
+        $this->assertEquals('cus_123456', $result['source_customer_id']);
         $this->assertEquals('john@example.com', $result['email']);
-        $this->assertEquals('square_cus_123456', $result['debtor_ref']);
+        $this->assertEquals(77, $result['staging_id']);
+        $this->assertNull($result['fa_debtor_no'], 'staging must not report a debtor_no');
 
-        $staged = null;
-        foreach ($GLOBALS['ksf_test_broadcasts'] as $broadcast) {
-            if ($broadcast[0] === 'stage_customer_data') {
-                $staged = $broadcast[1];
+        // The DTO must have crossed the boundary as a DTO instance, not an array.
+        $invocation = null;
+        foreach ($GLOBALS['ksf_test_invocations'] as $call) {
+            if ($call[1] === 'STAGE_ENTITY') {
+                $invocation = $call;
             }
         }
-        $this->assertIsArray($staged, 'stage_customer_data was not broadcast');
-        $this->assertEquals('square', $staged['source']);
-        $this->assertEquals('cus_123456', $staged['source_customer_id']);
-        $this->assertEquals('John Doe', $staged['name']);
-        $this->assertEquals('john@example.com', $staged['email']);
-        $this->assertEquals('staged', $staged['status']);
+        $this->assertNotNull($invocation, 'STAGE_ENTITY was not invoked');
+        // STAGE_ENTITY must be dispatched BY CAPABILITY. The recorder tags a
+        // capability dispatch '(first)' because no module was named; if Square
+        // ever hardcodes a stager again this assertion catches it.
+        $this->assertSame(
+            '(first)',
+            $invocation[0],
+            'STAGE_ENTITY must be dispatched by capability, not to a named module'
+        );
+        $this->assertInstanceOf(
+            \Ksfraser\StagingDto\StagingCustomer::class,
+            $invocation[2],
+            'ISU requires a StagingEntity DTO instance'
+        );
+
+        $dto = $invocation[2];
+          $this->assertEquals('square_api', $dto->getSource());
+        $this->assertEquals('cus_123456', $dto->getSourceId());
+        $this->assertEquals('John', $dto->getFirstName());
+        $this->assertEquals('Doe', $dto->getLastName());
+        $this->assertEquals('john@example.com', $dto->getEmail());
+        $this->assertEquals('1234567890', $dto->getPhone());
+    }
+
+    /**
+     * @BABOK Related: UT-SQUARE-004-001-002
+     */
+    public function testNewSquareCustomerIsStagedNotFabricatedAsDebtor(): void
+    {
+        $mockSquareCustomer = $this->createMock(Customer::class);
+        $mockSquareCustomer->method('getId')->willReturn('cus_999');
+        $mockSquareCustomer->method('getGivenName')->willReturn('Ada');
+        $mockSquareCustomer->method('getFamilyName')->willReturn('Lovelace');
+        $mockSquareCustomer->method('getEmailAddress')->willReturn('ada@example.com');
+        $mockSquareCustomer->method('getPhoneNumber')->willReturn('');
+
+        $this->mockDebtorDao->method('getByEmail')->willReturn(null);
+        $this->mockDebtorDao->expects($this->never())->method('insertDebtor');
+
+        // No ISU responder is scripted, so the call cannot silently succeed.
+        // The old implementation returned a debtor-shaped array (name/email/
+        // debtor_ref) implying an FA row existed; that must now be impossible.
+        $this->expectException(CustomerSyncException::class);
+
+        $this->customerService->syncCustomerFromSquareToFA($mockSquareCustomer);
+    }
+
+    /**
+     * A Square customer must never be reported as an FA debtor before review.
+     *
+     * @BABOK Related: UT-SQUARE-004-001-003
+     */
+    public function testStagedResultNeverContainsDebtorFields(): void
+    {
+        $mockSquareCustomer = $this->createMock(Customer::class);
+        $mockSquareCustomer->method('getId')->willReturn('cus_777');
+        $mockSquareCustomer->method('getGivenName')->willReturn('Grace');
+        $mockSquareCustomer->method('getFamilyName')->willReturn('Hopper');
+        $mockSquareCustomer->method('getEmailAddress')->willReturn('grace@example.com');
+        $mockSquareCustomer->method('getPhoneNumber')->willReturn('');
+
+        $this->mockDebtorDao->method('getByEmail')->willReturn(null);
+
+        $GLOBALS['ksf_test_invoke_writes']['ksf_FA_ImportStagingProcessing::STAGE_ENTITY'] = [
+            'success' => true,
+            'result' => ['id' => 12, 'stagingId' => 12],
+        ];
+
+        $result = $this->customerService->syncCustomerFromSquareToFA($mockSquareCustomer);
+
+        // Guard against the old fabricated-debtor shape regressing back in.
+        $this->assertArrayNotHasKey('debtor_ref', $result);
+        $this->assertArrayNotHasKey('name', $result);
+        $this->assertArrayNotHasKey('phone', $result);
+        $this->assertNull($result['fa_debtor_no']);
+        $this->assertEquals(12, $result['staging_id']);
+    }
+
+    /**
+     * ISU rejecting the payload must surface as a CustomerSyncException.
+     *
+     * @BABOK Related: UT-SQUARE-004-001-004
+     */
+    public function testStagingErrorFromIsuBecomesCustomerSyncException(): void
+    {
+        $mockSquareCustomer = $this->createMock(Customer::class);
+        $mockSquareCustomer->method('getId')->willReturn('cus_555');
+        $mockSquareCustomer->method('getGivenName')->willReturn('Alan');
+        $mockSquareCustomer->method('getFamilyName')->willReturn('Turing');
+        $mockSquareCustomer->method('getEmailAddress')->willReturn('alan@example.com');
+        $mockSquareCustomer->method('getPhoneNumber')->willReturn('');
+
+        $this->mockDebtorDao->method('getByEmail')->willReturn(null);
+
+        $GLOBALS['ksf_test_invoke_writes']['ksf_FA_ImportStagingProcessing::STAGE_ENTITY'] = [
+            'error' => 'Unauthorized',
+            'success' => false,
+        ];
+
+        $this->expectException(CustomerSyncException::class);
+        $this->expectExceptionMessage('Import Staging rejected customer: Unauthorized');
+
+        $this->customerService->syncCustomerFromSquareToFA($mockSquareCustomer);
+    }
+
+    /**
+     * Bulk refresh must STAGE every Square customer for ISU review.
+     *
+     * Square must never create FA customers directly. refreshAllCustomers()
+     * previously called CRM's CREATE_CUSTOMER responder; the only legal FAR
+     * creation path is ISU after human review, so the bulk path now uses the
+     * same STAGE_ENTITY staging used by incremental sync.
+     *
+     * @BABOK Related: UT-SQUARE-004-001-005
+     */
+    public function testRefreshAllCustomersStagesEveryCustomer(): void
+    {
+        $mockCustomer1 = $this->createMock(Customer::class);
+        $mockCustomer1->method('getId')->willReturn('cus_101');
+        $mockCustomer1->method('getGivenName')->willReturn('Ada');
+        $mockCustomer1->method('getFamilyName')->willReturn('Lovelace');
+        $mockCustomer1->method('getEmailAddress')->willReturn('ada@example.com');
+        $mockCustomer1->method('getPhoneNumber')->willReturn('');
+
+        $mockCustomer2 = $this->createMock(Customer::class);
+        $mockCustomer2->method('getId')->willReturn('cus_102');
+        $mockCustomer2->method('getGivenName')->willReturn('Grace');
+        $mockCustomer2->method('getFamilyName')->willReturn('Hopper');
+        $mockCustomer2->method('getEmailAddress')->willReturn('grace@example.com');
+        $mockCustomer2->method('getPhoneNumber')->willReturn('');
+
+        $mockApi = $this->createMock(\Square\Apis\CustomersApi::class);
+        $mockResult = $this->createMock(\Square\Http\ApiResponse::class);
+        $mockResult->method('isSuccess')->willReturn(true);
+        $mockListResult = $this->createMock(\Square\Models\ListCustomersResponse::class);
+        $mockListResult->method('getCustomers')->willReturn([$mockCustomer1, $mockCustomer2]);
+        $mockResult->method('getResult')->willReturn($mockListResult);
+        $mockApi->method('listCustomers')->willReturn($mockResult);
+        $this->mockSquareClient->method('getCustomersApi')->willReturn($mockApi);
+
+        $GLOBALS['ksf_test_invocations'] = [];
+        $GLOBALS['ksf_test_invoke_writes']['ksf_FA_ImportStagingProcessing::STAGE_ENTITY'] = [
+            'success' => true,
+            'result' => ['id' => 42, 'stagingId' => 42, 'status' => 'staged'],
+        ];
+
+        $results = $this->customerService->refreshAllCustomers();
+
+        $this->assertCount(2, $results);
+        foreach ($results as $result) {
+            $this->assertEquals('staged', $result['status']);
+            $this->assertEquals(42, $result['staging_id']);
+            $this->assertEquals('square_api', $result['source']);
+            $this->assertNull($result['fa_debtor_no']);
+        }
+
+        // Every customer crossed the boundary as a StagingCustomer DTO.
+        $stageCount = 0;
+        foreach ($GLOBALS['ksf_test_invocations'] as $call) {
+            if ($call[1] === 'STAGE_ENTITY' && in_array($call[0], ['(first)', '(all)'], true)) {
+                $this->assertInstanceOf(\Ksfraser\StagingDto\StagingCustomer::class, $call[2]);
+                $stageCount++;
+            }
+        }
+        $this->assertEquals(2, $stageCount);
+    }
+
+    /**
+     * Bulk refresh must NEVER call CRM to create a customer; only ISU may.
+     *
+     * @BABOK Related: UT-SQUARE-004-001-006
+     */
+    public function testRefreshAllCustomersNeverInvokesCreateCustomer(): void
+    {
+        $mockCustomer = $this->createMock(Customer::class);
+        $mockCustomer->method('getId')->willReturn('cus_201');
+        $mockCustomer->method('getGivenName')->willReturn('Ada');
+        $mockCustomer->method('getFamilyName')->willReturn('Lovelace');
+        $mockCustomer->method('getEmailAddress')->willReturn('ada@example.com');
+        $mockCustomer->method('getPhoneNumber')->willReturn('');
+
+        $mockApi = $this->createMock(\Square\Apis\CustomersApi::class);
+        $mockResult = $this->createMock(\Square\Http\ApiResponse::class);
+        $mockResult->method('isSuccess')->willReturn(true);
+        $mockListResult = $this->createMock(\Square\Models\ListCustomersResponse::class);
+        $mockListResult->method('getCustomers')->willReturn([$mockCustomer]);
+        $mockResult->method('getResult')->willReturn($mockListResult);
+        $mockApi->method('listCustomers')->willReturn($mockResult);
+        $this->mockSquareClient->method('getCustomersApi')->willReturn($mockApi);
+
+        $GLOBALS['ksf_test_invocations'] = [];
+        $GLOBALS['ksf_test_invoke_writes']['ksf_FA_ImportStagingProcessing::STAGE_ENTITY'] = [
+            'success' => true,
+            'result' => ['id' => 7, 'stagingId' => 7, 'status' => 'staged'],
+        ];
+
+        $this->customerService->refreshAllCustomers();
+
+        foreach ($GLOBALS['ksf_test_invocations'] as $call) {
+            $this->assertNotSame('ksf_FA_CRM', $call[0], 'Square must never call CRM to create a customer');
+            $this->assertNotSame('CREATE_CUSTOMER', $call[1], 'FAR creation is exclusively ISU\'s job');
+        }
+    }
+
+    /**
+     * A staging failure in the bulk path is reported per customer, not fatal.
+     *
+     * @BABOK Related: UT-SQUARE-004-001-007
+     */
+    public function testRefreshAllCustomersReportsStagingFailuresPerCustomer(): void
+    {
+        $mockCustomer = $this->createMock(Customer::class);
+        $mockCustomer->method('getId')->willReturn('cus_301');
+        $mockCustomer->method('getGivenName')->willReturn('Alan');
+        $mockCustomer->method('getFamilyName')->willReturn('Turing');
+        $mockCustomer->method('getEmailAddress')->willReturn('alan@example.com');
+        $mockCustomer->method('getPhoneNumber')->willReturn('');
+
+        $mockApi = $this->createMock(\Square\Apis\CustomersApi::class);
+        $mockResult = $this->createMock(\Square\Http\ApiResponse::class);
+        $mockResult->method('isSuccess')->willReturn(true);
+        $mockListResult = $this->createMock(\Square\Models\ListCustomersResponse::class);
+        $mockListResult->method('getCustomers')->willReturn([$mockCustomer]);
+        $mockResult->method('getResult')->willReturn($mockListResult);
+        $mockApi->method('listCustomers')->willReturn($mockResult);
+        $this->mockSquareClient->method('getCustomersApi')->willReturn($mockApi);
+
+        $GLOBALS['ksf_test_invoke_writes']['ksf_FA_ImportStagingProcessing::STAGE_ENTITY'] = [
+            'error' => 'Unauthorized',
+            'success' => false,
+        ];
+
+        $this->mockDebtorDao->expects($this->never())->method('insertDebtor');
+
+        $results = $this->customerService->refreshAllCustomers();
+
+        $this->assertCount(1, $results);
+        $this->assertEquals('failed', $results[0]['status']);
+        $this->assertStringContainsString('Unauthorized', $results[0]['error']);
     }
 
     /**

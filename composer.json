@@ -36,10 +36,7 @@
     "autoload": {
         "psr-4": {
             "ksfraser\\FrontAccounting\\Square\\": "src/"
-        },
-        "files": [
-            "src/Models/WebhookEventType.php"
-        ]
+        }
     },
     "autoload-dev": {
         "psr-4": {
@@ -52,6 +49,11 @@
         }
     },
     "scripts": {
-        "test": "phpunit"
+        "test": "phpunit",
+        "lint": "php bin/lint.php",
+        "verify": [
+            "@lint",
+            "@test"
+        ]
     }
 }

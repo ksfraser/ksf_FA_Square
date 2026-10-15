@@ -139,3 +139,43 @@ class YourRequest
 - Customer interface renamed: syncCustomerFromFAToSquare / syncCustomerFromSquareToFA.
 - syncCustomerFromSquareToFA now stages through Import Staging (StagingCustomerDAO) instead of direct debtor insert/update, supporting review/matching before final debtor creation (coordinates with ksf_FA_ImportStagingProcessing).
 - PHPUnit: 309 tests pass; 2 skipped (GD extension missing for CatalogExporter image tests).
+
+## Hook-dispatch audit (2026-10, cross-module sweep)
+
+Square's 11 `hook_invoke(self::HOOK_MODULE, ...)` calls were converted to
+capability dispatch (`hook_invoke_first`, `hook_invoke_all` fallback) in commit
+`e892a03`. `HOOK_MODULE = 'ksf_FA_ImportStagingProcessing'` is gone;
+`NoHardcodedStagerTest` now fails the build if any production file names a
+stager. Use that test as the template for the other source systems.
+
+### Known gap: eight `stage_*` broadcasts have no responder anywhere
+
+`GiftCardService`, `InventoryAnalyticsService`, `PaymentService`,
+`RefundService`, `SalesOrderService`, `WebhookService` and `DisputesService`
+each emit one of these via `hook_invoke_all`, and a sweep of every module in
+`~/Documents` (vendor and `fa_modules` excluded) found **no implementation**:
+
+| emitted event | notes |
+|---|---|
+| `stage_gift_card` | no `StagingGiftCard` DTO in staging-dto |
+| `stage_loyalty_program` | `StagingLoyaltyProgram` DTO **does** exist |
+| `stage_location_transfer` | no DTO |
+| `stage_inventory_adjustment` | `StagingInventory` DTO **does** exist |
+| `stage_payment_type` | no DTO |
+| `stage_refund` | `StagingRefund` DTO **does** exist |
+| `stage_order_lifecycle` | no DTO |
+| `stage_webhook_event` | no DTO |
+| `log_dispute_crm` | CRM logging, not staging |
+
+These are fire-and-forget broadcasts into the void, so Square believes it staged
+data that nothing received. Note the snake_case `stage_*` naming versus the
+working uppercase `STAGE_ENTITY` capability — the working path is the DTO
+contract, and these look like an earlier speculative design that was never wired
+up. **Do not treat them as working.** Building them out means choosing which
+subset ISU should own and adding responders; that is an open decision, not a
+mechanical fix.
+
+By contrast `order_imported` (`ImportService.php:566`) is a correct broadcast:
+`ksf_FA_HRM` and `ksf_FA_ProjectManagement` both implement it and accumulate
+into the by-reference payload (`$data['commissions_created']`), which is exactly
+what `hook_invoke_all` is for.
