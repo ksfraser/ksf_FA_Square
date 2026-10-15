@@ -29,10 +29,6 @@ if (is_dir($famockDir)) {
     require_once $famockDir . '/FaDateStubs.php';
     require_once $famockDir . '/FaSessionStubs.php';
     require_once $famockDir . '/FaSecurityStubs.php';
-    // FaUIStubs provides _() (gettext). Without it, unqualified _() calls
-    // inside a namespaced service resolve to
-    // ksfraser\FrontAccounting\Square\Services\_() and fatal.
-    require_once $famockDir . '/FaUIStubs.php';
 }
 
 // ImportStaging contract interfaces.
@@ -93,80 +89,11 @@ if (!function_exists('hook_invoke_all')) {
 }
 
 if (!function_exists('hook_invoke')) {
-    /**
-     * Recording double for FA's targeted hook dispatch.
-     *
-     * $data is passed by reference exactly as FA does. ISU's DTO-input
-     * responders REPLACE $data with a response array (they cannot write offsets
-     * onto a StagingEntity), so this double does the same when a test scripts
-     * a reply via $GLOBALS['ksf_test_invoke_writes'].
-     */
     function hook_invoke($ext, $method, &$data, $opts = null)
     {
-        $GLOBALS['ksf_test_invocations'][] = [$ext, $method, $data, $opts];
-
-        $key = $ext . '::' . $method;
-
-        if (isset($GLOBALS['ksf_test_invoke_writes'][$key])) {
-            $data = $GLOBALS['ksf_test_invoke_writes'][$key];
-        }
-
-        if (isset($GLOBALS['ksf_test_invoke_returns'][$key])) {
-            return $GLOBALS['ksf_test_invoke_returns'][$key];
-        }
-
         return null;
     }
-    /**
-     * Recording double for FA's hook_invoke_first().
-     *
-     * Production code dispatches by CAPABILITY, so the scripted-reply key is the
-     * bare method name ('STAGE_ENTITY'). The legacy '<module>::<method>' key is
-     * still honoured so tests written before the capability-dispatch change keep
-     * working.
-     *
-     * Mirrors FA semantics: walk the scripted providers in order and stop at the
-     * first non-null reply; a provider that declines leaves $data untouched.
-     */
-    function hook_invoke_first($method, &$data, $opts = null)
-    {
-        $GLOBALS['ksf_test_invocations'][] = ['(first)', $method, $data, $opts];
-
-        $providers = isset($GLOBALS['ksf_test_invoke_providers'][$method])
-            ? $GLOBALS['ksf_test_invoke_providers'][$method]
-            : ['ksf_FA_ImportStagingProcessing'];
-
-        foreach ($providers as $provider) {
-            $key   = $provider . '::' . $method;
-            $reply = null;
-
-            if (isset($GLOBALS['ksf_test_invoke_writes'][$key])) {
-                $reply = $GLOBALS['ksf_test_invoke_writes'][$key];
-            } elseif (isset($GLOBALS['ksf_test_invoke_writes'][$method])) {
-                $reply = $GLOBALS['ksf_test_invoke_writes'][$method];
-            }
-
-            if ($reply !== null) {
-                // A DTO-input responder REPLACES $data wholesale.
-                $data = $reply;
-
-                if (isset($GLOBALS['ksf_test_invoke_returns'][$key])) {
-                    return $GLOBALS['ksf_test_invoke_returns'][$key];
-                }
-
-                return $reply;
-            }
-        }
-
-        return null;
-    }
-
-
 }
 
-// Reset the recorders between tests.
+// Reset the broadcast recorder between tests.
 $GLOBALS['ksf_test_broadcasts'] = [];
-$GLOBALS['ksf_test_invocations'] = [];
-$GLOBALS['ksf_test_invoke_returns'] = [];
-$GLOBALS['ksf_test_invoke_writes'] = [];
-$GLOBALS['ksf_test_invoke_providers'] = [];
