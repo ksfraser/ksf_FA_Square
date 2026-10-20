@@ -480,7 +480,7 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
     {
         // This would be implemented with actual database update logic
         // Update the attachment record to point to the new document
-        $sql = "UPDATE fa_attachments SET 
+        $sql = "UPDATE " . TB_PREF . "attachments SET 
                 reference_type = ?, 
                 reference_id = ?, 
                 updated_at = ? 
@@ -641,7 +641,7 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
     private function createAttachmentLink(array $originalAttachment, array $newAttachment): void
     {
         // This would be implemented with actual database insertion logic
-        $sql = "INSERT INTO fa_attachment_links (
+        $sql = "INSERT INTO ksf_square_attachment_links (
             original_attachment_id,
             cloned_attachment_id,
             created_at,
@@ -939,7 +939,7 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      */
     private function updateTransactionReference(int $transactionId, int $referenceId): void
     {
-        $sql = "UPDATE fa_transactions 
+        $sql = "UPDATE ksf_square_transactions 
                 SET corrected_transaction_id = ?, 
                     updated_at = ? 
                 WHERE id = ?";
@@ -962,7 +962,7 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
     private function addLink(int $fromId, int $toId, string $type): void
     {
         // This would be implemented with actual database insertion logic
-        $sql = "INSERT INTO fa_transaction_links (
+        $sql = "INSERT INTO ksf_square_transaction_links (
             from_transaction_id,
             to_transaction_id,
             link_type,
