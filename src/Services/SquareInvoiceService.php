@@ -73,7 +73,12 @@ class SquareInvoiceService implements SquareInvoiceServiceInterface
         // Check if already mapped
         $existing = $this->mapDao->findByFaInvoiceNo($faInvoiceNo);
         if ($existing !== null) {
+            // A Square Invoice was already created for this FA invoice. Return
+            // the existing mapping with created=false so the caller can show an
+            // accurate message instead of falsely claiming a new invoice was
+            // created on the Square side.
             return [
+                'created'         => false,
                 'square_invoice_id' => $existing['square_invoice_id'],
                 'square_order_id'   => $existing['square_order_id'],
                 'public_url'        => $existing['public_url'],
@@ -168,6 +173,7 @@ class SquareInvoiceService implements SquareInvoiceServiceInterface
         ]);
 
         return [
+            'created'         => true,
             'square_invoice_id' => $squareInvoiceId,
             'square_order_id'   => $squareOrderId,
             'public_url'        => $publicUrl,

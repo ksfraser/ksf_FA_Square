@@ -529,7 +529,12 @@ class hooks_ksf_FA_Square extends hooks {
           // Log the activity
           if (function_exists('display_notification')) {
               $url = $result['public_url'] ?? '';
-              $msg = _("Square Invoice created") . ': #' . $faInvoiceNo;
+              $created = !empty($result['created']);
+              if ($created) {
+                  $msg = _("Square Invoice created") . ': #' . $faInvoiceNo;
+              } else {
+                  $msg = _("Square Invoice already exists") . ': #' . $faInvoiceNo;
+              }
               if ($url) {
                   $msg .= ' — <a href="' . htmlspecialchars($url) . '" target="_blank">' . _("View") . '</a>';
               }
