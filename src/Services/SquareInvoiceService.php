@@ -120,6 +120,10 @@ class SquareInvoiceService implements SquareInvoiceServiceInterface
         // Note: title is a derived field — Square auto-computes it. Do NOT set it.
         $invoice->setDeliveryMethod($deliveryMethod);
 
+        // Step 4: Create the invoice (DRAFT) via Square Invoices API
+        $request = new CreateInvoiceRequest($invoice);
+        $request->setIdempotencyKey('fa-inv-' . $faInvoiceNo . '-' . time());
+
         $invoicesApi = $this->client->getInvoicesApi();
 
         $response = $invoicesApi->createInvoice($request);
