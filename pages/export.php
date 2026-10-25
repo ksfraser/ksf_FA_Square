@@ -49,6 +49,16 @@ echo '<style>
 </style>';
 echo '<span class="square-env-badge">' . $badgeText . '</span>';
 
+$squareDashboardUrl = $env === 'production'
+    ? 'https://app.squareup.com/dashboard'
+    : 'https://app.squareupsandbox.com/dashboard';
+$squareDevUrl = $env === 'production'
+    ? 'https://developer.squareup.com/'
+    : 'https://developer.squareup.com/console/en/apps';
+echo ' <a href="' . $squareDashboardUrl . '" target="_blank" style="margin-left:8px;">' . _("Open Square Dashboard") . '</a>';
+echo ' <a href="' . $squareDevUrl . '" target="_blank" style="margin-left:8px;">' . _("Square Developer Console") . '</a>';
+echo '<br style="clear:both;">';
+
 if ($accessToken === null || $accessToken === '') {
     display_error(_("Access Token not configured. Please configure in Square Configuration first."));
     end_page();
@@ -353,12 +363,11 @@ if (isset($_POST['action']) && $_POST['action'] == 'i_export') {
                 $exportRequest->getCurrency(),
                 $exportRequest->getSalesType()
             );
-            $squarePrice = SquarePrice::fromDollars($myPrice);
-            $priceCents = $squarePrice->getCents();
+            $priceResult = SquarePrice::enforceValid($myPrice, $stockId);
+            $priceCents = $priceResult['cents'];
             
-            $warning = $squarePrice->getWarningMessage($stockId);
-            if ($warning !== null) {
-                display_notification(_("  ") . $warning);
+            if ($priceResult['warning'] !== null) {
+                display_notification(_("  ") . $priceResult['warning']);
             }
 
             $catName = $item['cat_description'] ?? 'General';

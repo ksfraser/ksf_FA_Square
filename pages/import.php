@@ -68,6 +68,12 @@ if ($accessToken === null || $accessToken === '') {
     return;
 }
 
+// Heartbeat: confirm the Import Staging module is active before allowing imports.
+$isStagingActive = isset($Hooks['ksf_FA_ImportStagingProcessing']);
+if (!$isStagingActive) {
+    display_error(_('The Import Staging module (ksf_FA_ImportStagingProcessing) is not active. Square orders cannot be staged or imported until it is activated on the Extensions page.'));
+}
+
 try {
     $client = SquareClientFactory::create($settings);
     $locationsApi = $client->getLocationsApi();
@@ -183,6 +189,14 @@ if ($action === 'o_import') {
                 if (empty($locations)) {
                     $error = _("No Square locations found. Check Square API configuration.");
                 } else {
+                    // Flush output progressively so the UI does not go blank
+                    // during a long stage-only import (mirrors export.php).
+                    set_time_limit(0);
+                    ob_implicit_flush(1);
+                    while (ob_get_level() > 0) {
+                        ob_end_flush();
+                    }
+
                     $results = $importService->stageFromApi(
                         $fromDateTime,
                         $toDateTime,
@@ -197,6 +211,7 @@ if ($action === 'o_import') {
                     $msg = _("Staging complete. Staged: ") . $results['staged']
                         . _(", Skipped: ") . $results['skipped']
                         . _(", Payments found: ") . $results['payments_found'];
+                    $msg .= ' <a href="' . $path_to_root . '/modules/ksf_FA_Square/pages/review_match.php">' . _("Review &amp; Match Staged Transactions") . '</a>';
                 }
 
                 $statusCounts = $gateway->getStatusCounts('square');

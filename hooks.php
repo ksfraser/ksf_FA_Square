@@ -194,8 +194,15 @@ class hooks_ksf_FA_Square extends hooks {
 */
     function activate_extension($company, $check_only=true) {
         if (file_exists(dirname(__FILE__) . '/sql/install.sql')) {
-            $updates = array('install.sql' => array('square'));
-            return $this->update_databases($company, $updates, $check_only);
+            $updates = array(
+                'install.sql'        => array('square'),
+                'square_tokens.sql'  => array('square_tokens'),
+            );
+            $this->update_databases($company, $updates, $check_only);
+        }
+        if (!$check_only) {
+            $this->injectSquareInvoicePaymentTerm();
+            $this->ensureSquareInvoiceMapTable();
         }
       try {
         $this->ensure_composer_dependencies();
@@ -204,6 +211,61 @@ class hooks_ksf_FA_Square extends hooks {
       } 
         return true;
     }
+
+  /**//**
+   * Inject a "Square Invoice" payment term into FA's 0_payment_terms table
+   * so invoices using it route through the Square Invoice db_postwrite hook.
+   * Idempotent: does nothing when a square_invoice term already exists.
+   */
+  private function injectSquareInvoicePaymentTerm() {
+      if (!function_exists('db_query') || !function_exists('db_fetch_assoc')) {
+          return;
+      }
+      $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
+
+      // Check whether a square_invoice payment term already exists.
+      $sql = "SELECT terms_indicator FROM {$tablePrefix}payment_terms
+              WHERE terms = 'Square Invoice' LIMIT 1";
+      $result = @db_query($sql);
+      if ($result) {
+          $row = db_fetch_assoc($result);
+          if ($row !== false) {
+              return; // Already present
+          }
+      }
+
+      $sql = "INSERT INTO {$tablePrefix}payment_terms
+              (terms, days_before_due) VALUES ('Square Invoice', 30)";
+      @db_query($sql);
+  }
+
+  /**//**
+   * Ensure the square_invoice_map mapping table exists (used to link FA
+   * sales invoices to Square Invoices for the 'View on Square' link).
+   */
+  private function ensureSquareInvoiceMapTable() {
+      if (!function_exists('db_query')) {
+          return;
+      }
+      $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
+      $sql = "CREATE TABLE IF NOT EXISTS `{$tablePrefix}square_invoice_map` (
+          `fa_invoice_no` int(11) NOT NULL,
+          `square_invoice_id` varchar(64) NOT NULL DEFAULT '',
+          `square_order_id` varchar(64) NOT NULL DEFAULT '',
+          `square_customer_id` varchar(64) NOT NULL DEFAULT '',
+          `amount_cents` int(11) NOT NULL DEFAULT 0,
+          `currency` varchar(3) NOT NULL DEFAULT 'CAD',
+          `destination` varchar(32) NOT NULL DEFAULT 'square_invoice',
+          `status` varchar(16) NOT NULL DEFAULT 'DRAFT',
+          `public_url` varchar(512) NOT NULL DEFAULT '',
+          `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+          `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+          PRIMARY KEY (`fa_invoice_no`),
+          KEY `square_invoice_id` (`square_invoice_id`),
+          KEY `square_order_id` (`square_order_id`)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
+      @db_query($sql);
+  }
 	/*
 		Install additional menu options provided by module
 	*/
@@ -229,13 +291,13 @@ class hooks_ksf_FA_Square extends hooks {
             }
         }
 
-        $app->add_rapp_function($externalLevel, _('Square Dashboard'),
+        $app->add_lapp_function($externalLevel, _('Square Dashboard'),
           $path_to_root.'/modules/'.$this->module_name.'/pages/dashboard.php', 'SA_ksf_FA_SquareVIEW');
         $app->add_rapp_function($externalLevel, _('Square Configuration'),
           $path_to_root.'/modules/'.$this->module_name.'/pages/config.php', 'SA_ksf_FA_SquareMANAGE');
-        $app->add_rapp_function($externalLevel, _('Import Square Orders'),
+        $app->add_lapp_function($externalLevel, _('Import Square Orders'),
           $path_to_root.'/modules/'.$this->module_name.'/pages/import.php', 'SA_ksf_FA_SquareMANAGE');
-        $app->add_rapp_function($externalLevel, _('Export to Square'),
+        $app->add_lapp_function($externalLevel, _('Export to Square'),
           $path_to_root.'/modules/'.$this->module_name.'/pages/export.php', 'SA_ksf_FA_SquareMANAGE');
 	}
   /**//**
@@ -496,6 +558,25 @@ class hooks_ksf_FA_Square extends hooks {
 
       $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
 
+      // First honor the administrator's configured payment destination.
+      // When the cart's payment term matches the configured destination,
+      // route the invoice through Square Invoice.
+      $autoload = dirname(__FILE__) . '/vendor/autoload.php';
+      if (file_exists($autoload)) {
+          require_once $autoload;
+      }
+      if (class_exists('\ksfraser\FrontAccounting\Square\Config\Settings')) {
+          try {
+              $settings = \ksfraser\FrontAccounting\Square\Config\Settings::fromFADatabase($tablePrefix);
+              $configured = $settings->getPaymentDestination();
+              if ($configured > 0 && $configured === $termsIndicator) {
+                  return 'square_invoice_email';
+              }
+          } catch (\Throwable $e) {
+              // Fall through to table-based detection below.
+          }
+      }
+
       // Check our custom destination mapping table
       $sql = "SELECT payment_term_name FROM {$tablePrefix}ksf_payment_destinations
               WHERE payment_term = " . (int)$termsIndicator;
@@ -524,6 +605,60 @@ class hooks_ksf_FA_Square extends hooks {
           }
       }
 
+      return null;
+  }
+
+  /**//**
+   * pre_header hook: inject a "View on Square" link when viewing a sales
+   * invoice that has been pushed to Square. Uses the sandbox or production
+   * Square URL depending on the configured environment.
+   *
+   * @param array &$data Page header args
+   * @param array|null $opts Options
+   * @return null
+   */
+  function pre_header(&$data, $opts = null)
+  {
+      if (($_GET['trans_type'] ?? '') !== ST_SALESINVOICE) {
+          return null;
+      }
+      $transNo = (int)($_GET['trans_no'] ?? 0);
+      if ($transNo <= 0) {
+          return null;
+      }
+
+      $autoload = dirname(__FILE__) . '/vendor/autoload.php';
+      if (file_exists($autoload)) {
+          require_once $autoload;
+      }
+      if (!class_exists('\ksfraser\FrontAccounting\Square\Config\Settings') ||
+          !class_exists('\ksfraser\FrontAccounting\Square\DAO\SquareInvoiceMapDAO')) {
+          return null;
+      }
+
+      try {
+          $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
+          $settings = \ksfraser\FrontAccounting\Square\Config\Settings::fromFADatabase($tablePrefix);
+          $mapDao = new \ksfraser\FrontAccounting\Square\DAO\SquareInvoiceMapDAO($tablePrefix);
+          $mapping = $mapDao->findByFaInvoiceNo($transNo);
+          if ($mapping === null) {
+              return null;
+          }
+
+          $squareUrl = $mapping['public_url'] ?? '';
+          if (empty($squareUrl)) {
+              $squareUrl = 'https://squareup.com/invoices/' . $mapping['square_invoice_id'];
+          }
+
+          $msg = _("View this Square Invoice: ") .
+              ' <a href="' . htmlspecialchars($squareUrl) . '" target="_blank">' .
+              _("View on Square") . '</a>';
+          if (function_exists('display_notification')) {
+              display_notification($msg);
+          }
+      } catch (\Throwable $e) {
+          error_log('ksf_FA_Square: View on Square link failed: ' . $e->getMessage());
+      }
       return null;
   }
 

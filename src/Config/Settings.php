@@ -35,6 +35,7 @@ class Settings implements SettingsInterface
             'useCardAsBranch' => 0,
             'allowSkuChange' => 0,
             'default_pricebook' => '',
+            'payment_destination' => 0,
         ], $config);
     }
 
@@ -330,6 +331,28 @@ class Settings implements SettingsInterface
     }
 
     /**
+     * Gets the configured FA payment term that maps to Square Invoice.
+     * Returns the terms_indicator of the selected payment term, or 0 when none.
+     *
+     * @return int Payment terms_indicator or 0
+     */
+    public function getPaymentDestination(): int
+    {
+        return (int)($this->config['payment_destination'] ?? 0);
+    }
+
+    /**
+     * Sets the FA payment term that maps to Square Invoice.
+     *
+     * @param int $termsIndicator Payment terms_indicator
+     * @return void
+     */
+    public function setPaymentDestination(int $termsIndicator): void
+    {
+        $this->config['payment_destination'] = $termsIndicator;
+    }
+
+    /**
      * Builds a SourceConfig-compatible array for ISU processing.
      *
      * @return array<string, mixed>
@@ -349,6 +372,7 @@ class Settings implements SettingsInterface
             'useCardAsBranch'   => $this->isUseCardAsBranch(),
             'allowSkuChange'    => $this->isAllowSkuChange(),
             'default_pricebook' => $this->getDefaultPricebook(),
+            'payment_destination' => $this->getPaymentDestination(),
         ];
     }
 

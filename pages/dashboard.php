@@ -107,7 +107,60 @@ try {
 br();
 
 start_table(TABLESTYLE);
+table_section_title(_("Square Actions / Sync"));
 
+$actions = [
+    [
+        'label' => _('Stage Customers from Square'),
+        'url' => $path_to_root . '/modules/ksf_FA_Square/pages/import.php',
+        'note' => _('Pull Square customers into Import Staging for review.'),
+    ],
+    [
+        'label' => _('Export Customers to Square'),
+        'url' => $path_to_root . '/modules/ksf_FA_Square/pages/export.php',
+        'note' => _('Push FA debtors/customers to Square.'),
+    ],
+    [
+        'label' => _('Import Square Orders'),
+        'url' => $path_to_root . '/modules/ksf_FA_Square/pages/import.php',
+        'note' => _('Import Square transactions into staging.'),
+    ],
+    [
+        'label' => _('Export Items to Square'),
+        'url' => $path_to_root . '/modules/ksf_FA_Square/pages/export.php',
+        'note' => _('Push FA stock items to the Square catalog.'),
+    ],
+    [
+        'label' => _('Review & Match Staged'),
+        'url' => $path_to_root . '/modules/ksf_FA_Square/pages/review_match.php',
+        'note' => _('Review staged transactions before importing.'),
+    ],
+];
+
+$notImplemented = [
+    _('Import Gift Cards') => _('Gift card staging is not yet wired to a responder.'),
+    _('Export Gift Cards') => _('Gift card export is not yet implemented.'),
+    _('Export Categories') => _('Category export is not yet implemented.'),
+];
+
+echo '<tr><td class="label">' . _("Available Actions:") . '</td><td>';
+foreach ($actions as $action) {
+    echo '<div style="margin: 4px 0;">';
+    echo '<a href="' . htmlspecialchars($action['url']) . '" class="button">' . htmlspecialchars($action['label']) . '</a>';
+    echo ' <span style="color:#666; font-size:0.9em;">— ' . htmlspecialchars($action['note']) . '</span>';
+    echo '</div>';
+}
+echo '<hr style="margin:8px 0; border:none; border-top:1px solid #ddd;">';
+echo '<div style="color:#888; font-size:0.9em;">' . _('Not yet implemented:') . '</div>';
+foreach ($notImplemented as $label => $reason) {
+    echo '<div style="margin: 2px 0;">' . htmlspecialchars($label) . ' — ' . htmlspecialchars($reason) . '</div>';
+}
+echo '</td></tr>';
+end_table(1);
+
+br();
+
+start_table(TABLESTYLE);
 table_section_title(_("Import Log (Last 10 Runs)"));
 
 $squareImportLogDao = new SquareImportLogDAO($tablePrefix);

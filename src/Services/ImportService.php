@@ -703,10 +703,18 @@ class ImportService
                 $locationsProcessed++;
                 $branch = $this->custBranchDao->getByDebtorNoAndName($destCust, $locName);
                 if (!$branch) {
-                    $importResults['errors'][] = _("SKIPPED LOCATION: '") . $locName . _("' - No matching FA customer branch found.");
-                    $importResults['errors'][] = _("  To fix: Create a customer branch named '") . $locName . _("' for the selected customer.");
-                    $importResults['locations_skipped']++;
-                    continue;
+                    // Fall back to the customer's default (first) branch when the
+                    // Square location name does not match an FA customer branch
+                    // name, instead of skipping the location outright.
+                    $branches = $this->custBranchDao->getByDebtorNo($destCust);
+                    if (empty($branches)) {
+                        $importResults['errors'][] = _("SKIPPED LOCATION: '") . $locName . _("' - No matching FA customer branch found.");
+                        $importResults['errors'][] = _("  No branches exist for customer: ") . $destCust;
+                        $importResults['locations_skipped']++;
+                        continue;
+                    }
+                    $branch = $branches[0];
+                    $importResults['errors'][] = _("WARNING: Location '") . $locName . _("' — using default branch '") . ($branch['br_name'] ?? $branch['branch_code']) . _("' instead.");
                 }
 
                 $payments = $this->orderImporter->listPayments($fromDateTime, $toDateTime, $locId);

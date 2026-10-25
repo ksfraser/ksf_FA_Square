@@ -284,7 +284,7 @@ class SquarePrice
 
     /**
      * Convenience method to validate and get cents with warnings.
-     * 
+     *
      * @param float $price Price in dollars
      * @param string $itemId Optional item ID for warnings
      * @return array Array with 'cents' and 'warning' (null if none)
@@ -301,6 +301,27 @@ class SquarePrice
             'was_transformed' => $squarePrice->wasTransformed(),
             'warning' => $squarePrice->getWarningMessage($itemId),
             'log_message' => $squarePrice->getLogMessage(),
+        ];
+    }
+
+    /**
+     * Enforce a valid Square price (cents) for a dollar amount.
+     *
+     * This is the SRP entry point for controllers: pass a dollar price,
+     * receive the Integer cents value safe for the Square API, plus any
+     * transformation warning (sentinel for <= 0, cap at $999,999.99).
+     *
+     * @param float $price Price in dollars
+     * @param string $itemId Optional item ID for warning context
+     * @return array ['cents' => int, 'warning' => string|null, 'was_transformed' => bool]
+     */
+    public static function enforceValid(float $price, string $itemId = ''): array
+    {
+        $result = self::validate($price, $itemId);
+        return [
+            'cents' => $result['cents'],
+            'warning' => $result['warning'],
+            'was_transformed' => $result['was_transformed'],
         ];
     }
 }

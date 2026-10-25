@@ -108,6 +108,7 @@ if (isset($_POST['action'])) {
                     'cash_bank' => 'int',
                     'default_pay_card' => 'int',
                     'default_pay_cash' => 'int',
+                    'payment_destination' => 'int',
                     'useCardAsBranch' => 'bool',
                     'allowSkuChange' => 'bool',
                     'default_pricebook' => 'string',
@@ -124,6 +125,25 @@ if (isset($_POST['action'])) {
 
                 $msg = _("Configuration updated");
                 $settings = Settings::fromFADatabase($tablePrefix);
+
+                // Persist location mappings when submitted from the same form.
+                $thisMappingDao = new LocationMappingDAO($tablePrefix);
+                $allMappingOption = $_POST['map_all_locations'] ?? '';
+                if ($allMappingOption !== '' && $allMappingOption !== 'none') {
+                    $thisMappingDao->setMapping(LocationMappingDAO::ALL_LOCATIONS, $allMappingOption);
+                } else {
+                    $thisMappingDao->removeMapping(LocationMappingDAO::ALL_LOCATIONS);
+                }
+                foreach ($faLocations as $faLoc) {
+                    $faLocCode = $faLoc['loc_code'];
+                    $mappingKey = 'map_loc_' . $faLocCode;
+                    $selectedSquareLoc = $_POST[$mappingKey] ?? '';
+                    if ($selectedSquareLoc !== '') {
+                        $thisMappingDao->setMapping($faLocCode, $selectedSquareLoc);
+                    } else {
+                        $thisMappingDao->removeMapping($faLocCode);
+                    }
+                }
                 break;
 
             case 'save_mappings':
@@ -152,15 +172,10 @@ if (isset($_POST['action'])) {
                 break;
 
             case 'create_tables':
-                $txnDao->ensureTableExists();
-                $itemDao->ensureTableExists();
-                $msg = _("Staging tables created");
-                break;
-
             case 'drop_tables':
-                \db_query("DROP TABLE IF EXISTS {$tablePrefix}ksf_import_square_transactions");
-                \db_query("DROP TABLE IF EXISTS {$tablePrefix}ksf_import_square_items");
-                $msg = _("Staging tables dropped");
+                // Staging tables are owned by ksf_FA_ImportStagingProcessing (ISU) via hooks.
+                // Direct create/drop is no longer available from this screen.
+                $msg = _("Staging is managed by the Import Staging module via hooks.");
                 break;
         }
     } catch (\Exception $e) {
@@ -268,7 +283,14 @@ if (function_exists('get_all_bank_accounts')) {
 
 $payTypes = [0 => _('-- Default --')];
 if (function_exists('get_all_payment_terms')) {
-    // payment types from FA
+    $payResult = get_all_payment_terms();
+    if ($payResult !== false) {
+        while ($payRow = db_fetch_assoc($payResult)) {
+            if ($payRow !== false && isset($payRow['terms_indicator'], $payRow['terms'])) {
+                $payTypes[(int)$payRow['terms_indicator']] = $payRow['terms'];
+            }
+        }
+    }
 }
 
 echo '<tr><td class="label">' . _("Square GL Account:") . '</td><td>';
@@ -300,6 +322,14 @@ check_row(_("Allow SKU Change:"), 'allowSkuChange', $settings->isAllowSkuChange(
 
 text_row(_("Default Price Book:"), 'default_pricebook', $settings->getDefaultPricebook(), 30, 50);
 
+echo '<tr><td class="label">' . _("Payment Destination (Square Invoice):") . '</td><td>';
+echo array_selector('payment_destination', $settings->getPaymentDestination(), $payTypes, [
+    'select_submit' => false,
+    'async' => false,
+]);
+echo '</td></tr>';
+label_row('', _('Select the FA payment term that maps to Square Invoice. When an invoice uses this term, the db_postwrite hook creates a Square Invoice instead of an FA cash sale.'));
+
 end_table(1);
 
 if ($msg !== '') {
@@ -309,6 +339,62 @@ if ($error !== '') {
     display_error($error);
 }
 
+    if ($accessToken !== null && $accessToken !== '') {
+        start_table(TABLESTYLE);
+        table_section_title(_("Location Mapping (FA <-> Square)"));
+        end_table(1);
+        
+        $squareLocOptions = ['none' => _('-- Not Mapped --')] + $squareLocations;
+        
+        start_table(TABLESTYLE2);
+        
+        $allMappingValue = $mappingByFaLoc[LocationMappingDAO::ALL_LOCATIONS] ?? 'none';
+        echo '<tr><td class="label" style="font-weight: bold;">' . _("All Locations (sum QOH):") . '</td><td>';
+        echo array_selector('map_all_locations', $allMappingValue, $squareLocOptions);
+        echo '</td></tr>';
+        
+        label_row('', _('(If "All Locations" is mapped, individual location mappings are ignored. FA QOH summed across ALL locations.)'));
+        
+        end_table(1);
+        
+        br();
+        
+        start_table(TABLESTYLE);
+        $th = [_("FA Location Code"), _("FA Location Name"), _("Map to Square Location")];
+        table_header($th);
+        
+        $k = 0;
+        foreach ($faLocations as $faLoc) {
+            alt_table_row_color($k);
+            $faLocCode = $faLoc['loc_code'];
+            $mappedSquareLoc = $mappingByFaLoc[$faLocCode] ?? 'none';
+            
+            label_cell($faLocCode);
+            label_cell($faLoc['location_name']);
+            echo '<td>';
+            echo array_selector('map_loc_' . $faLocCode, $mappedSquareLoc, $squareLocOptions);
+            echo '</td>';
+            end_row();
+        }
+        
+        end_table(1);
+        
+        br();
+        label_row(_("Mapping Behavior:"), "");
+        label_row(_("N FA -> 1 Square:"), _("Multiple FA locations can map to the same Square location. QOH is summed across all mapped FA locations."));
+        label_row(_("1 FA -> 1 Square:"), _("A single FA location maps to one Square location. QOH is passed through directly."));
+        label_row(_("Not Mapped:"), _("FA locations not mapped will be included in 'All Locations' if that mapping is set; otherwise ignored for inventory push."));
+        
+        br();
+        
+        if ($msg !== '') {
+            display_notification($msg);
+        }
+        if ($error !== '') {
+            display_error($error);
+        }
+    }
+
 hidden('action', 'update');
 submit_center('update', _("Update Configuration"));
 
@@ -316,93 +402,26 @@ end_form();
 
 br();
 
-if ($accessToken !== null && $accessToken !== '') {
-    start_form();
-    
-    start_table(TABLESTYLE);
-    table_section_title(_("Location Mapping (FA <-> Square)"));
-    end_table(1);
-    
-    $squareLocOptions = ['none' => _('-- Not Mapped --')] + $squareLocations;
-    
-    start_table(TABLESTYLE2);
-    
-    $allMappingValue = $mappingByFaLoc[LocationMappingDAO::ALL_LOCATIONS] ?? 'none';
-    echo '<tr><td class="label" style="font-weight: bold;">' . _("All Locations (sum QOH):") . '</td><td>';
-    echo array_selector('map_all_locations', $allMappingValue, $squareLocOptions);
-    echo '</td></tr>';
-    
-    label_row('', _('(If "All Locations" is mapped, individual location mappings are ignored. FA QOH summed across ALL locations.)'));
-    
-    end_table(1);
-    
-    br();
-    
-    start_table(TABLESTYLE);
-    $th = [_("FA Location Code"), _("FA Location Name"), _("Map to Square Location")];
-    table_header($th);
-    
-    $k = 0;
-    foreach ($faLocations as $faLoc) {
-        alt_table_row_color($k);
-        $faLocCode = $faLoc['loc_code'];
-        $mappedSquareLoc = $mappingByFaLoc[$faLocCode] ?? 'none';
-        
-        label_cell($faLocCode);
-        label_cell($faLoc['location_name']);
-        echo '<td>';
-        echo array_selector('map_loc_' . $faLocCode, $mappedSquareLoc, $squareLocOptions);
-        echo '</td>';
-        end_row();
+// Staging is now owned by ksf_FA_ImportStagingProcessing (ISU) via hooks.
+// Query ISU for staging status rather than managing tables directly.
+$isStagingActive = isset($Hooks['ksf_FA_ImportStagingProcessing']);
+$stagingStatus = __('Not Available');
+if ($isStagingActive) {
+    $stagingData = [];
+    $constants = hook_invoke('ksf_FA_ImportStagingProcessing', 'getModuleConstants', $stagingData);
+    if ($constants !== null && is_array($constants)) {
+        $stagingStatus = __('Managed by Import Staging (ISU)');
+    } else {
+        $stagingStatus = __('ISU Active');
     }
-    
-    end_table(1);
-    
-    br();
-    label_row(_("Mapping Behavior:"), "");
-    label_row(_("N FA -> 1 Square:"), _("Multiple FA locations can map to the same Square location. QOH is summed across all mapped FA locations."));
-    label_row(_("1 FA -> 1 Square:"), _("A single FA location maps to one Square location. QOH is passed through directly."));
-    label_row(_("Not Mapped:"), _("FA locations not mapped will be included in 'All Locations' if that mapping is set; otherwise ignored for inventory push."));
-    
-    br();
-    
-    if ($msg !== '') {
-        display_notification($msg);
-    }
-    if ($error !== '') {
-        display_error($error);
-    }
-    
-    hidden('action', 'save_mappings');
-    submit_center('save_mappings', _("Save Location Mappings"));
-    
-    end_form();
-    
-    br();
+} else {
+    $stagingStatus = __('Import Staging module not active');
 }
-
-start_form();
 
 start_table(TABLESTYLE);
-
-table_section_title(_("Staging Tables"));
-
-$sql = "SHOW TABLES LIKE '{$tablePrefix}ksf_import_square_transactions'";
-$result = db_query($sql);
-$tablesExist = $result !== false && db_num_rows($result) > 0;
-
-label_row(_("Staging Tables Status:"), $tablesExist ? _("Created") : _("Not Created"));
-
-end_table(1);
-
-if ($tablesExist) {
-    hidden('action', 'drop_tables');
-    submit_center('drop', _("Drop Staging Tables"));
-} else {
-    hidden('action', 'create_tables');
-    submit_center('create', _("Create Staging Tables"));
+table_section_title(_("Staging Tables (via Import Staging)"));
+label_row(_("Staging Status:"), $stagingStatus);
+if (!$isStagingActive) {
+    label_row('', _('Activate ksf_FA_ImportStagingProcessing on the Extensions page to enable Square order staging.'));
 }
-
-end_form();
-
-end_page();
+end_table(1);
