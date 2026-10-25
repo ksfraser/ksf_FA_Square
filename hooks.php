@@ -452,7 +452,9 @@ class hooks_ksf_FA_Square extends hooks {
 
       // Check if this payment term is a square_invoice* destination
       $destination = $this->resolvePaymentDestination((int)$cart->payment_terms['terms_indicator']);
-      if ($destination === null || strpos($destination, 'square_invoice') !== 0) {
+      if ($destination === null
+          || (strpos($destination, 'square_invoice') !== 0
+              && strpos($destination, 'square invoice') !== 0)) {
           return null; // Not our destination — pass to next handler
       }
 
@@ -585,7 +587,7 @@ class hooks_ksf_FA_Square extends hooks {
           $row = db_fetch($result);
           if ($row && !empty($row['payment_term_name'])) {
               $name = strtolower(trim($row['payment_term_name']));
-              if (strpos($name, 'square_invoice') === 0) {
+              if (strpos($name, 'square_invoice') === 0 || strpos($name, 'square invoice') === 0) {
                   return $name;
               }
           }
@@ -599,7 +601,7 @@ class hooks_ksf_FA_Square extends hooks {
           $row = db_fetch($result);
           if ($row && !empty($row['terms'])) {
               $name = strtolower(trim($row['terms']));
-              if (strpos($name, 'square_invoice') === 0) {
+              if (strpos($name, 'square_invoice') === 0 || strpos($name, 'square invoice') === 0) {
                   return $name;
               }
           }
