@@ -679,11 +679,17 @@ class hooks_ksf_FA_Square extends hooks {
       $items = [];
       if (isset($cart->line_items) && is_array($cart->line_items)) {
           foreach ($cart->line_items as $line) {
+              // Apply per-line discount the same way FA does in
+              // Cart::get_items_total(): quantity * price * (1 - discount_percent)
+              $price = (float)($line->price ?? 0);
+              $discount = (float)($line->discount_percent ?? 0);
+              $discountedPrice = $price * (1 - $discount);
+
               $items[] = [
                   'stock_id'         => $line->stock_id ?? '',
                   'item_description' => $line->item_description ?? $line->stock_id ?? '',
                   'quantity'         => $line->quantity ?? 1,
-                  'price'            => $line->price ?? 0,
+                  'price'            => round($discountedPrice, user_price_dec()),
                   'tax_type_id'      => $line->tax_type_id ?? 0,
               ];
           }
