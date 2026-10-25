@@ -18,6 +18,12 @@ use ksfraser\FrontAccounting\Square\DAO\LocationMappingDAO;
 use ksfraser\FrontAccounting\Square\DAO\TransactionStagingDAO;
 use ksfraser\FrontAccounting\Square\DAO\ItemStagingDAO;
 use ksfraser\FrontAccounting\Square\Infrastructure\SquareClientFactory;
+use ksfraser\FrontAccounting\Common\ReferenceData\FaGlAccountProvider;
+use ksfraser\FrontAccounting\Common\ReferenceData\FaBankAccountProvider;
+use ksfraser\FrontAccounting\Common\ReferenceData\FaPaymentTermProvider;
+use ksfraser\FrontAccounting\Common\Html\ReferenceData\GlAccountDdlBuilder;
+use ksfraser\FrontAccounting\Common\Html\ReferenceData\BankAccountDdlBuilder;
+use ksfraser\FrontAccounting\Common\Html\ReferenceData\PaymentTermDdlBuilder;
 use Square\Exceptions\ApiException;
 
 $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
@@ -262,34 +268,19 @@ start_table(TABLESTYLE);
 table_section_title(_("Import Settings (for ISU staging processing)"));
 
 $glAccounts = [];
-$glResult = db_query("SELECT account_code, account_name FROM {$tablePrefix}chart_master WHERE inactive = 0 ORDER BY account_code");
-if ($glResult !== false) {
-    while ($glRow = db_fetch_assoc($glResult)) {
-        if ($glRow !== false) {
-            $glAccounts[$glRow['account_code']] = $glRow['account_code'] . ' - ' . $glRow['account_name'];
-        }
-    }
-}
+$glProvider = new FaGlAccountProvider($tablePrefix);
+$glBuilder = new GlAccountDdlBuilder($glProvider);
+$glAccounts = $glBuilder->build((string)($settings->getGlAccount() ?: null));
 
 $bankAccounts = [];
-$bankResult = db_query("SELECT id, bank_account_name FROM {$tablePrefix}bank_accounts WHERE inactive = 0 ORDER BY id");
-if ($bankResult !== false) {
-    while ($bankRow = db_fetch_assoc($bankResult)) {
-        if ($bankRow !== false) {
-            $bankAccounts[(int)$bankRow['id']] = (int)$bankRow['id'] . ' - ' . $bankRow['bank_account_name'];
-        }
-    }
-}
+$bankProvider = new FaBankAccountProvider($tablePrefix);
+$bankBuilder = new BankAccountDdlBuilder($bankProvider);
+$bankAccounts = $bankBuilder->build((int)($settings->getBankAccount() ?: null));
 
 $payTypes = [0 => _('-- Default --')];
-$payResult = db_query("SELECT terms_indicator, terms FROM {$tablePrefix}payment_terms WHERE inactive = 0 ORDER BY terms_indicator");
-if ($payResult !== false) {
-    while ($payRow = db_fetch_assoc($payResult)) {
-        if ($payRow !== false && isset($payRow['terms_indicator'], $payRow['terms'])) {
-            $payTypes[(int)$payRow['terms_indicator']] = $payRow['terms'];
-        }
-    }
-}
+$payProvider = new FaPaymentTermProvider($tablePrefix);
+$payBuilder = new PaymentTermDdlBuilder($payProvider);
+$payTypes = $payBuilder->build((int)($settings->getPaymentDestination() ?: null));
 
 echo '<tr><td class="label">' . _("Square GL Account:") . '</td><td>';
 echo array_selector('gl_account', $settings->getGlAccount(), $glAccounts);
