@@ -688,6 +688,20 @@ class hooks_ksf_FA_Square extends hooks {
               ];
           }
       }
+
+      // Add shipping / freight as its own line item so Square receives
+      // the final amount including shipping, not just the item subtotal.
+      $freight = (float)($cart->freight_cost ?? 0);
+      if ($freight > 0) {
+          $items[] = [
+              'stock_id'         => 'SHIPPING',
+              'item_description' => _('Shipping'),
+              'quantity'         => 1,
+              'price'            => $freight,
+              'tax_type_id'      => 0,
+          ];
+      }
+
       return $items;
   }
 
