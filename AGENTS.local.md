@@ -140,6 +140,13 @@ class YourRequest
 - syncCustomerFromSquareToFA now stages through Import Staging (StagingCustomerDAO) instead of direct debtor insert/update, supporting review/matching before final debtor creation (coordinates with ksf_FA_ImportStagingProcessing).
 - PHPUnit: 309 tests pass; 2 skipped (GD extension missing for CatalogExporter image tests).
 
+--- Update 2026-10-25 ---
+- Square Invoice creation fixed: createInvoiceFromFA() now always calls the Square
+  createInvoice API (removed findByFaInvoiceNo early-return that reused old Square
+  links). Added SquareInvoiceMapDAO::upsert() + version column migration.
+- Invoice and Items exporting TESTED WORKING via Square Dashboard export flow.
+- Both FA containers (ksfii_app-fa 8090, ksf_fa-fa 8080) restarted with fix deployed.
+
 ## Hook-dispatch audit (2026-10, cross-module sweep)
 
 Square's 11 `hook_invoke(self::HOOK_MODULE, ...)` calls were converted to
