@@ -42,8 +42,14 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
             'correction_log_file' => sys_get_temp_dir() . '/corrections.log'
         ], $config);
 
-        // Reset the shared correction ledger for the current session
-        file_put_contents($this->getSharedCorrectionLogPath(), '');
+        // Reset the shared correction ledger for the current session.
+        // Logging infrastructure must never break business logic: only truncate
+        // when logging is enabled, and suppress write errors so an unwritable
+        // temp dir (e.g. root-owned /tmp/ksf_corrections.jsonl) cannot block
+        // corrections. Integration testing surfaced permission failures here.
+        if ($this->config['log_corrections']) {
+            @file_put_contents($this->getSharedCorrectionLogPath(), '');
+        }
     }
 
     /**
@@ -1523,7 +1529,10 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
         
         file_put_contents($this->config['correction_log_file'], $logMessage, FILE_APPEND);
         
-        // Append machine-readable record to the shared correction ledger
+        // Append machine-readable record to the shared correction ledger.
+        // Suppress write errors: a shared ledger in an unwritable temp dir must
+        // never cause a correction to fail. The per-call config log file above
+        // is the authoritative log; the shared ledger is best-effort only.
         $record = [
             'timestamp' => $result['timestamp'] ?? time(),
             'success' => (bool)$result['success'],
@@ -1533,8 +1542,8 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
             'new_debtor' => (int)($result['new_transaction']['debtor_id'] ?? 0),
             'method' => $result['method']
         ];
-        
-        file_put_contents(
+
+        @file_put_contents(
             $this->getSharedCorrectionLogPath(),
             json_encode($record) . "\n",
             FILE_APPEND
