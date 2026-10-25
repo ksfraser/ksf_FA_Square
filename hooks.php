@@ -617,9 +617,10 @@ class hooks_ksf_FA_Square extends hooks {
    * @param array|null $opts Options
    * @return null
    */
-  function pre_header(&$data, $opts = null)
+  function pre_header($fun_args)
   {
-      if (($_GET['trans_type'] ?? '') !== ST_SALESINVOICE) {
+      $transType = isset($fun_args['trans_type']) ? $fun_args['trans_type'] : ($_GET['trans_type'] ?? '');
+      if ($transType !== ST_SALESINVOICE) {
           return null;
       }
       $transNo = (int)($_GET['trans_no'] ?? 0);

@@ -262,33 +262,31 @@ start_table(TABLESTYLE);
 table_section_title(_("Import Settings (for ISU staging processing)"));
 
 $glAccounts = [];
-if (function_exists('get_all_gl_accounts')) {
-    $glResult = get_all_gl_accounts();
-    if ($glResult !== false) {
-        while ($glRow = db_fetch_assoc($glResult)) {
+$glResult = db_query("SELECT account_code, account_name FROM {$tablePrefix}chart_master WHERE inactive = 0 ORDER BY account_code");
+if ($glResult !== false) {
+    while ($glRow = db_fetch_assoc($glResult)) {
+        if ($glRow !== false) {
             $glAccounts[$glRow['account_code']] = $glRow['account_code'] . ' - ' . $glRow['account_name'];
         }
     }
 }
 
 $bankAccounts = [];
-if (function_exists('get_all_bank_accounts')) {
-    $bankResult = get_all_bank_accounts();
-    if ($bankResult !== false) {
-        while ($bankRow = db_fetch_assoc($bankResult)) {
-            $bankAccounts[$bankRow['id']] = $bankRow['id'] . ' - ' . $bankRow['bank_name'];
+$bankResult = db_query("SELECT id, bank_account_name FROM {$tablePrefix}bank_accounts WHERE inactive = 0 ORDER BY id");
+if ($bankResult !== false) {
+    while ($bankRow = db_fetch_assoc($bankResult)) {
+        if ($bankRow !== false) {
+            $bankAccounts[(int)$bankRow['id']] = (int)$bankRow['id'] . ' - ' . $bankRow['bank_account_name'];
         }
     }
 }
 
 $payTypes = [0 => _('-- Default --')];
-if (function_exists('get_all_payment_terms')) {
-    $payResult = get_all_payment_terms();
-    if ($payResult !== false) {
-        while ($payRow = db_fetch_assoc($payResult)) {
-            if ($payRow !== false && isset($payRow['terms_indicator'], $payRow['terms'])) {
-                $payTypes[(int)$payRow['terms_indicator']] = $payRow['terms'];
-            }
+$payResult = db_query("SELECT terms_indicator, terms FROM {$tablePrefix}payment_terms WHERE inactive = 0 ORDER BY terms_indicator");
+if ($payResult !== false) {
+    while ($payRow = db_fetch_assoc($payResult)) {
+        if ($payRow !== false && isset($payRow['terms_indicator'], $payRow['terms'])) {
+            $payTypes[(int)$payRow['terms_indicator']] = $payRow['terms'];
         }
     }
 }
