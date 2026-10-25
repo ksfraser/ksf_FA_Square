@@ -9,7 +9,6 @@ use Square\Models\InvoiceRecipient;
 use Square\Models\InvoicePaymentRequest;
 use Square\Models\CreateInvoiceRequest;
 use Square\Models\PublishInvoiceRequest;
-use Square\Models\UpdateInvoiceRequest;
 use Square\Models\InvoiceRequestType;
 use Square\Models\InvoiceDeliveryMethod;
 use Square\Models\InvoiceAcceptedPaymentMethods;
@@ -71,14 +70,12 @@ class SquareInvoiceService implements SquareInvoiceServiceInterface
     ): array {
         $this->mapDao->ensureTableExists();
 
-        // Check if this FA invoice already has a linked Square Invoice.
-        $existing = $this->mapDao->findByFaInvoiceNo($faInvoiceNo);
-
-        // Every step below (order, customer, invoice build) is shared between
-        // create and update paths — the only difference is whether we call
-        // createInvoice or updateInvoice against the Square API, and whether we
-        // insert or update the mapping row.
-        $isUpdate = $existing !== null;
+        // Every FA invoice that routes to Square Invoice gets a NEW Square
+        // Invoice created via the Square Invoices API. We never reuse or
+        // update an existing Square Invoice here — each FA invoice maps to
+        // its own Square invoice. The mapping row is upserted so a re-push
+        // (or reused FA invoice number) replaces the linked Square-invoice
+        // id rather than leaving a stale link.
 
         // Step 1: Create a Square Order from FA line items
         $orderResult = $this->createSquareOrder($debtorNo, $lineItems);
@@ -125,72 +122,6 @@ class SquareInvoiceService implements SquareInvoiceServiceInterface
 
         $invoicesApi = $this->client->getInvoicesApi();
 
-        if ($isUpdate) {
-            // UPDATE path: push changes to the existing Square Invoice using its
-            // linked ID + stored version for optimistic locking.
-            $squareInvoiceId = $existing['square_invoice_id'];
-            $version = (int)($existing['version'] ?? 0);
-            $invoice->setId($squareInvoiceId);
-            $invoice->setVersion($version);
-
-            $updateRequest = new UpdateInvoiceRequest($invoice);
-            $updateRequest->setIdempotencyKey('fa-inv-update-' . $faInvoiceNo . '-' . time());
-
-            $response = $invoicesApi->updateInvoice($squareInvoiceId, $updateRequest);
-
-            if (!$response->isSuccess()) {
-                $errors = $response->getErrors();
-                $errMsg = 'Square Invoice update failed';
-                if ($errors) {
-                    foreach ($errors as $err) {
-                        $errMsg .= ': ' . ($err->getDetail() ?? $err->getCode() ?? 'unknown');
-                    }
-                }
-                throw new \RuntimeException($errMsg);
-            }
-
-            $updated = $response->getResult()->getInvoice();
-            $version = $updated->getVersion();
-            $publicUrl = $updated->getPublicUrl() ?? '';
-
-            // Publish after update so changes are visible to the payer
-            $publishResult = $this->publishInvoiceInternal($squareInvoiceId, $version, $deliveryMethod);
-            $status = $publishResult['status'] ?? 'UNPAID';
-            if (!empty($publishResult['public_url'])) {
-                $publicUrl = $publishResult['public_url'];
-            }
-
-            // Update the mapping row
-            $this->mapDao->update($faInvoiceNo, [
-                'square_invoice_id'  => $squareInvoiceId,
-                'square_order_id'    => $squareOrderId,
-                'square_customer_id' => $squareCustomerId ?? '',
-                'amount_cents'       => $totalAmountCents,
-                'currency'           => 'CAD',
-                'destination'        => $deliveryMethod === 'EMAIL' ? 'square_invoice_email' : 'square_invoice',
-                'status'             => $status,
-                'public_url'         => $publicUrl,
-                'version'            => $version,
-            ]);
-
-            return [
-                'created'         => false,
-                'square_invoice_id' => $squareInvoiceId,
-                'square_order_id'   => $squareOrderId,
-                'public_url'        => $publicUrl,
-                'status'            => $status,
-            ];
-        }
-
-        // CREATE path: no mapping exists yet — create a fresh Square Invoice.
-        $squareInvoiceId = null;
-        $version = null;
-        $publicUrl = '';
-
-        // Step 4: Create the invoice (DRAFT)
-        $request = new CreateInvoiceRequest($invoice);
-        $request->setIdempotencyKey('fa-inv-' . $faInvoiceNo . '-' . time());
-
         $response = $invoicesApi->createInvoice($request);
 
         if (!$response->isSuccess()) {
@@ -216,8 +147,8 @@ class SquareInvoiceService implements SquareInvoiceServiceInterface
             $publicUrl = $publishResult['public_url'];
         }
 
-        // Step 6: Store mapping
-        $this->mapDao->insert([
+        // Step 6: Upsert mapping — insert new, or replace existing link
+        $this->mapDao->upsert([
             'fa_invoice_no'      => $faInvoiceNo,
             'square_invoice_id'  => $squareInvoiceId,
             'square_order_id'    => $squareOrderId,

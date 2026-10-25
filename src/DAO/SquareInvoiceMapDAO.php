@@ -71,48 +71,40 @@ class SquareInvoiceMapDAO
     }
 
     /**
-     * Update an existing mapping row by FA invoice number.
+     * Upsert a mapping row by FA invoice number.
      *
-     * Used when re-pushing an FA invoice that already has a Square Invoice
-     * linked (update the Square-invoice id / version / url / status).
+     * Inserts a new row, or updates the existing one when fa_invoice_no
+     * already exists (e.g. FA reuses an invoice number, or a re-push
+     * replaces the linked Square Invoice).
      */
-    public function update(int $faInvoiceNo, array $data): bool
+    public function upsert(array $data): bool
     {
-        $sets = [];
-        if (isset($data['square_invoice_id'])) {
-            $sets[] = "square_invoice_id = " . db_escape($data['square_invoice_id']);
-        }
-        if (isset($data['square_order_id'])) {
-            $sets[] = "square_order_id = " . db_escape($data['square_order_id']);
-        }
-        if (isset($data['square_customer_id'])) {
-            $sets[] = "square_customer_id = " . db_escape($data['square_customer_id']);
-        }
-        if (isset($data['amount_cents'])) {
-            $sets[] = "amount_cents = " . (int)$data['amount_cents'];
-        }
-        if (isset($data['currency'])) {
-            $sets[] = "currency = " . db_escape($data['currency']);
-        }
-        if (isset($data['destination'])) {
-            $sets[] = "destination = " . db_escape($data['destination']);
-        }
-        if (isset($data['status'])) {
-            $sets[] = "status = " . db_escape($data['status']);
-        }
-        if (isset($data['public_url'])) {
-            $sets[] = "public_url = " . db_escape($data['public_url']);
-        }
-        if (isset($data['version'])) {
-            $sets[] = "version = " . (int)$data['version'];
-        }
-        if (empty($sets)) {
-            return true;
-        }
-        $sets[] = "updated_at = CURRENT_TIMESTAMP";
-        $sql = "UPDATE `" . $this->table() . "` SET " . implode(', ', $sets) .
-               " WHERE fa_invoice_no = " . (int)$faInvoiceNo;
-        return db_query($sql, 'Could not update square invoice mapping');
+        $sql = "INSERT INTO `" . $this->table() . "` (
+            fa_invoice_no, square_invoice_id, square_order_id, square_customer_id,
+            amount_cents, currency, destination, status, public_url, version
+        ) VALUES (
+            " . db_escape($data['fa_invoice_no']) . ",
+            " . db_escape($data['square_invoice_id']) . ",
+            " . db_escape($data['square_order_id'] ?? '') . ",
+            " . db_escape($data['square_customer_id'] ?? '') . ",
+            " . (int)($data['amount_cents'] ?? 0) . ",
+            " . db_escape($data['currency'] ?? 'CAD') . ",
+            " . db_escape($data['destination'] ?? 'square_invoice') . ",
+            " . db_escape($data['status'] ?? 'DRAFT') . ",
+            " . db_escape($data['public_url'] ?? '') . ",
+            " . (isset($data['version']) ? (int)$data['version'] : 0) . "
+        ) ON DUPLICATE KEY UPDATE
+            square_invoice_id = VALUES(square_invoice_id),
+            square_order_id   = VALUES(square_order_id),
+            square_customer_id = VALUES(square_customer_id),
+            amount_cents      = VALUES(amount_cents),
+            currency          = VALUES(currency),
+            destination       = VALUES(destination),
+            status            = VALUES(status),
+            public_url        = VALUES(public_url),
+            version           = VALUES(version),
+            updated_at        = CURRENT_TIMESTAMP";
+        return db_query($sql, 'Could not upsert square invoice mapping');
     }
 
     /**

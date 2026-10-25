@@ -14,14 +14,14 @@ use Square\Models\Invoice;
 interface SquareInvoiceServiceInterface
 {
     /**
-     * Create or update a Square Invoice from an FA sales invoice.
+     * Create a Square Invoice from an FA sales invoice.
      *
-     * Each FA invoice maps to exactly one Square Invoice (1:1). When no
-     * mapping exists yet, a new Square Invoice is created via the Square
-     * Invoices API and the mapping is inserted. When a mapping already
-     * exists, the linked Square Invoice is updated via updateInvoice using
-     * its stored ID + version (optimistic locking), and the mapping row is
-     * refreshed.
+     * Each FA invoice that routes to Square Invoice gets a NEW Square Invoice
+     * created via the Square Invoices API. We never reuse or update an
+     * existing Square Invoice here — each FA invoice maps to its own Square
+     * invoice. The mapping row is upserted so a re-push (or reused FA invoice
+     * number) replaces the linked Square-invoice id rather than leaving a
+     * stale link.
      *
      * @param int    $faInvoiceNo    FA debtor_trans trans_no
      * @param int    $debtorNo       FA debtor_no
@@ -29,9 +29,9 @@ interface SquareInvoiceServiceInterface
      * @param string $dueDate        YYYY-MM-DD
      * @param string $deliveryMethod EMAIL | SHARE_MANUALLY | SMS
      * @param string|null $automaticPaymentSource NONE | CARD_ON_FILE | BANK_ON_FILE
-     * @return array ['created' => bool, 'square_invoice_id' => string, 'square_order_id' => string, 'public_url' => string, 'status' => string]
-     *               'created' is true when a new Square Invoice was created,
-     *               false when an existing one was updated.
+     * @return array ['created' => true, 'square_invoice_id' => string, 'square_order_id' => string, 'public_url' => string, 'status' => string]
+     *               'created' is always true — a new Square Invoice is created
+     *               for every FA invoice.
      */
     public function createInvoiceFromFA(
         int $faInvoiceNo,
