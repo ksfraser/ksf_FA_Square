@@ -46,6 +46,12 @@ class SquareInvoiceMapDAO
             KEY `square_order_id` (`square_order_id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
         db_query($sql, 'Could not create square_invoice_map table');
+
+        // Add version column if missing (existing installs from before v2.4.4)
+        db_query(
+            "ALTER TABLE `" . $this->table() . "` ADD COLUMN IF NOT EXISTS `version` int(11) NOT NULL DEFAULT 0",
+            'Could not add version column to square_invoice_map'
+        );
     }
 
     /**
