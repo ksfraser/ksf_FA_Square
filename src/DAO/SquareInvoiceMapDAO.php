@@ -38,6 +38,7 @@ class SquareInvoiceMapDAO
             `destination` varchar(32) NOT NULL DEFAULT 'square_invoice',
             `status` varchar(16) NOT NULL DEFAULT 'DRAFT',
             `public_url` varchar(512) NOT NULL DEFAULT '',
+            `version` int(11) NOT NULL DEFAULT 0,
             `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
             `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
             PRIMARY KEY (`fa_invoice_no`),
@@ -67,6 +68,51 @@ class SquareInvoiceMapDAO
             " . db_escape($data['public_url'] ?? '') . "
         )";
         return db_query($sql, 'Could not insert square invoice mapping');
+    }
+
+    /**
+     * Update an existing mapping row by FA invoice number.
+     *
+     * Used when re-pushing an FA invoice that already has a Square Invoice
+     * linked (update the Square-invoice id / version / url / status).
+     */
+    public function update(int $faInvoiceNo, array $data): bool
+    {
+        $sets = [];
+        if (isset($data['square_invoice_id'])) {
+            $sets[] = "square_invoice_id = " . db_escape($data['square_invoice_id']);
+        }
+        if (isset($data['square_order_id'])) {
+            $sets[] = "square_order_id = " . db_escape($data['square_order_id']);
+        }
+        if (isset($data['square_customer_id'])) {
+            $sets[] = "square_customer_id = " . db_escape($data['square_customer_id']);
+        }
+        if (isset($data['amount_cents'])) {
+            $sets[] = "amount_cents = " . (int)$data['amount_cents'];
+        }
+        if (isset($data['currency'])) {
+            $sets[] = "currency = " . db_escape($data['currency']);
+        }
+        if (isset($data['destination'])) {
+            $sets[] = "destination = " . db_escape($data['destination']);
+        }
+        if (isset($data['status'])) {
+            $sets[] = "status = " . db_escape($data['status']);
+        }
+        if (isset($data['public_url'])) {
+            $sets[] = "public_url = " . db_escape($data['public_url']);
+        }
+        if (isset($data['version'])) {
+            $sets[] = "version = " . (int)$data['version'];
+        }
+        if (empty($sets)) {
+            return true;
+        }
+        $sets[] = "updated_at = CURRENT_TIMESTAMP";
+        $sql = "UPDATE `" . $this->table() . "` SET " . implode(', ', $sets) .
+               " WHERE fa_invoice_no = " . (int)$faInvoiceNo;
+        return db_query($sql, 'Could not update square invoice mapping');
     }
 
     /**

@@ -258,6 +258,7 @@ class hooks_ksf_FA_Square extends hooks {
           `destination` varchar(32) NOT NULL DEFAULT 'square_invoice',
           `status` varchar(16) NOT NULL DEFAULT 'DRAFT',
           `public_url` varchar(512) NOT NULL DEFAULT '',
+          `version` int(11) NOT NULL DEFAULT 0,
           `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
           `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
           PRIMARY KEY (`fa_invoice_no`),
