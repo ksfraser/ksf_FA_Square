@@ -185,6 +185,143 @@ class SquareInvoiceService implements SquareInvoiceServiceInterface
     /**
      * {@inheritdoc}
      */
+    public function updateInvoice(
+        int $faInvoiceNo,
+        int $debtorNo,
+        array $lineItems,
+        string $dueDate
+    ): array {
+        $this->mapDao->ensureTableExists();
+
+        $existing = $this->mapDao->findByFaInvoiceNo($faInvoiceNo);
+        if ($existing === null) {
+            throw new \RuntimeException(
+                "No Square Invoice mapping found for FA invoice #$faInvoiceNo"
+            );
+        }
+
+        $squareInvoiceId = $existing['square_invoice_id'];
+
+        // Get current version from Square
+        $getResp = $this->client->getInvoicesApi()->getInvoice($squareInvoiceId);
+        if (!$getResp->isSuccess()) {
+            throw new \RuntimeException(
+                "Failed to retrieve Square Invoice $squareInvoiceId"
+            );
+        }
+        $currentInvoice = $getResp->getResult()->getInvoice();
+        $version = $currentInvoice->getVersion() ?? 0;
+
+        // Build updated invoice
+        $invoice = new \Square\Models\Invoice();
+        $invoice->setId($squareInvoiceId);
+        $invoice->setVersion($version);
+        $invoice->setLocationId($this->locationId);
+        $invoice->setOrderId($existing['square_order_id'] ?? '');
+
+        // Build line items
+        $orderLineItems = [];
+        $totalCents = 0;
+        foreach ($lineItems as $item) {
+            $qty = (string)($item['quantity'] ?? 1);
+            $li = new \Square\Models\OrderLineItem($qty);
+            $li->setName($item['stock_id'] ?? $item['item_description'] ?? 'Item');
+
+            $unitPrice = (int)(($item['price'] ?? 0) * 100);
+            $money = new \Square\Models\Money();
+            $money->setAmount($unitPrice);
+            $money->setCurrency('CAD');
+            $li->setBasePriceMoney($money);
+
+            if (isset($item['tax_type_id']) && $item['tax_type_id'] > 0) {
+                $tax = new \Square\Models\OrderLineItemTax();
+                $tax->setCatalogObjectId((string)$item['tax_type_id']);
+                $tax->setScope('ORDER');
+                $li->setAppliedTaxes([$tax]);
+            }
+
+            $totalCents += $unitPrice * (int)($item['quantity'] ?? 1);
+            $orderLineItems[] = $li;
+        }
+
+        // Update the order
+        $order = new \Square\Models\Order($this->locationId);
+        $order->setId($existing['square_order_id'] ?? '');
+        $order->setLocationId($this->locationId);
+        $order->setLineItems($orderLineItems);
+        $order->setPricingOptions(
+            (new \Square\Models\OrderPricingOptions())->setAutoApplyDiscounts(true)
+        );
+
+        $updateOrderRequest = new \Square\Models\UpdateOrderRequest();
+        $updateOrderRequest->setOrder($order);
+        $updateOrderRequest->setIdempotencyKey('fa-order-update-' . $faInvoiceNo . '-' . time());
+
+        $orderResp = $this->client->getOrdersApi()->updateOrder(
+            $existing['square_order_id'] ?? '',
+            $updateOrderRequest
+        );
+
+        if (!$orderResp->isSuccess()) {
+            throw new \RuntimeException(
+                'Square Order update failed: ' . ($orderResp->getErrors() ? $orderResp->getErrors()[0]->getDetail() ?? 'unknown' : 'unknown')
+            );
+        }
+
+        // Build payment request
+        $paymentRequest = new \Square\Models\InvoicePaymentRequest();
+        $paymentRequest->setRequestType(\Square\Models\InvoiceRequestType::BALANCE);
+        $paymentRequest->setDueDate($dueDate);
+
+        $invoice->setPaymentRequests([$paymentRequest]);
+
+        $acceptedPaymentMethods = new \Square\Models\InvoiceAcceptedPaymentMethods();
+        $acceptedPaymentMethods->setCard(true);
+        $invoice->setAcceptedPaymentMethods($acceptedPaymentMethods);
+
+        $invoice->setDeliveryMethod($existing['destination'] === 'square_invoice_email'
+            ? \Square\Models\InvoiceDeliveryMethod::EMAIL
+            : \Square\Models\InvoiceDeliveryMethod::SHARE_MANUALLY);
+
+        $updateRequest = new \Square\Models\UpdateInvoiceRequest($version);
+        $updateRequest->setInvoice($invoice);
+        $updateRequest->setIdempotencyKey('fa-inv-update-' . $faInvoiceNo . '-' . time());
+
+        $updateResp = $this->client->getInvoicesApi()->updateInvoice($squareInvoiceId, $updateRequest);
+
+        if (!$updateResp->isSuccess()) {
+            throw new \RuntimeException(
+                'Square Invoice update failed: ' . ($updateResp->getErrors() ? $updateResp->getErrors()[0]->getDetail() ?? 'unknown' : 'unknown')
+            );
+        }
+
+        $updated = $updateResp->getResult()->getInvoice();
+        $publicUrl = $updated->getPublicUrl() ?? '';
+        $status = $updated->getStatus() ?? 'UNPAID';
+
+        // Update mapping
+        $this->mapDao->update([
+            'fa_invoice_no'      => $faInvoiceNo,
+            'square_invoice_id'  => $squareInvoiceId,
+            'square_order_id'    => $existing['square_order_id'] ?? '',
+            'square_customer_id' => $existing['square_customer_id'] ?? '',
+            'amount_cents'       => $totalCents,
+            'currency'           => 'CAD',
+            'destination'        => $existing['destination'] ?? 'square_invoice',
+            'status'             => $status,
+            'public_url'         => $publicUrl,
+        ]);
+
+        return [
+            'square_invoice_id' => $squareInvoiceId,
+            'public_url'        => $publicUrl,
+            'status'            => $status,
+        ];
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function getInvoiceStatus(string $squareInvoiceId): string
     {
         $invoicesApi = $this->client->getInvoicesApi();

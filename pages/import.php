@@ -552,4 +552,29 @@ if ($error !== '') {
 submit_center('oimport', _("Run Import"));
 
 end_form();
+
+// Link to view import logs (#29)
+$logDir = company_path() . '/logs/';
+$logFiles = [];
+if (is_dir($logDir)) {
+    $files = glob($logDir . 'square*.log');
+    if ($files) {
+        rsort($files);
+        foreach ($files as $logFile) {
+            $logFiles[] = basename($logFile);
+        }
+    }
+}
+
+if (!empty($logFiles)) {
+    br();
+    echo '<div style="margin-top: 15px;">';
+    echo '<strong>' . _("View Import Logs:") . '</strong> ';
+    foreach ($logFiles as $logFile) {
+        $logUrl = $path_to_root . '/modules/ksf_FA_Square/pages/view_log.php?file=' . urlencode($logFile);
+        echo '<a href="' . htmlspecialchars($logUrl) . '" class="button" style="margin-left: 5px;">' . htmlspecialchars($logFile) . '</a>';
+    }
+    echo '</div>';
+}
+
 end_page();

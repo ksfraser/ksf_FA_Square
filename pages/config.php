@@ -9,6 +9,7 @@ add_access_extensions();
 
 include_once $path_to_root . "/includes/ui.inc";
 include_once $path_to_root . "/includes/data_checks.inc";
+include_once $path_to_root . "/sales/includes/db/sales_types_db.inc";
 
 include_once __DIR__ . "/../vendor/autoload.php";
 
@@ -263,6 +264,25 @@ label_row('', _('(Used to set the tax rate on items pushed to Square; leave unse
 
 end_table(1);
 
+// -- Payment Destination (Square Invoice) ---------------------------------
+start_table(TABLESTYLE);
+table_section_title(_("Payment Destination"));
+
+$payTypes = [0 => _('-- Default --')];
+$payProvider = new FaPaymentTermProvider($tablePrefix);
+$payBuilder = new PaymentTermDdlBuilder($payProvider);
+$payTypes = $payBuilder->build((int)($settings->getPaymentDestination() ?: null));
+
+echo '<tr><td class="label">' . _("Payment Destination (Square Invoice):") . '</td><td>';
+echo array_selector('payment_destination', $settings->getPaymentDestination(), $payTypes, [
+    'select_submit' => false,
+    'async' => false,
+]);
+echo '</td></tr>';
+label_row('', _('Select the FA payment term that maps to Square Invoice. When an invoice uses this term, the db_postwrite hook creates a Square Invoice instead of an FA cash sale.'));
+
+end_table(1);
+
 // -- Import Settings (absorbed from ISU) ---------------------------------
 start_table(TABLESTYLE);
 table_section_title(_("Import Settings (for ISU staging processing)"));
@@ -276,11 +296,6 @@ $bankAccounts = [];
 $bankProvider = new FaBankAccountProvider($tablePrefix);
 $bankBuilder = new BankAccountDdlBuilder($bankProvider);
 $bankAccounts = $bankBuilder->build((int)($settings->getBankAccount() ?: null));
-
-$payTypes = [0 => _('-- Default --')];
-$payProvider = new FaPaymentTermProvider($tablePrefix);
-$payBuilder = new PaymentTermDdlBuilder($payProvider);
-$payTypes = $payBuilder->build((int)($settings->getPaymentDestination() ?: null));
 
 echo '<tr><td class="label">' . _("Square GL Account:") . '</td><td>';
 echo array_selector('gl_account', $settings->getGlAccount(), $glAccounts);
@@ -309,15 +324,10 @@ echo '</td></tr>';
 check_row(_("Use Card as Branch:"), 'useCardAsBranch', $settings->isUseCardAsBranch());
 check_row(_("Allow SKU Change:"), 'allowSkuChange', $settings->isAllowSkuChange());
 
-text_row(_("Default Price Book:"), 'default_pricebook', $settings->getDefaultPricebook(), 30, 50);
-
-echo '<tr><td class="label">' . _("Payment Destination (Square Invoice):") . '</td><td>';
-echo array_selector('payment_destination', $settings->getPaymentDestination(), $payTypes, [
-    'select_submit' => false,
-    'async' => false,
-]);
+echo '<tr><td class="label">' . _("Default Price Book:") . '</td><td>';
+sales_types_list_row(_('Default Price Book:'), 'default_pricebook', (int)($settings->getDefaultPricebook() ?: null), false, _('-- None --'));
 echo '</td></tr>';
-label_row('', _('Select the FA payment term that maps to Square Invoice. When an invoice uses this term, the db_postwrite hook creates a Square Invoice instead of an FA cash sale.'));
+label_row('', _('Sales type/price list from FA. Leave as -- None -- to not set a default price book.'));
 
 end_table(1);
 
@@ -329,6 +339,9 @@ if ($error !== '') {
 }
 
     if ($accessToken !== null && $accessToken !== '') {
+        // Location Mapping section in bordered div (#23)
+        echo '<div style="border: 2px solid #007bff; border-radius: 6px; padding: 15px; margin: 15px 0; background: #f8f9fa;">';
+        
         start_table(TABLESTYLE);
         table_section_title(_("Location Mapping (FA <-> Square)"));
         end_table(1);
@@ -374,7 +387,41 @@ if ($error !== '') {
         label_row(_("1 FA -> 1 Square:"), _("A single FA location maps to one Square location. QOH is passed through directly."));
         label_row(_("Not Mapped:"), _("FA locations not mapped will be included in 'All Locations' if that mapping is set; otherwise ignored for inventory push."));
         
+        echo '</div>';
+        
         br();
+        
+        // Logging links (#26)
+        start_table(TABLESTYLE);
+        table_section_title(_("Import Logs"));
+        
+        $logDir = company_path() . '/logs/';
+        $logFiles = [];
+        if (is_dir($logDir)) {
+            $files = glob($logDir . 'square*.log');
+            if ($files) {
+                rsort($files);
+                foreach ($files as $logFile) {
+                    $logFiles[] = basename($logFile);
+                }
+            }
+        }
+        
+        if (!empty($logFiles)) {
+            echo '<tr><td class="label">' . _("Recent Import Logs:") . '</td><td>';
+            $count = 0;
+            foreach ($logFiles as $logFile) {
+                if ($count++ >= 5) break;
+                $logUrl = $path_to_root . '/modules/ksf_FA_Square/pages/view_log.php?file=' . urlencode($logFile);
+                echo '<a href="' . htmlspecialchars($logUrl) . '" class="button" style="margin: 2px;">' . htmlspecialchars($logFile) . '</a> ';
+            }
+            echo '</td></tr>';
+        } else {
+            echo '<tr><td class="label">' . _("Recent Import Logs:") . '</td><td>';
+            echo _('No import logs found.');
+            echo '</td></tr>';
+        }
+        end_table(1);
         
         if ($msg !== '') {
             display_notification($msg);

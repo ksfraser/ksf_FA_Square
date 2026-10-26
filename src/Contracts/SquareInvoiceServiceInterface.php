@@ -83,4 +83,24 @@ interface SquareInvoiceServiceInterface
      * @return bool
      */
     public function updateMappingStatus(int $faInvoiceNo, string $status): bool;
+
+    /**
+     * Update an existing Square Invoice from modified FA invoice data.
+     *
+     * Replaces line items, amount, and due date on the Square Invoice.
+     * Requires the Square Invoice to be in a modifiable state (DRAFT, UNPAID).
+     *
+     * @param int    $faInvoiceNo    FA debtor_trans trans_no
+     * @param int    $debtorNo       FA debtor_no
+     * @param array  $lineItems      Updated FA sales_order_details rows
+     * @param string $dueDate        YYYY-MM-DD
+     * @return array ['square_invoice_id' => string, 'public_url' => string, 'status' => string]
+     * @throws \Exception if the Square Invoice cannot be updated
+     */
+    public function updateInvoice(
+        int $faInvoiceNo,
+        int $debtorNo,
+        array $lineItems,
+        string $dueDate
+    ): array;
 }
