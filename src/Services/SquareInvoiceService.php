@@ -258,14 +258,14 @@ class SquareInvoiceService implements SquareInvoiceServiceInterface
         // Update the order
         $order = new \Square\Models\Order($this->locationId);
         $order->setId($existing['square_order_id'] ?? '');
+        $order->setVersion($version);
         $order->setLocationId($this->locationId);
         $order->setLineItems($orderLineItems);
         $order->setPricingOptions(
             (new \Square\Models\OrderPricingOptions())->setAutoApplyDiscounts(true)
         );
 
-        $updateOrderRequest = new \Square\Models\UpdateOrderRequest();
-        $updateOrderRequest->setOrder($order);
+        $updateOrderRequest = new \Square\Models\UpdateOrderRequest($order);
         $updateOrderRequest->setIdempotencyKey('fa-order-update-' . $faInvoiceNo . '-' . time());
 
         error_log('ksf_FA_Square: Calling Square UpdateOrder for order ' . $squareOrderId . ', invoice ' . $squareInvoiceId);
@@ -302,8 +302,7 @@ class SquareInvoiceService implements SquareInvoiceServiceInterface
             ? \Square\Models\InvoiceDeliveryMethod::EMAIL
             : \Square\Models\InvoiceDeliveryMethod::SHARE_MANUALLY);
 
-        $updateRequest = new \Square\Models\UpdateInvoiceRequest($version);
-        $updateRequest->setInvoice($invoice);
+        $updateRequest = new \Square\Models\UpdateInvoiceRequest($invoice);
         $updateRequest->setIdempotencyKey('fa-inv-update-' . $faInvoiceNo . '-' . time());
 
         $updateResp = $this->client->getInvoicesApi()->updateInvoice($squareInvoiceId, $updateRequest);
