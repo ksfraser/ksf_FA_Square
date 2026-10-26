@@ -219,6 +219,16 @@ class SquareInvoiceService implements SquareInvoiceServiceInterface
         $currentInvoice = $getResp->getResult()->getInvoice();
         $version = $currentInvoice->getVersion() ?? 0;
 
+        // Use Square's order ID from the invoice response, not the mapping
+        // (old mappings may have empty square_order_id)
+        $squareOrderId = $currentInvoice->getOrderId() ?? $squareOrderId;
+
+        if (empty($squareOrderId)) {
+            throw new \RuntimeException(
+                "Square Invoice $squareInvoiceId has no order ID - cannot update"
+            );
+        }
+
         error_log('ksf_FA_Square: Updating Square Invoice ' . $squareInvoiceId . ', Order ' . $squareOrderId . ', Version ' . $version);
 
         // Build updated invoice
@@ -228,7 +238,7 @@ class SquareInvoiceService implements SquareInvoiceServiceInterface
         $invoice->setId($squareInvoiceId);
         $invoice->setVersion($version);
         $invoice->setLocationId($this->locationId);
-        $invoice->setOrderId($existing['square_order_id'] ?? '');
+        $invoice->setOrderId($squareOrderId);
 
         // Build line items
         $orderLineItems = [];
@@ -257,7 +267,7 @@ class SquareInvoiceService implements SquareInvoiceServiceInterface
 
         // Update the order
         $order = new \Square\Models\Order($this->locationId);
-        $order->setId($existing['square_order_id'] ?? '');
+        $order->setId($squareOrderId);
         $order->setVersion($version);
         $order->setLocationId($this->locationId);
         $order->setLineItems($orderLineItems);
