@@ -207,6 +207,7 @@ class SquareInvoiceService implements SquareInvoiceServiceInterface
         }
 
         $squareInvoiceId = $existing['square_invoice_id'];
+        $squareOrderId = $existing['square_order_id'] ?? '';
 
         // Get current version from Square
         $getResp = $this->client->getInvoicesApi()->getInvoice($squareInvoiceId);
@@ -217,6 +218,10 @@ class SquareInvoiceService implements SquareInvoiceServiceInterface
         }
         $currentInvoice = $getResp->getResult()->getInvoice();
         $version = $currentInvoice->getVersion() ?? 0;
+
+        error_log('ksf_FA_Square: Updating Square Invoice ' . $squareInvoiceId . ', Order ' . $squareOrderId . ', Version ' . $version);
+
+        // Build updated invoice
 
         // Build updated invoice
         $invoice = new \Square\Models\Invoice();
@@ -263,8 +268,10 @@ class SquareInvoiceService implements SquareInvoiceServiceInterface
         $updateOrderRequest->setOrder($order);
         $updateOrderRequest->setIdempotencyKey('fa-order-update-' . $faInvoiceNo . '-' . time());
 
+        error_log('ksf_FA_Square: Calling Square UpdateOrder for order ' . $squareOrderId . ', invoice ' . $squareInvoiceId);
+
         $orderResp = $this->client->getOrdersApi()->updateOrder(
-            $existing['square_order_id'] ?? '',
+            $squareOrderId,
             $updateOrderRequest
         );
 
