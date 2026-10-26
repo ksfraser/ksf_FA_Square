@@ -504,102 +504,74 @@ class hooks_ksf_FA_Square extends hooks {
           return null;
       }
 
-          try {
-              $service = $this->buildSquareInvoiceService();
-              if ($service === null) {
-                  error_log('ksf_FA_Square: SquareInvoiceService unavailable for invoice #' . $faInvoiceNo);
-                  return null;
-              }
-
-              $dueDate = date('Y-m-d', strtotime('+30 days'));
-              $deliveryMethod = $data['destination'] === 'square_invoice_email'
-                  ? 'EMAIL'
-                  : 'SHARE_MANUALLY';
-
-              $autoPaymentSource = $data['destination'] === 'square_invoice_card'
-                  ? 'CARD_ON_FILE'
-                  : null;
-
-              // Check if this FA invoice already has a Square Invoice mapping
-              // (i.e. this is an update, not a first-time creation)
-              $mapDao = new \ksfraser\FrontAccounting\Square\DAO\SquareInvoiceMapDAO(
-                  $tablePrefix
-              );
-              $existingMap = $mapDao->findByFaInvoiceNo($faInvoiceNo);
-              $isUpdate = $existingMap !== null;
-
-              if ($isUpdate) {
-                  // Update existing Square Invoice
-                  $result = $service->updateInvoice(
-                      $faInvoiceNo,
-                      $data['customer_id'],
-                      $data['line_items'],
-                      $dueDate
-                  );
-
-                  // Log the activity
-                  if (function_exists('display_notification')) {
-                      $url = $result['public_url'] ?? '';
-                      $msg = _("Square Invoice updated") . ': #' . $faInvoiceNo;
-                      if ($url) {
-                          $msg .= ' — <a href="' . htmlspecialchars($url) . '" target="_blank">' . _("View") . '</a>';
-                      }
-                      display_notification($msg);
-                  }
-              } else {
-                  // Create new Square Invoice
-                  $result = $service->createInvoiceFromFA(
-                      $faInvoiceNo,
-                      $data['customer_id'],
-                      $data['line_items'],
-                      $dueDate,
-                      $deliveryMethod,
-                      $autoPaymentSource
-                  );
-
-                  // Log the activity
-                  if (function_exists('display_notification')) {
-                      $url = $result['public_url'] ?? '';
-                      $created = !empty($result['created']);
-                      if ($created) {
-                          $msg = _("Square Invoice created") . ': #' . $faInvoiceNo;
-                          // Explicitly create a CRM note for this Square Invoice
-                          // (#19, #21) — don't assume a listener is registered.
-                          $noteData = [
-                              'note'      => _("Square Invoice created for FA Sales Invoice #") . $faInvoiceNo,
-                              'subject'   => _("Square Invoice"),
-                              'note_type' => 'square_invoice',
-                              'owner'     => (int)$data['customer_id'],
-                          ];
-                          $noteOpts = [
-                              'links' => [
-                                  ['sales_invoice', (int)$faInvoiceNo, 'square_invoice'],
-                              ],
-                          ];
-                          $noteResult = hook_invoke('ksf_FA_Notes', 'CREATE_NOTE', $noteData, $noteOpts);
-                          if ($noteResult === false) {
-                              error_log('ksf_FA_Square: CREATE_NOTE failed for Square Invoice #' . $faInvoiceNo . ': ' . ($noteData['error'] ?? 'unknown'));
-                          } else {
-                              $msg .= ' — CRM note created';
-                          }
-                      } else {
-                          $msg = _("Square Invoice already exists") . ': #' . $faInvoiceNo;
-                      }
-                      if ($url) {
-                          $msg .= ' — <a href="' . htmlspecialchars($url) . '" target="_blank">' . _("View") . '</a>';
-                      }
-                      display_notification($msg);
-                  }
-              }
-
-              return $result;
-          } catch (\Throwable $e) {
-              error_log('ksf_FA_Square: Square Invoice ' . ($isUpdate ? 'update' : 'creation') . ' failed for #' . $faInvoiceNo . ': ' . $e->getMessage());
-              if (function_exists('display_error')) {
-                  display_error(_("Square Invoice ") . ($isUpdate ? _("update") : _("creation")) . _(" failed") . ': ' . $e->getMessage());
-              }
+      try {
+          $service = $this->buildSquareInvoiceService();
+          if ($service === null) {
+              error_log('ksf_FA_Square: SquareInvoiceService unavailable for invoice #' . $faInvoiceNo);
               return null;
           }
+
+          $dueDate = date('Y-m-d', strtotime('+30 days'));
+          $deliveryMethod = $data['destination'] === 'square_invoice_email'
+              ? 'EMAIL'
+              : 'SHARE_MANUALLY';
+
+          $autoPaymentSource = $data['destination'] === 'square_invoice_card'
+              ? 'CARD_ON_FILE'
+              : null;
+
+          // Create or update Square Invoice via Square Invoices API
+          $result = $service->createInvoiceFromFA(
+              $faInvoiceNo,
+              $data['customer_id'],
+              $data['line_items'],
+              $dueDate,
+              $deliveryMethod,
+              $autoPaymentSource
+          );
+
+          // Log the activity
+          if (function_exists('display_notification')) {
+              $url = $result['public_url'] ?? '';
+              $created = !empty($result['created']);
+              if ($created) {
+                  $msg = _("Square Invoice created") . ': #' . $faInvoiceNo;
+                  // Explicitly create a CRM note for this Square Invoice
+                  // (#19, #21) — don't assume a listener is registered.
+                  $noteData = [
+                      'note'      => _("Square Invoice created for FA Sales Invoice #") . $faInvoiceNo,
+                      'subject'   => _("Square Invoice"),
+                      'note_type' => 'square_invoice',
+                      'owner'     => (int)$data['customer_id'],
+                  ];
+                  $noteOpts = [
+                      'links' => [
+                          ['sales_invoice', (int)$faInvoiceNo, 'square_invoice'],
+                      ],
+                  ];
+                  $noteResult = hook_invoke('ksf_FA_Notes', 'CREATE_NOTE', $noteData, $noteOpts);
+                  if ($noteResult === false) {
+                      error_log('ksf_FA_Square: CREATE_NOTE failed for Square Invoice #' . $faInvoiceNo . ': ' . ($noteData['error'] ?? 'unknown'));
+                  } else {
+                      $msg .= ' — CRM note created';
+                  }
+              } else {
+                  $msg = _("Square Invoice already exists") . ': #' . $faInvoiceNo;
+              }
+              if ($url) {
+                  $msg .= ' — <a href="' . htmlspecialchars($url) . '" target="_blank">' . _("View") . '</a>';
+              }
+              display_notification($msg);
+          }
+
+          return $result;
+      } catch (\Throwable $e) {
+          error_log('ksf_FA_Square: Square Invoice creation/update failed for #' . $faInvoiceNo . ': ' . $e->getMessage());
+          if (function_exists('display_error')) {
+              display_error(_("Square Invoice creation/update failed") . ': ' . $e->getMessage());
+          }
+          return null;
+      }
   }
 
   /**
