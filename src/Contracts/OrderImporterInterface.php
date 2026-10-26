@@ -8,6 +8,9 @@ use Square\Models\Payment;
 
 interface OrderImporterInterface
 {
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function listPayments(
         \DateTimeInterface $from,
         \DateTimeInterface $to,

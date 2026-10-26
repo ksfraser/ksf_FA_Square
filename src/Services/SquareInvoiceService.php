@@ -60,6 +60,9 @@ class SquareInvoiceService implements SquareInvoiceServiceInterface
     /**
      * {@inheritdoc}
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function createInvoiceFromFA(
         int $faInvoiceNo,
         int $debtorNo,
@@ -177,6 +180,9 @@ class SquareInvoiceService implements SquareInvoiceServiceInterface
     /**
      * {@inheritdoc}
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function publishInvoice(string $squareInvoiceId, int $version): array
     {
         return $this->publishInvoiceInternal($squareInvoiceId, $version, 'SHARE_MANUALLY');
@@ -263,9 +269,15 @@ class SquareInvoiceService implements SquareInvoiceServiceInterface
         );
 
         if (!$orderResp->isSuccess()) {
-            throw new \RuntimeException(
-                'Square Order update failed: ' . ($orderResp->getErrors() ? $orderResp->getErrors()[0]->getDetail() ?? 'unknown' : 'unknown')
-            );
+            $errors = $orderResp->getErrors();
+            $errMsg = 'Square Order update failed';
+            if ($errors) {
+                foreach ($errors as $err) {
+                    $errMsg .= ': ' . ($err->getDetail() ?? $err->getCode() ?? 'unknown');
+                }
+            }
+            error_log('ksf_FA_Square: Square Order update failed for order ' . ($existing['square_order_id'] ?? 'MISSING') . ': ' . $errMsg);
+            throw new \RuntimeException($errMsg);
         }
 
         // Build payment request
@@ -322,6 +334,9 @@ class SquareInvoiceService implements SquareInvoiceServiceInterface
     /**
      * {@inheritdoc}
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getInvoiceStatus(string $squareInvoiceId): string
     {
         $invoicesApi = $this->client->getInvoicesApi();
@@ -338,6 +353,9 @@ class SquareInvoiceService implements SquareInvoiceServiceInterface
     /**
      * {@inheritdoc}
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function findBySquareInvoiceId(string $squareInvoiceId): ?array
     {
         return $this->mapDao->findBySquareInvoiceId($squareInvoiceId);
@@ -353,6 +371,9 @@ class SquareInvoiceService implements SquareInvoiceServiceInterface
 
     /**
      * {@inheritdoc}
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function updateMappingStatus(int $faInvoiceNo, string $status): bool
     {
@@ -393,6 +414,9 @@ class SquareInvoiceService implements SquareInvoiceServiceInterface
         ];
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function createSquareOrder(int $debtorNo, array $lineItems): array
     {
         $ordersApi = $this->client->getOrdersApi();
@@ -458,6 +482,9 @@ class SquareInvoiceService implements SquareInvoiceServiceInterface
      *
      * Square Invoices require a customer_id to publish.
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function resolveOrCreateSquareCustomer(int $debtorNo): ?string
     {
         // Step 1: Check local mapping table
@@ -504,6 +531,9 @@ class SquareInvoiceService implements SquareInvoiceServiceInterface
      *
      * @return string|null Square customer ID or null
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function searchSquareCustomerByReference(int $debtorNo): ?string
     {
         try {
@@ -539,6 +569,9 @@ class SquareInvoiceService implements SquareInvoiceServiceInterface
      * If missing, pull from FA crm_contacts and update the Square profile.
      * Required because Square derives email on InvoiceRecipient from the customer profile.
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function ensureCustomerHasEmail(string $squareCustomerId, int $debtorNo): void
     {
         try {
@@ -570,6 +603,9 @@ class SquareInvoiceService implements SquareInvoiceServiceInterface
     /**
      * Look up debtor name from FA database.
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function lookupDebtorName(int $debtorNo): string
     {
         if (!function_exists('db_query') || !function_exists('db_fetch')) {
@@ -594,6 +630,9 @@ class SquareInvoiceService implements SquareInvoiceServiceInterface
      * FA 2.4 stores contact info in crm_persons linked via crm_contacts.
      * Type 'customer' = debtor-level, type 'cust_branch' = branch contact.
      * We check both, preferring the debtor-level email.
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function lookupDebtorEmail(int $debtorNo): string
     {
@@ -633,6 +672,9 @@ class SquareInvoiceService implements SquareInvoiceServiceInterface
     /**
      * Store or update the FA debtor → Square customer mapping.
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function storeCustomerMapping(int $debtorNo, string $squareCustomerId): void
     {
         if (!function_exists('db_query')) {
@@ -649,6 +691,9 @@ class SquareInvoiceService implements SquareInvoiceServiceInterface
 
     /**
      * Create a new customer in Square via the CustomersApi.
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function createSquareCustomer(int $debtorNo, string $name, string $email): ?string
     {

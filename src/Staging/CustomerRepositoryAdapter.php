@@ -51,6 +51,9 @@ class CustomerRepositoryAdapter implements CustomerRepositoryInterface
         return (int)\db_insert_id();
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function findById(int $id): ?StagingCustomer
     {
         $tableName = $this->tablePrefix . 'staging_customers';
@@ -76,6 +79,9 @@ class CustomerRepositoryAdapter implements CustomerRepositoryInterface
         return null;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function findByStatus(string $status, ?string $source = null): array
     {
         $tableName = $this->tablePrefix . 'staging_customers';
@@ -96,6 +102,9 @@ class CustomerRepositoryAdapter implements CustomerRepositoryInterface
         return $models;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function findByEmail(string $email): array
     {
         $tableName = $this->tablePrefix . 'staging_customers';
@@ -112,6 +121,9 @@ class CustomerRepositoryAdapter implements CustomerRepositoryInterface
         return $models;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function updateStatus(int $id, string $status, ?string $error = null): void
     {
         $tableName = $this->tablePrefix . 'staging_customers';
@@ -139,6 +151,9 @@ class CustomerRepositoryAdapter implements CustomerRepositoryInterface
         return \db_affected_rows() > 0;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function countByStatus(?string $source = null): array
     {
         $tableName = $this->tablePrefix . 'staging_customers';
@@ -172,6 +187,9 @@ class CustomerRepositoryAdapter implements CustomerRepositoryInterface
  * @since 1.0.0
  * @deprecated 1.1.0 Use StagingCustomer DTO via hooks
  */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function toModel(array $row): StagingCustomer
     {
         $customer = new StagingCustomer($row['source'] ?? 'square_api');

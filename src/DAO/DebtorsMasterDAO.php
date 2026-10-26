@@ -26,6 +26,9 @@ class DebtorsMasterDAO
      * @param int $debtorNo Debtor number
      * @return array|null Debtor data or null if not found
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getDebtor(int $debtorNo): ?array
     {
         $tableName = $this->getTableName();
@@ -45,6 +48,9 @@ class DebtorsMasterDAO
      * 
      * @param string $email Email address
      * @return array|null Debtor data or null if not found
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getByEmail(string $email): ?array
     {
@@ -66,6 +72,9 @@ class DebtorsMasterDAO
      * @param string $phone Phone number
      * @return array|null Debtor data or null if not found
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getByPhone(string $phone): ?array
     {
         $tableName = $this->getTableName();
@@ -85,6 +94,9 @@ class DebtorsMasterDAO
      * 
      * @param string $name Customer name
      * @return array|null Debtor data or null if not found
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getByName(string $name): ?array
     {
@@ -112,6 +124,9 @@ class DebtorsMasterDAO
      * @param array $data Update data
      * @return bool Success status
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function updateDebtor(int $debtorNo, array $data): bool
     {
         $tableName = $this->getTableName();
@@ -136,6 +151,9 @@ class DebtorsMasterDAO
      * 
      * @param array $debtorData Debtor data
      * @return int Debtor number
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function insertDebtor(array $debtorData): int
     {
@@ -167,6 +185,9 @@ class DebtorsMasterDAO
      * @param int $limit Maximum number of debtors to return
      * @return array Debtors
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getAllDebtors(int $limit = 100): array
     {
         $tableName = $this->getTableName();
@@ -191,6 +212,9 @@ class DebtorsMasterDAO
      * 
      * @param array $criteria Search criteria
      * @return array Matching debtors
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function searchDebtors(array $criteria): array
     {
@@ -240,6 +264,9 @@ class DebtorsMasterDAO
      * 
      * @return array Statistics array
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getDebtorStatistics(): array
     {
         $tableName = $this->getTableName();
@@ -286,6 +313,9 @@ class DebtorsMasterDAO
     /**
      * Ensures the table exists.
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function ensureTableExists(): void
     {
         $tableName = $this->getTableName();
@@ -326,6 +356,9 @@ class DebtorsMasterDAO
      * Gets the table name.
      * 
      * @return string Table name
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function getTableName(): string
     {

@@ -36,6 +36,9 @@ class ReportSchedulerService
      * @param array $scheduleData Schedule data
      * @return array Created schedule
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function createSchedule(array $scheduleData): array
     {
         try {
@@ -67,6 +70,9 @@ class ReportSchedulerService
      * @param int $scheduleId Schedule ID
      * @param array $scheduleData Schedule data
      * @return array Updated schedule
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function updateSchedule(int $scheduleId, array $scheduleData): array
     {
@@ -102,6 +108,9 @@ class ReportSchedulerService
      * @param int $scheduleId Schedule ID
      * @return bool Success status
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function deleteSchedule(int $scheduleId): bool
     {
         try {
@@ -125,6 +134,9 @@ class ReportSchedulerService
      * @param int $scheduleId Schedule ID
      * @return array Schedule data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getScheduleById(int $scheduleId): ?array
     {
         $tableName = $this->getScheduleTableName();
@@ -144,6 +156,9 @@ class ReportSchedulerService
      * 
      * @param array $filters Filter parameters
      * @return array Schedules
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getSchedules(array $filters): array
     {
@@ -190,6 +205,9 @@ class ReportSchedulerService
      * @param int $scheduleId Schedule ID
      * @return array Schedule execution result
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function runSchedule(int $scheduleId): array
     {
         try {
@@ -235,6 +253,9 @@ class ReportSchedulerService
      * 
      * @return array Schedule execution results
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function runDueSchedules(): array
     {
         $results = [];
@@ -264,6 +285,9 @@ class ReportSchedulerService
      * 
      * @param array $scheduleData Schedule data
      * @throws \Exception on validation failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function validateScheduleData(array $scheduleData): void
     {
@@ -302,6 +326,9 @@ class ReportSchedulerService
      * 
      * @param array $scheduleData Schedule data
      * @return string Next run time
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function calculateNextRun(array $scheduleData): string
     {
@@ -354,6 +381,9 @@ class ReportSchedulerService
      * 
      * @return array Due schedules
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getDueSchedules(): array
     {
         $tableName = $this->getScheduleTableName();
@@ -381,6 +411,9 @@ class ReportSchedulerService
      * @param int $scheduleId Schedule ID
      * @return bool Success status
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function updateScheduleRunTime(int $scheduleId): bool
     {
         $tableName = $this->getScheduleTableName();
@@ -399,6 +432,9 @@ class ReportSchedulerService
      * 
      * @param array $scheduleData Schedule data
      * @return int Schedule ID
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function insertSchedule(array $scheduleData): int
     {
@@ -431,6 +467,9 @@ class ReportSchedulerService
      * @param array $scheduleData Schedule data
      * @return bool Success status
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function updateScheduleById(int $scheduleId, array $scheduleData): bool
     {
         $tableName = $this->getScheduleTableName();
@@ -456,6 +495,9 @@ class ReportSchedulerService
      * @param int $scheduleId Schedule ID
      * @return bool Success status
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function deleteScheduleById(int $scheduleId): bool
     {
         $tableName = $this->getScheduleTableName();
@@ -469,6 +511,9 @@ class ReportSchedulerService
      * 
      * @param int $dayOfWeek Day of week
      * @return string Day name
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function getDayName(int $dayOfWeek): string
     {
@@ -495,6 +540,9 @@ class ReportSchedulerService
      * @param int $currentTime Current time
      * @return int Next run time
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function parseCronExpression(string $cronExpression, int $currentTime): int
     {
         // Simple cron parser for basic expressions
@@ -514,6 +562,9 @@ class ReportSchedulerService
      * Gets schedule table name.
      * 
      * @return string Table name
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function getScheduleTableName(): string
     {

@@ -45,6 +45,9 @@ interface RefundServiceInterface
      * @param string|null $locationId Square location ID
      * @return array Refund records
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function listRefunds(
         ?string $beginTime = null,
         ?string $endTime = null,
@@ -66,6 +69,9 @@ interface RefundServiceInterface
      * @param int $invoiceId FA invoice ID
      * @return int Created FA credit note ID
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function recordRefundInFA(Refund $refund, int $invoiceId): int;
 
     /**
@@ -82,6 +88,9 @@ interface RefundServiceInterface
      * @param string|null $beginTime Start of range
      * @param string|null $endTime End of range
      * @return array Statistics
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getRefundStatistics(
         ?string $beginTime = null,

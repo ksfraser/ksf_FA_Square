@@ -134,6 +134,9 @@ class ImportService
      *
      * @return PaymentService
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function createDefaultPaymentService(): PaymentService
     {
         return new PaymentService(
@@ -151,6 +154,9 @@ class ImportService
      * @param string $message
      * @param array  $context Optional key-value context to append
      * @return void
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function logMessage(string $level, string $message, array $context = []): void
     {
@@ -171,6 +177,9 @@ class ImportService
      * and Square's non-staging support tables exist.
      *
      * @return void
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function ensureStagingTablesExist(): void
     {
@@ -196,6 +205,9 @@ class ImportService
      * @param string|null $toDate
      * @return array
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getStagedTransactions(
         string $status = 'staged',
         ?string $fromDate = null,
@@ -211,6 +223,9 @@ class ImportService
      * @param string $fromDate From date
      * @param string $toDate To date
      * @return array Validation result with 'valid' flag and 'error' message
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function validateImportParams(
         int $destCust,
@@ -243,6 +258,9 @@ class ImportService
      * @param array $locations [locationId => locationName]
      * @return array Results with 'staged', 'skipped', 'errors'
      * @throws ApiException
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function stageFromApi(
         DateTimeInterface $fromDate,
@@ -403,6 +421,9 @@ class ImportService
      * @return int Staged transaction ID
      * @throws Exception
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function stagePaymentAndOrder(
         Payment $payment,
         Order $order,
@@ -529,6 +550,9 @@ class ImportService
      * @param string $tipsItem
      * @return array [invoice_no, success, message]
      * @throws Exception
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function processStagedTransaction(
         int $stagingId,
@@ -702,6 +726,9 @@ class ImportService
      * @param array $payload Event payload
      * @return void
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function broadcastOrderImported(array $payload): void
     {
         if (!function_exists('hook_invoke_all')) {
@@ -732,6 +759,9 @@ class ImportService
      * @param int $debtorNo FA debtor number
      * @return int|null FA payment id, or null when not recorded
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function recordSquarePayment(array $squarePayment, int $debtorNo): ?int
     {
         if ($this->paymentService === null) {
@@ -756,6 +786,9 @@ class ImportService
      *
      * @param array $trans Staged transaction row
      * @return array Square payment array
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function buildSquarePaymentFromTransaction(array $trans): array
     {
@@ -791,6 +824,9 @@ class ImportService
      * @param Payment $payment Square payment
      * @return array Square payment array
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function buildSquarePaymentFromPayment(Payment $payment): array
     {
         $totalMoney = $payment->getTotalMoney();
@@ -822,6 +858,9 @@ class ImportService
      * @param string $locationFilter Location filter (empty = all)
      * @param array $locations Array of locations
      * @return array Import results with 'imported', 'skipped', 'failed', 'errors', 'msg'
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function performImport(
         array $customer,
@@ -1072,6 +1111,9 @@ class ImportService
      *
      * @return IsuStagingGateway
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getGateway(): IsuStagingGateway
     {
         return $this->gateway;
@@ -1097,6 +1139,9 @@ class ImportService
      * @param int $limit Maximum number of logs to return
      * @return array Array of log entries
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getRecentLogs(int $limit = 10): array
     {
         return $this->squareImportLogDao->getRecentLogs($limit);
@@ -1117,6 +1162,9 @@ class ImportService
      *
      * @param Payment $payment
      * @return array
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function paymentToArray(Payment $payment): array
     {
@@ -1143,6 +1191,9 @@ class ImportService
      *
      * @param Order $order
      * @return array
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function orderToArray(Order $order): array
     {

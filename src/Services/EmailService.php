@@ -39,6 +39,9 @@ class EmailService
      * @param array $emailData Email data
      * @return array Send results
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function sendEmail(array $emailData): array
     {
         try {
@@ -67,6 +70,9 @@ class EmailService
      * 
      * @param array $emails List of email data
      * @return array Send results
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function sendMultipleEmails(array $emails): array
     {
@@ -106,6 +112,9 @@ class EmailService
      * @param array $emailData Email data
      * @return array Send results
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function sendTemplateEmail(string $templateName, array $data, array $emailData): array
     {
         try {
@@ -131,6 +140,9 @@ class EmailService
      * @param string $templateName Template name
      * @param array $templateData Template data
      * @return array Template results
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function createTemplate(string $templateName, array $templateData): array
     {
@@ -158,6 +170,9 @@ class EmailService
      * @param string $templateName Template name
      * @param array $templateData Template data
      * @return array Template results
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function updateTemplate(string $templateName, array $templateData): array
     {
@@ -190,6 +205,9 @@ class EmailService
      * @param string $templateName Template name
      * @return array Template results
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function deleteTemplate(string $templateName): array
     {
         try {
@@ -217,6 +235,9 @@ class EmailService
      * @param array $filters Filter parameters
      * @return array Email templates
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getTemplates(array $filters = []): array
     {
         $templates = $this->emailTemplates;
@@ -234,6 +255,9 @@ class EmailService
      * 
      * @param array $filters Filter parameters
      * @return array Email logs
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getEmailLogs(array $filters = []): array
     {
@@ -260,6 +284,9 @@ class EmailService
      * 
      * @param array $emailData Email data
      * @throws \Exception on validation failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function validateEmailData(array $emailData): void
     {
@@ -304,6 +331,9 @@ class EmailService
      * @param array $templateData Template data
      * @throws \Exception on validation failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function validateTemplateData(array $templateData): void
     {
         if (empty($templateData)) {
@@ -328,6 +358,9 @@ class EmailService
      * 
      * @param array $emailData Email data
      * @return array Prepared email
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function prepareEmail(array $emailData): array
     {
@@ -357,6 +390,9 @@ class EmailService
      * 
      * @param array $emailData Email data
      * @return array Email headers
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function prepareHeaders(array $emailData): array
     {
@@ -388,6 +424,9 @@ class EmailService
      * @param array $emailData Email data
      * @return array Send results
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function sendEmailWithSmtp(array $emailData): array
     {
         try {
@@ -411,6 +450,9 @@ class EmailService
      * 
      * @return resource SMTP connection
      * @throws \Exception on connection failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function createSmtpConnection()
     {
@@ -448,6 +490,9 @@ class EmailService
      * @param resource $smtp SMTP connection
      * @param array $emailData Email data
      * @return array Send results
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function smtpSend($smtp, array $emailData): array
     {
@@ -496,6 +541,9 @@ class EmailService
      * @param string $command Command to execute
      * @return string Response
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function smtpCommand($smtp, string $command): string
     {
         fwrite($smtp, $command . "\r\n");
@@ -525,6 +573,9 @@ class EmailService
      * @param array $data Template data
      * @return array Rendered template
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function renderTemplate(array $template, array $data): array
     {
         $rendered = $template;
@@ -545,6 +596,9 @@ class EmailService
      * @param array $data Template data
      * @return string Rendered text
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function renderText(string $text, array $data): string
     {
         // Simple template rendering
@@ -561,6 +615,9 @@ class EmailService
      * 
      * @param array $emailData Email data
      * @param array $result Send results
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function logEmail(array $emailData, array $result): void
     {
@@ -587,6 +644,9 @@ class EmailService
 
     /**
      * Cleans old email logs.
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function cleanOldLogs(): void
     {
@@ -638,6 +698,9 @@ class EmailService
      * 
      * @return array Configuration
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getConfig(): array
     {
         return $this->config;
@@ -657,6 +720,9 @@ class EmailService
      * Gets email templates.
      * 
      * @return array Email templates
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getTemplatesList(): array
     {
@@ -681,6 +747,9 @@ class EmailService
      * @param int $endTime End timestamp
      * @return array Email logs in time range
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getEmailLogsByTimeRange(int $startTime, int $endTime): array
     {
         return array_filter($this->emailLog, fn($log) => 
@@ -701,6 +770,9 @@ class EmailService
 
     /**
      * Clears email logs.
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function clearEmailLogs(): void
     {
@@ -735,6 +807,9 @@ class EmailService
      * 
      * @param array $testEmail Test email data
      * @return array Test results
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function testEmailSending(array $testEmail): array
     {

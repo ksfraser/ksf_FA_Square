@@ -46,6 +46,9 @@ class TransactionEditService
      * @param array $editData Edit data
      * @return array Edit results
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function editTransaction(array $editData): array
     {
         try {
@@ -93,6 +96,9 @@ class TransactionEditService
      * @param array $approvalData Approval data
      * @return array Approval results
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function approveEdit(string $editId, string $approverId, array $approvalData = []): array
     {
         try {
@@ -138,6 +144,9 @@ class TransactionEditService
      * @param array $rejectionData Rejection data
      * @return array Rejection results
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function rejectEdit(string $editId, string $rejecterId, string $reason, array $rejectionData = []): array
     {
         try {
@@ -179,6 +188,9 @@ class TransactionEditService
      * @param string $cancellerId Canceller ID
      * @param string $reason Cancellation reason
      * @return array Cancellation results
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function cancelEdit(string $editId, string $cancellerId, string $reason): array
     {
@@ -223,6 +235,9 @@ class TransactionEditService
      * @param array $filters Filter parameters
      * @return array Edit queue
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getEditQueue(array $filters = []): array
     {
         $filteredQueue = $this->editQueue;
@@ -256,6 +271,9 @@ class TransactionEditService
      * 
      * @param array $filters Filter parameters
      * @return array Edit history
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getEditHistory(array $filters = []): array
     {
@@ -291,6 +309,9 @@ class TransactionEditService
      * @param int $userId User ID
      * @return array Edit permissions
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getEditPermissions(int $userId): array
     {
         return $this->editPermissions[$userId] ?? [];
@@ -321,6 +342,9 @@ class TransactionEditService
      * @param array $filters Filter parameters
      * @return array Edit report
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function generateEditReport(array $filters = []): array
     {
         $report = [
@@ -340,6 +364,9 @@ class TransactionEditService
      * 
      * @param array $editData Edit data
      * @throws \Exception on validation failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function validateEditData(array $editData): void
     {
@@ -370,6 +397,9 @@ class TransactionEditService
      * 
      * @param array $editData Edit data
      * @throws \Exception on permission failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function checkEditPermissions(array $editData): void
     {
@@ -415,6 +445,9 @@ class TransactionEditService
      * @param array $editData Edit data
      * @return array Edit entry
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function createEditEntry(array $editData): array
     {
         $entry = [
@@ -438,6 +471,9 @@ class TransactionEditService
      * 
      * @param array $edit Edit data
      * @return array Validation result
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function validateEdit(array $edit): array
     {
@@ -477,6 +513,9 @@ class TransactionEditService
      * 
      * @param array $edit Edit data
      * @return array Validation result
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function validateCorrection(array $edit): array
     {
@@ -537,6 +576,9 @@ class TransactionEditService
      * @param array $edit Edit data
      * @return array Validation result
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function validateModification(array $edit): array
     {
         $modificationData = $edit['edit_data'];
@@ -585,6 +627,9 @@ class TransactionEditService
      * @param array $edit Edit data
      * @return array Validation result
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function validateVoid(array $edit): array
     {
         $voidData = $edit['edit_data'];
@@ -632,6 +677,9 @@ class TransactionEditService
      * @param array $editData Edit data
      * @return string Priority level
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function calculateEditPriority(array $editData): string
     {
         $amount = $editData['amount'] ?? 0;
@@ -657,6 +705,9 @@ class TransactionEditService
      * 
      * @param array $editData Edit data
      * @return bool True if auto-approval should be performed
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function shouldAutoApprove(array $editData): bool
     {
@@ -689,6 +740,9 @@ class TransactionEditService
      * @param array $edit Edit data
      * @return array Auto-approval result
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function performAutoApproval(array $edit): array
     {
         $edit['status'] = self::EDIT_STATUS_APPROVED;
@@ -711,6 +765,9 @@ class TransactionEditService
      * @param array $edit Edit data
      * @return array Approval result
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function processApproval(array $edit): array
     {
         // This would be implemented with actual approval processing logic
@@ -731,6 +788,9 @@ class TransactionEditService
      * @param array $edit Edit data
      * @return array Rejection result
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function processRejection(array $edit): array
     {
         // This would be implemented with actual rejection processing logic
@@ -749,6 +809,9 @@ class TransactionEditService
      * Applies edit changes to transaction.
      * 
      * @param array $edit Edit data
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function applyEditChanges(array $edit): void
     {
@@ -771,6 +834,9 @@ class TransactionEditService
      * Applies correction to transaction.
      * 
      * @param array $edit Edit data
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function applyCorrection(array $edit): void
     {
@@ -800,6 +866,9 @@ class TransactionEditService
      * 
      * @param array $edit Edit data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function applyVoid(array $edit): void
     {
         $voidData = $edit['edit_data'];
@@ -814,6 +883,9 @@ class TransactionEditService
      * @param int $transactionId Transaction ID
      * @param string $field Field name
      * @return mixed Current value
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function getCurrentTransactionValue(int $transactionId, string $field)
     {
@@ -844,6 +916,9 @@ class TransactionEditService
      * @param string $field Field name
      * @param mixed $value New value
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function updateTransactionField(int $transactionId, string $field, $value): void
     {
         // This would be implemented with actual field update logic
@@ -863,6 +938,9 @@ class TransactionEditService
     /**
      * Initializes edit permissions.
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function initializeEditPermissions(): void
     {
         // This would be implemented with actual permission initialization logic
@@ -877,6 +955,9 @@ class TransactionEditService
      * Adds to edit queue.
      * 
      * @param array $edit Edit data
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function addToEditQueue(array $edit): void
     {
@@ -897,6 +978,9 @@ class TransactionEditService
      * Adds to edit history.
      * 
      * @param array $edit Edit data
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function addToEditHistory(array $edit): void
     {
@@ -924,6 +1008,9 @@ class TransactionEditService
      * 
      * @param array $edit Edit data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function logEdit(array $edit): void
     {
         $logMessage = sprintf(
@@ -946,6 +1033,9 @@ class TransactionEditService
      * @param array $filters Filter parameters
      * @return array Queue summary
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getQueueSummary(array $filters = []): array
     {
         $queue = $this->getEditQueue($filters);
@@ -967,6 +1057,9 @@ class TransactionEditService
      * @param array $filters Filter parameters
      * @return array History summary
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getHistorySummary(array $filters = []): array
     {
         $history = $this->getEditHistory($filters);
@@ -985,6 +1078,9 @@ class TransactionEditService
      * Gets edit statistics.
      * 
      * @return array Edit statistics
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function getEditStatistics(): array
     {
@@ -1006,6 +1102,9 @@ class TransactionEditService
      * 
      * @return array Counts by type
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function countEditsByType(): array
     {
         $counts = [];
@@ -1023,6 +1122,9 @@ class TransactionEditService
      * 
      * @return array Counts by status
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function countEditsByStatus(): array
     {
         $counts = [];
@@ -1039,6 +1141,9 @@ class TransactionEditService
      * Calculates average edit time.
      * 
      * @return float Average edit time in seconds
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function calculateAverageEditTime(): float
     {
@@ -1060,6 +1165,9 @@ class TransactionEditService
      * 
      * @return float Success rate
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function calculateEditSuccessRate(): float
     {
         if (empty($this->editHistory)) {
@@ -1076,6 +1184,9 @@ class TransactionEditService
      * Gets top editors.
      * 
      * @return array Top editors
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function getTopEditors(): array
     {
@@ -1094,6 +1205,9 @@ class TransactionEditService
      * Generates recommendations.
      * 
      * @return array Recommendations
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function generateRecommendations(): array
     {
@@ -1136,6 +1250,9 @@ class TransactionEditService
      * 
      * @return array Configuration
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getConfig(): array
     {
         return $this->config;
@@ -1154,6 +1271,9 @@ class TransactionEditService
     /**
      * Clears edit queue.
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function clearEditQueue(): void
     {
         $this->editQueue = [];
@@ -1169,6 +1289,9 @@ class TransactionEditService
 
     /**
      * Clears edit permissions.
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function clearEditPermissions(): void
     {

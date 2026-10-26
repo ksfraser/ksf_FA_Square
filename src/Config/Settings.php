@@ -39,6 +39,10 @@ class Settings implements SettingsInterface
         ], $config);
     }
 
+    /**
+     * @since 2.0.0
+     * @BABOK Related: FR-SQ-001
+     */
     public static function fromFADatabase(string $tablePrefix): self
     {
         $config = [];
@@ -64,6 +68,9 @@ class Settings implements SettingsInterface
         return new self($config);
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getAccessToken(): ?string
     {
         $env = $this->getEnvironment();
@@ -80,6 +87,9 @@ class Settings implements SettingsInterface
      * Useful for display/notification purposes.
      * 
      * @return string Description like 'sandbox_access_token', 'production_access_token', or 'access_token (legacy fallback)'
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getTokenSourceDescription(): string
     {
@@ -99,6 +109,9 @@ class Settings implements SettingsInterface
      * 
      * @return string 'sandbox', 'production', or 'legacy'
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getTokenType(): string
     {
         $env = $this->getEnvironment();
@@ -117,6 +130,9 @@ class Settings implements SettingsInterface
         $this->config['access_token'] = $token;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getSandboxAccessToken(): ?string
     {
         return $this->config['sandbox_access_token'] ?? null;
@@ -132,6 +148,9 @@ class Settings implements SettingsInterface
         return $this->config['production_access_token'] ?? null;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function setProductionAccessToken(string $token): void
     {
         $this->config['production_access_token'] = $token;
@@ -147,6 +166,9 @@ class Settings implements SettingsInterface
         $this->config['environment'] = $env;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getLastImportDate(): ?\DateTimeInterface
     {
         $date = $this->config['last_import_date'] ?? null;
@@ -164,6 +186,9 @@ class Settings implements SettingsInterface
         $this->config['last_import_date'] = $date->format('Y-m-d H:i:s');
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getDestinationCustomer(): ?int
     {
         $dest = $this->config['destination_customer'] ?? null;
@@ -180,6 +205,9 @@ class Settings implements SettingsInterface
         return $this->config['default_location'] ?? null;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function setDefaultLocation(string $locationId): void
     {
         $this->config['default_location'] = $locationId;
@@ -208,6 +236,9 @@ class Settings implements SettingsInterface
      *
      * @since 2.4.4
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function setDefaultTaxGroup(int $taxGroupId): void
     {
         $this->config['default_tax_group'] = $taxGroupId;
@@ -225,6 +256,9 @@ class Settings implements SettingsInterface
         return (int)($this->config['gl_account'] ?? 0);
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function setGlAccount(int $gl): void
     {
         $this->config['gl_account'] = $gl;
@@ -240,6 +274,9 @@ class Settings implements SettingsInterface
         $this->config['cash_gl'] = $gl;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getXferToGl(): int
     {
         return (int)($this->config['xfer_to_gl'] ?? 0);
@@ -255,6 +292,9 @@ class Settings implements SettingsInterface
         return (int)($this->config['bank_account'] ?? 0);
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function setBankAccount(int $bank): void
     {
         $this->config['bank_account'] = $bank;
@@ -270,6 +310,9 @@ class Settings implements SettingsInterface
         $this->config['xfer_to_bank'] = $bank;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getCashBank(): int
     {
         return (int)($this->config['cash_bank'] ?? 0);
@@ -285,6 +328,9 @@ class Settings implements SettingsInterface
         return (int)($this->config['default_pay_card'] ?? 0);
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function setDefaultPayCard(int $payType): void
     {
         $this->config['default_pay_card'] = $payType;
@@ -300,6 +346,9 @@ class Settings implements SettingsInterface
         $this->config['default_pay_cash'] = $payType;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function isUseCardAsBranch(): bool
     {
         return (bool)($this->config['useCardAsBranch'] ?? false);
@@ -315,6 +364,9 @@ class Settings implements SettingsInterface
         return (bool)($this->config['allowSkuChange'] ?? false);
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function setAllowSkuChange(bool $flag): void
     {
         $this->config['allowSkuChange'] = $flag ? 1 : 0;
@@ -336,6 +388,9 @@ class Settings implements SettingsInterface
      *
      * @return int Payment terms_indicator or 0
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getPaymentDestination(): int
     {
         return (int)($this->config['payment_destination'] ?? 0);
@@ -356,6 +411,9 @@ class Settings implements SettingsInterface
      * Builds a SourceConfig-compatible array for ISU processing.
      *
      * @return array<string, mixed>
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function toSourceConfigArray(): array
     {
@@ -410,6 +468,9 @@ class Settings implements SettingsInterface
      * @param string $tablePrefix Database table prefix
      * @return void
      * @throws Exception if query fails
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function saveAllToDatabase(string $tablePrefix): void
     {

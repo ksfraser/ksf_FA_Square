@@ -8,6 +8,9 @@ use Square\Models\TerminalCheckout;
 
 interface TerminalPaymentInterface
 {
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function createOrderFromInvoice(
         string $locationId,
         array $lineItems,
@@ -22,6 +25,9 @@ interface TerminalPaymentInterface
         ?int $tipCents = null
     ): TerminalCheckout;
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getCheckoutStatus(string $checkoutId): TerminalCheckout;
 
     public function cancelCheckout(string $checkoutId): void;

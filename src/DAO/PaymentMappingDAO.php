@@ -26,6 +26,9 @@ class PaymentMappingDAO
      * @param string $squarePaymentId Square payment ID
      * @return array|null Payment data or null if not found
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getPaymentBySquareId(string $squarePaymentId): ?array
     {
         $tableName = $this->getMappingsTableName();
@@ -45,6 +48,9 @@ class PaymentMappingDAO
      * 
      * @param string $squareRefundId Square refund ID
      * @return array|null Refund data or null if not found
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getRefundBySquareId(string $squareRefundId): ?array
     {
@@ -66,6 +72,9 @@ class PaymentMappingDAO
      * @param int $faPaymentId FA payment ID
      * @return array|null Payment data or null if not found
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getPaymentByFaId(int $faPaymentId): ?array
     {
         $tableName = $this->getMappingsTableName();
@@ -86,6 +95,9 @@ class PaymentMappingDAO
      * @param int $faRefundId FA refund ID
      * @return array|null Refund data or null if not found
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getRefundByFaId(int $faRefundId): ?array
     {
         $tableName = $this->getMappingsTableName();
@@ -104,6 +116,9 @@ class PaymentMappingDAO
      * Gets all mappings.
      * 
      * @return array All mappings
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getAllMappings(): array
     {
@@ -129,6 +144,9 @@ class PaymentMappingDAO
      * 
      * @param array $mappingData Mapping data
      * @return int Mapping ID
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function createMapping(array $mappingData): int
     {
@@ -161,6 +179,9 @@ class PaymentMappingDAO
      * @param array $data Update data
      * @return bool Success status
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function updateMapping(int $id, array $data): bool
     {
         $tableName = $this->getMappingsTableName();
@@ -186,6 +207,9 @@ class PaymentMappingDAO
      * @param int $id Mapping ID
      * @return bool Success status
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function deleteMapping(int $id): bool
     {
         $tableName = $this->getMappingsTableName();
@@ -200,6 +224,9 @@ class PaymentMappingDAO
      * @param int $startId Start ID
      * @param int $endId End ID
      * @return array Mappings in range
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getMappingsByFaIdRange(int $startId, int $endId): array
     {
@@ -228,6 +255,9 @@ class PaymentMappingDAO
      * @param string $pattern Square payment ID pattern
      * @return array Matching mappings
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getMappingsBySquareIdPattern(string $pattern): array
     {
         $tableName = $this->getMappingsTableName();
@@ -253,6 +283,9 @@ class PaymentMappingDAO
      * Gets mapping statistics.
      * 
      * @return array Statistics array
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getMappingStatistics(): array
     {
@@ -306,6 +339,9 @@ class PaymentMappingDAO
     /**
      * Ensures the table exists.
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function ensureTableExists(): void
     {
         $tableName = $this->getMappingsTableName();
@@ -341,6 +377,9 @@ class PaymentMappingDAO
      * Gets mappings table name.
      * 
      * @return string Table name
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function getMappingsTableName(): string
     {

@@ -26,6 +26,9 @@ class ReportGenerationException extends \Exception
      * 
      * @return array|null Context data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getContext(): ?array
     {
         return $this->context;

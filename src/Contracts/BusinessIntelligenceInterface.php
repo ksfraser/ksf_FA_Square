@@ -29,6 +29,9 @@ interface BusinessIntelligenceInterface
      * @return array Customer analytics data
      * @throws AnalyticsException on processing failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getCustomerAnalytics(array $filters): array;
 
     /**
@@ -47,6 +50,9 @@ interface BusinessIntelligenceInterface
      * @return array Financial analytics data
      * @throws AnalyticsException on processing failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getFinancialAnalytics(array $filters): array;
 
     /**
@@ -64,6 +70,9 @@ interface BusinessIntelligenceInterface
      * @param array $reportData Report data
      * @return array Report results
      * @throws ReportGenerationException on generation failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function generateCustomReport(array $reportData): array;
 }

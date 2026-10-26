@@ -5,6 +5,9 @@ namespace ksfraser\FrontAccounting\Square\Contracts;
 
 interface SettingsInterface
 {
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getAccessToken(): ?string;
 
     public function setAccessToken(string $token): void;
@@ -19,6 +22,9 @@ interface SettingsInterface
 
     public function getEnvironment(): string;
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function setEnvironment(string $env): void;
 
     public function getLastImportDate(): ?\DateTimeInterface;
@@ -33,6 +39,9 @@ interface SettingsInterface
 
     public function setDefaultLocation(string $locationId): void;
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getDefaultTaxGroup(): ?int;
 
     public function setDefaultTaxGroup(int $taxGroupId): void;

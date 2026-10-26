@@ -36,6 +36,9 @@ class AuditService
      * @param array $auditEvent Audit event data
      * @return bool Success status
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function logAuditEvent(array $auditEvent): bool
     {
         try {
@@ -71,6 +74,9 @@ class AuditService
      * @param int $endTime End timestamp
      * @return array Audit log entries
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getAuditLogByTimeRange(int $startTime, int $endTime): array
     {
         $filteredLog = [];
@@ -89,6 +95,9 @@ class AuditService
      * 
      * @param string $username Username
      * @return array Audit log entries
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getAuditLogByUser(string $username): array
     {
@@ -109,6 +118,9 @@ class AuditService
      * @param string $action Action type
      * @return array Audit log entries
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getAuditLogByAction(string $action): array
     {
         $filteredLog = [];
@@ -127,6 +139,9 @@ class AuditService
      * 
      * @param string $resource Resource type
      * @return array Audit log entries
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getAuditLogByResource(string $resource): array
     {
@@ -147,6 +162,9 @@ class AuditService
      * @param string $severity Severity level
      * @return array Audit log entries
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getAuditLogBySeverity(string $severity): array
     {
         $filteredLog = [];
@@ -165,6 +183,9 @@ class AuditService
      * 
      * @param array $filters Filter parameters
      * @return array Audit report
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function generateAuditReport(array $filters = []): array
     {
@@ -189,6 +210,9 @@ class AuditService
      * 
      * @param string $standard Compliance standard
      * @return array Compliance check results
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function performComplianceCheck(string $standard): array
     {
@@ -217,6 +241,9 @@ class AuditService
      * 
      * @param array $monitoringConfig Monitoring configuration
      * @return array Setup results
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function setupComplianceMonitoring(array $monitoringConfig): array
     {
@@ -263,6 +290,9 @@ class AuditService
      * 
      * @return array Audit statistics
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getAuditStatistics(): array
     {
         $stats = [
@@ -306,6 +336,9 @@ class AuditService
      * @param array $auditEvent Audit event data
      * @throws \Exception on validation failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function validateAuditEvent(array $auditEvent): void
     {
         if (empty($auditEvent)) {
@@ -339,6 +372,9 @@ class AuditService
      * 
      * @return string Audit ID
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function generateAuditId(): string
     {
         return uniqid('audit_', true);
@@ -370,6 +406,9 @@ class AuditService
      * 
      * @param array $auditEvent Audit event data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function checkCompliance(array $auditEvent): void
     {
         foreach ($this->complianceStandards as $standard) {
@@ -383,6 +422,9 @@ class AuditService
 
     /**
      * Initializes compliance standards.
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function initializeComplianceStandards(): void
     {
@@ -425,6 +467,9 @@ class AuditService
      * 
      * @param array $filters Filter parameters
      * @return array Audit summary
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function generateAuditSummary(array $filters): array
     {
@@ -475,6 +520,9 @@ class AuditService
      * 
      * @return array Compliance report
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function generateComplianceReport(): array
     {
         $report = [];
@@ -491,6 +539,9 @@ class AuditService
      * 
      * @param array $filters Filter parameters
      * @return array Audit findings
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function generateAuditFindings(array $filters): array
     {
@@ -520,6 +571,9 @@ class AuditService
      * 
      * @param array $filters Filter parameters
      * @return array Audit recommendations
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function generateAuditRecommendations(array $filters): array
     {
@@ -560,6 +614,9 @@ class AuditService
      * @param array $filters Filter criteria
      * @return array Filtered events
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function filterAuditEvents(array $filters): array
     {
         $filteredEvents = $this->auditLog;
@@ -597,6 +654,9 @@ class AuditService
      * @param array $events Audit events
      * @return array Pattern analysis
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function analyzeAuditPatterns(array $events): array
     {
         $patterns = [];
@@ -619,6 +679,9 @@ class AuditService
      * @param array $events Events in pattern
      * @return string Severity level
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function determinePatternSeverity(array $events): string
     {
         $criticalCount = count(array_filter($events, fn($e) => $e['severity'] === 'CRITICAL'));
@@ -638,6 +701,9 @@ class AuditService
      * 
      * @param string $pattern Pattern name
      * @return string Recommendation
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function generatePatternRecommendation(string $pattern): string
     {
@@ -659,6 +725,9 @@ class AuditService
      * @param string $standard Compliance standard
      * @return array Compliance check results
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function runComplianceChecks(string $standard): array
     {
         // This would be implemented with actual compliance checking logic
@@ -676,6 +745,9 @@ class AuditService
      * @param array $config Configuration
      * @return array Setup results
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function setupPCIDSSMonitoring(array $config): array
     {
         return [
@@ -689,6 +761,9 @@ class AuditService
      * 
      * @param array $config Configuration
      * @return array Setup results
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function setupGDPRMonitoring(array $config): array
     {
@@ -704,6 +779,9 @@ class AuditService
      * @param array $config Configuration
      * @return array Setup results
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function setupHIPAAMonitoring(array $config): array
     {
         return [
@@ -718,6 +796,9 @@ class AuditService
      * @param array $config Configuration
      * @return array Setup results
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function setupSOXMonitoring(array $config): array
     {
         return [
@@ -731,6 +812,9 @@ class AuditService
      * 
      * @param array $config Configuration
      * @return array Setup results
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function setupISO27001Monitoring(array $config): array
     {

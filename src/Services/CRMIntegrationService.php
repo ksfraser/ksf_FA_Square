@@ -47,6 +47,9 @@ class CRMIntegrationService implements CRMIntegrationInterface
      * @param array $squareCustomer Square customer data
      * @throws CRMIntegrationException on sync failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function syncCustomerWithCRM(array $debtor, array $squareCustomer): void
     {
         try {
@@ -77,6 +80,9 @@ class CRMIntegrationService implements CRMIntegrationInterface
      * @return array CRM contact history
      * @throws CRMIntegrationException on failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getCRMContactHistory(int $debtorNo): array
     {
         try {
@@ -103,6 +109,9 @@ class CRMIntegrationService implements CRMIntegrationInterface
      * @param array $communication Communication data
      * @throws CRMIntegrationException on failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function trackCustomerCommunication(array $communication): void
     {
         try {
@@ -127,6 +136,9 @@ class CRMIntegrationService implements CRMIntegrationInterface
      * @return array Sync result summary
      * @throws CRMIntegrationException on failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function syncCustomerFromSquare(array $squareCustomer): array
     {
         try {
@@ -147,6 +159,9 @@ class CRMIntegrationService implements CRMIntegrationInterface
      * @param array $squareCustomer Square customer data
      * @return array FA debtor data
      * @throws CRMIntegrationException on failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function syncCustomerFromSquareToFA(array $squareCustomer): array
     {
@@ -177,6 +192,9 @@ class CRMIntegrationService implements CRMIntegrationInterface
      * @param array $squareCustomer Square customer data
      * @return array Updated debtor data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function updateDebtorFromSquare(array $debtor, array $squareCustomer): array
     {
         $updateData = [
@@ -206,6 +224,9 @@ class CRMIntegrationService implements CRMIntegrationInterface
      * 
      * @param array $squareCustomer Square customer data
      * @return array New debtor data
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function createDebtorFromSquare(array $squareCustomer): array
     {
@@ -239,6 +260,9 @@ class CRMIntegrationService implements CRMIntegrationInterface
      * @param array $oldData Old data
      * @param array $newData New data
      * @return array Changed fields
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function getChangedFields(array $oldData, array $newData): array
     {
@@ -276,6 +300,9 @@ class CRMIntegrationService implements CRMIntegrationInterface
      * @param array $squareCustomer Square customer data
      * @return string Comma-separated address string
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function buildDebtorAddress(array $squareCustomer): string
     {
         $parts = array_filter([
@@ -296,6 +323,9 @@ class CRMIntegrationService implements CRMIntegrationInterface
      * @param array $debtor FA debtor data
      * @param array $squareCustomer Square customer data
      * @throws CRMIntegrationException on validation failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function validateCustomerData(array $debtor, array $squareCustomer): void
     {
@@ -322,6 +352,9 @@ class CRMIntegrationService implements CRMIntegrationInterface
      * @param array $squareCustomer Square customer data
      * @throws CRMIntegrationException on validation failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function validateSquareCustomerData(array $squareCustomer): void
     {
         if (empty($squareCustomer['id'])) {
@@ -341,6 +374,9 @@ class CRMIntegrationService implements CRMIntegrationInterface
      * 
      * @param array $communication Communication data
      * @throws CRMIntegrationException on validation failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function validateCommunicationData(array $communication): void
     {
@@ -365,6 +401,9 @@ class CRMIntegrationService implements CRMIntegrationInterface
      * @param array $debtor FA debtor data
      * @param array $squareCustomer Square customer data
      * @return array CRM data
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function convertToFACustomer(array $debtor, array $squareCustomer): array
     {

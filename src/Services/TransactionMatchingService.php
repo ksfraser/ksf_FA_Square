@@ -49,6 +49,9 @@ class TransactionMatchingService
      * @param array $faTransactions FA transactions data
      * @return array Match results
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function matchTransactions(array $squareTransaction, array $faTransactions): array
     {
         try {
@@ -92,6 +95,9 @@ class TransactionMatchingService
      * @param array $approvalData Approval data
      * @return array Approval results
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function approveMatch(string $matchId, string $approverId, array $approvalData = []): array
     {
         try {
@@ -134,6 +140,9 @@ class TransactionMatchingService
      * @param array $rejectionData Rejection data
      * @return array Rejection results
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function rejectMatch(string $matchId, string $rejecterId, string $reason, array $rejectionData = []): array
     {
         try {
@@ -174,6 +183,9 @@ class TransactionMatchingService
      * @param array $filters Filter parameters
      * @return array Matching queue
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getMatchingQueue(array $filters = []): array
     {
         $filteredQueue = $this->matchingQueue;
@@ -208,6 +220,9 @@ class TransactionMatchingService
      * @param array $filters Filter parameters
      * @return array Matching history
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getMatchingHistory(array $filters = []): array
     {
         $filteredHistory = $this->matchingHistory;
@@ -237,6 +252,9 @@ class TransactionMatchingService
      * 
      * @return array Match statistics
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getMatchingStatistics(): array
     {
         $stats = [
@@ -260,6 +278,9 @@ class TransactionMatchingService
      * @param array $filters Filter parameters
      * @return array Match report
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function generateMatchReport(array $filters = []): array
     {
         $report = [
@@ -280,6 +301,9 @@ class TransactionMatchingService
      * 
      * @param array $rules Match rules
      * @return array Update results
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function updateMatchRules(array $rules): array
     {
@@ -302,6 +326,9 @@ class TransactionMatchingService
      * @param array $squareTransaction Square transaction data
      * @param array $faTransactions FA transactions data
      * @throws \Exception on validation failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function validateTransactionData(array $squareTransaction, array $faTransactions): void
     {
@@ -338,6 +365,9 @@ class TransactionMatchingService
      * @param array $matchConfidence Match confidence
      * @return array Match entry
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function createMatchEntry(array $squareTransaction, array $potentialMatches, array $matchConfidence): array
     {
         $entry = [
@@ -361,6 +391,9 @@ class TransactionMatchingService
      * @param array $squareTransaction Square transaction data
      * @param array $faTransactions FA transactions data
      * @return array Potential matches
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function findPotentialMatches(array $squareTransaction, array $faTransactions): array
     {
@@ -392,6 +425,9 @@ class TransactionMatchingService
      * @param array $potentialMatches Potential matches
      * @return array Match confidence
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function calculateMatchConfidence(array $squareTransaction, array $potentialMatches): array
     {
         if (empty($potentialMatches)) {
@@ -421,6 +457,9 @@ class TransactionMatchingService
      * @param array $matchConfidence Match confidence
      * @return string Match status
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function determineMatchStatus(array $matchConfidence): string
     {
         $score = $matchConfidence['score'];
@@ -440,6 +479,9 @@ class TransactionMatchingService
      * @param array $squareTransaction Square transaction data
      * @param array $faTransaction FA transaction data
      * @return float Match score
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function calculateIndividualMatchScore(array $squareTransaction, array $faTransaction): float
     {
@@ -476,6 +518,9 @@ class TransactionMatchingService
      * @param float $faAmount FA transaction amount
      * @return float Match score
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function calculateAmountMatch(float $squareAmount, float $faAmount): float
     {
         $difference = abs($squareAmount - $faAmount);
@@ -494,6 +539,9 @@ class TransactionMatchingService
      * @param array $squareCustomer Square transaction customer
      * @param array $faCustomer FA transaction customer
      * @return float Match score
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function calculateCustomerMatch(array $squareCustomer, array $faCustomer): float
     {
@@ -521,6 +569,9 @@ class TransactionMatchingService
      * @param int $faDate FA transaction date
      * @return float Match score
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function calculateDateMatch(int $squareDate, int $faDate): float
     {
         $difference = abs($squareDate - $faDate);
@@ -539,6 +590,9 @@ class TransactionMatchingService
      * @param array $squareTransaction Square transaction data
      * @param array $faTransaction FA transaction data
      * @return float Match score
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function calculateReferenceMatch(array $squareTransaction, array $faTransaction): float
     {
@@ -566,6 +620,9 @@ class TransactionMatchingService
      * @param string $faName FA customer name
      * @return float Match score
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function calculateNameMatch(string $squareName, string $faName): float
     {
         // Normalize names
@@ -589,6 +646,9 @@ class TransactionMatchingService
      * @param string $squareEmail Square customer email
      * @param string $faEmail FA customer email
      * @return float Match score
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function calculateEmailMatch(string $squareEmail, string $faEmail): float
     {
@@ -619,6 +679,9 @@ class TransactionMatchingService
      * @param string $faPhone FA customer phone
      * @return float Match score
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function calculatePhoneMatch(string $squarePhone, string $faPhone): float
     {
         if (empty($squarePhone) || empty($faPhone)) {
@@ -648,6 +711,9 @@ class TransactionMatchingService
      * @param string $name Name to normalize
      * @return string Normalized name
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function normalizeName(string $name): string
     {
         // Remove extra whitespace, convert to lowercase
@@ -672,6 +738,9 @@ class TransactionMatchingService
      * @param float $matchScore Match score
      * @return string Match type
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function determineMatchType(float $matchScore): string
     {
         if ($matchScore >= $this->config['auto_approve_threshold']) {
@@ -690,6 +759,9 @@ class TransactionMatchingService
      * @param array $faTransaction FA transaction data
      * @return array Match details
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getMatchDetails(array $squareTransaction, array $faTransaction): array
     {
         return [
@@ -706,6 +778,9 @@ class TransactionMatchingService
      * 
      * @param array $match Match data
      * @return array Approval result
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function processMatchApproval(array $match): array
     {
@@ -728,6 +803,9 @@ class TransactionMatchingService
      * @param array $match Match data
      * @return array Rejection result
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function processMatchRejection(array $match): array
     {
         // This would be implemented with actual match rejection processing logic
@@ -746,6 +824,9 @@ class TransactionMatchingService
     /**
      * Initializes match rules.
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function initializeMatchRules(): void
     {
         $this->matchRules = [
@@ -762,6 +843,9 @@ class TransactionMatchingService
      * Adds to matching queue.
      * 
      * @param array $match Match data
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function addToMatchingQueue(array $match): void
     {
@@ -782,6 +866,9 @@ class TransactionMatchingService
      * Adds to matching history.
      * 
      * @param array $match Match data
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function addToMatchingHistory(array $match): void
     {
@@ -809,6 +896,9 @@ class TransactionMatchingService
      * 
      * @param array $match Match data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function logMatch(array $match): void
     {
         $logMessage = sprintf(
@@ -831,6 +921,9 @@ class TransactionMatchingService
      * 
      * @return float Average confidence
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function calculateAverageConfidence(): float
     {
         if (empty($this->matchingHistory)) {
@@ -846,6 +939,9 @@ class TransactionMatchingService
      * 
      * @return float Success rate
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function calculateMatchSuccessRate(): float
     {
         if (empty($this->matchingHistory)) {
@@ -860,6 +956,9 @@ class TransactionMatchingService
      * Counts matches by type.
      * 
      * @return array Counts by type
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function countMatchesByType(): array
     {
@@ -877,6 +976,9 @@ class TransactionMatchingService
      * Counts matches by day.
      * 
      * @return array Counts by day
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function countMatchesByDay(): array
     {
@@ -896,6 +998,9 @@ class TransactionMatchingService
      * @param array $filters Filter parameters
      * @return array Queue summary
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getQueueSummary(array $filters = []): array
     {
         $queue = $this->getMatchingQueue($filters);
@@ -914,6 +1019,9 @@ class TransactionMatchingService
      * @param array $filters Filter parameters
      * @return array History summary
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getHistorySummary(array $filters = []): array
     {
         $history = $this->getMatchingHistory($filters);
@@ -930,6 +1038,9 @@ class TransactionMatchingService
      * Generates recommendations.
      * 
      * @return array Recommendations
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function generateRecommendations(): array
     {
@@ -973,6 +1084,9 @@ class TransactionMatchingService
      * 
      * @return array Performance metrics
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getPerformanceMetrics(): array
     {
         return [
@@ -987,6 +1101,9 @@ class TransactionMatchingService
      * Calculates average processing time.
      * 
      * @return float Average processing time in seconds
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function calculateAverageProcessingTime(): float
     {
@@ -1010,6 +1127,9 @@ class TransactionMatchingService
      * 
      * @return float Accuracy percentage
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function calculateAccuracy(): float
     {
         // This would be implemented with actual accuracy calculation
@@ -1032,6 +1152,9 @@ class TransactionMatchingService
      * 
      * @return array Configuration
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getConfig(): array
     {
         return $this->config;
@@ -1049,6 +1172,9 @@ class TransactionMatchingService
 
     /**
      * Clears matching queue.
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function clearMatchingQueue(): void
     {

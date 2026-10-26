@@ -29,6 +29,9 @@ interface PaymentServiceInterface
      * @return int Refund ID
      * @throws RefundProcessingException on processing failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function processSquareRefund(array $squareRefund): int;
 
     /**
@@ -46,6 +49,9 @@ interface PaymentServiceInterface
      * @param string $squarePaymentId Square payment ID
      * @return array|null Payment data or null if not found
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getPaymentBySquareId(string $squarePaymentId): ?array;
 
     /**
@@ -62,6 +68,9 @@ interface PaymentServiceInterface
      * @param array $mappingData Mapping data
      * @return int Mapping ID
      * @throws PaymentMappingException on creation failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function createPaymentMapping(array $mappingData): int;
 

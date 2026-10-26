@@ -47,6 +47,9 @@ class IsuStagingGateway
      * @param array  $context Optional key-value context to append
      * @return void
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function logMessage(string $level, string $message, array $context = []): void
     {
         $logFile = $this->companyDir . 'square_sync.log';
@@ -85,6 +88,9 @@ class IsuStagingGateway
      * @param array|null  $opts
      * @return array|null
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function invokeCapability(string $capability, &$data, $opts = null)
     {
         if (function_exists('hook_invoke_first')) {
@@ -107,6 +113,9 @@ class IsuStagingGateway
      *
      * @param string $sourcePaymentId The Square payment ID
      * @return bool
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function exists(string $sourcePaymentId): bool
     {
@@ -139,6 +148,9 @@ class IsuStagingGateway
      * @param array $orderData Square order data
      * @param array $lineItems Square line items
      * @return int ISU staging ID, or 0 on failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function stageSquareOrder(array $paymentData, array $orderData, array $lineItems = []): int
     {
@@ -224,6 +236,9 @@ class IsuStagingGateway
      * @param array $orderData Square order data
      * @return void
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function storeSquareMetadata(int $stagingId, array $paymentData, array $orderData): void
     {
         $existing = $this->getById($stagingId);
@@ -262,6 +277,9 @@ class IsuStagingGateway
      * @param int $id ISU staging ID
      * @return array|null
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getById(int $id): ?array
     {
         if (!function_exists('hook_invoke')) {
@@ -281,6 +299,9 @@ class IsuStagingGateway
      *
      * @param int $id ISU staging ID
      * @return void
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function delete(int $id): void
     {
@@ -302,6 +323,9 @@ class IsuStagingGateway
      * @param int $stagingId ISU staging ID
      * @return void
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function deleteLineItemsByTransaction(int $stagingId): void
     {
         if (!function_exists('hook_invoke')) {
@@ -319,6 +343,9 @@ class IsuStagingGateway
      *
      * @param string|null $source Source filter (e.g., 'square')
      * @return array [status => count]
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getStatusCounts(?string $source = null): array
     {
@@ -340,6 +367,9 @@ class IsuStagingGateway
      * @param string|null $fromDate From date (Y-m-d)
      * @param string|null $toDate To date (Y-m-d)
      * @return array
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getByStatus(
         string $status,
@@ -372,6 +402,9 @@ class IsuStagingGateway
      * @param array $extraFields Additional fields to update
      * @return void
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function updateStatus(int $id, string $status, array $extraFields = []): void
     {
         if (!function_exists('hook_invoke')) {
@@ -395,6 +428,9 @@ class IsuStagingGateway
      * @param array $fields Fields to update (ISU field names)
      * @return void
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function updateFields(int $id, array $fields): void
     {
         if (!function_exists('hook_invoke')) {
@@ -414,6 +450,9 @@ class IsuStagingGateway
      *
      * @param int $stagingId ISU staging transaction ID
      * @return array
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getLineItems(int $stagingId): array
     {

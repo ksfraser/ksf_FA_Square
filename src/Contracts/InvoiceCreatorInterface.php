@@ -7,6 +7,9 @@ use Square\Models\Order;
 
 interface InvoiceCreatorInterface
 {
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function createSalesInvoice(
         int $debtorNo,
         int $branchNo,

@@ -30,6 +30,9 @@ class WebhookSubscriptionDAO
      *
      * @return string
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getTableName(): string
     {
         return $this->tablePrefix . 'square_webhook_subscriptions';
@@ -54,6 +57,9 @@ class WebhookSubscriptionDAO
      * Creates the table from scratch.
      *
      * @throws Exception
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function createTable(): void
     {
@@ -85,6 +91,9 @@ class WebhookSubscriptionDAO
      * @param array $data Subscription data
      * @return int Inserted ID
      * @throws Exception
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function insertSubscription(array $data): int
     {
@@ -129,6 +138,9 @@ class WebhookSubscriptionDAO
      * @return void
      * @throws Exception
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function updateSubscription(string $squareId, array $data): void
     {
         $tableName = $this->getTableName();
@@ -161,6 +173,9 @@ class WebhookSubscriptionDAO
      * @return void
      * @throws Exception
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function deleteSubscription(string $squareId): void
     {
         $tableName = $this->getTableName();
@@ -175,6 +190,9 @@ class WebhookSubscriptionDAO
      * Gets all active subscriptions.
      *
      * @return array Array of subscription records
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getActiveSubscriptions(): array
     {
@@ -201,6 +219,9 @@ class WebhookSubscriptionDAO
      * @param string $squareId Square subscription ID
      * @return array|null
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getBySquareId(string $squareId): ?array
     {
         $tableName = $this->getTableName();
@@ -221,6 +242,9 @@ class WebhookSubscriptionDAO
      * @param array $eventData Event data
      * @return int Logged event ID
      * @throws Exception
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function logEvent(array $eventData): int
     {

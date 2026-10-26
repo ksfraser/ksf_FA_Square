@@ -9,6 +9,9 @@ namespace ksfraser\FrontAccounting\Square\Services;
  */
 class GiftCardService
 {
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function processGiftCard(array $giftData): void
     {
         // Not staged. This used to broadcast a raw array to 'stage_gift_card',
@@ -23,6 +26,9 @@ class GiftCardService
         // Left as a documented gap rather than a silent no-op.
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function processLoyalty(array $loyaltyData): void
     {
         // Not staged. The raw array went to 'stage_loyalty_program', which no
@@ -37,6 +43,9 @@ class GiftCardService
         // StagingLoyaltyProgram would be wrong even once the adapter supports it;
         // StagingLoyaltyAccount is the closer fit.
     }
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function processMultiLocationTransfer(array $transferData): void
     {
         // Not staged. The raw array went to 'stage_location_transfer', which no

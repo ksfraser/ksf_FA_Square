@@ -30,6 +30,9 @@ class ReportDistributionService
      * @param array $distributionData Distribution data
      * @return array Created distribution
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function createDistribution(array $distributionData): array
     {
         try {
@@ -64,6 +67,9 @@ class ReportDistributionService
      * @param array $distributionData Distribution data
      * @return array Updated distribution
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function updateDistribution(int $distributionId, array $distributionData): array
     {
         try {
@@ -97,6 +103,9 @@ class ReportDistributionService
      * @param int $distributionId Distribution ID
      * @return bool Success status
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function deleteDistribution(int $distributionId): bool
     {
         try {
@@ -123,6 +132,9 @@ class ReportDistributionService
      * @param int $distributionId Distribution ID
      * @return array Distribution data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getDistributionById(int $distributionId): ?array
     {
         $tableName = $this->getDistributionTableName();
@@ -142,6 +154,9 @@ class ReportDistributionService
      * 
      * @param array $filters Filter parameters
      * @return array Distributions
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getDistributions(array $filters): array
     {
@@ -188,6 +203,9 @@ class ReportDistributionService
      * @param array $filters Filter parameters
      * @return array Distribution history
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getDistributionHistory(array $filters): array
     {
         $tableName = $this->getDistributionHistoryTableName();
@@ -232,6 +250,9 @@ class ReportDistributionService
      * 
      * @param int $distributionId Distribution ID
      * @return array Execution result
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function executeDistribution(int $distributionId): array
     {
@@ -283,6 +304,9 @@ class ReportDistributionService
      * @param array $distributionData Distribution data
      * @throws \Exception on validation failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function validateDistributionData(array $distributionData): void
     {
         if (empty($distributionData)) {
@@ -321,6 +345,9 @@ class ReportDistributionService
      * @param int $distributionId Distribution ID
      * @return bool Success status
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function queueDistribution(int $distributionId): bool
     {
         // Add to queue table for background processing
@@ -340,6 +367,9 @@ class ReportDistributionService
      * @param int $distributionId Distribution ID
      * @return bool Success status
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function cancelDistribution(int $distributionId): bool
     {
         $tableName = $this->getDistributionTableName();
@@ -354,6 +384,9 @@ class ReportDistributionService
      * @param int $distributionId Distribution ID
      * @param string $status Status
      * @return bool Success status
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function updateDistributionStatus(int $distributionId, string $status): bool
     {
@@ -371,6 +404,9 @@ class ReportDistributionService
      * @param string $message Message
      * @return bool Success status
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function logDistributionHistory(int $distributionId, string $status, string $message): bool
     {
         $tableName = $this->getDistributionHistoryTableName();
@@ -386,6 +422,9 @@ class ReportDistributionService
      * @param array $distribution Distribution data
      * @param array $reportData Report data
      * @return array Execution result
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function executeDistributionMethod(array $distribution, array $reportData): array
     {
@@ -420,6 +459,9 @@ class ReportDistributionService
      * @param array $reportData Report data
      * @param array $config Configuration
      * @return array Execution result
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function executeEmailDistribution(array $distribution, array $reportData, array $config): array
     {
@@ -463,6 +505,9 @@ class ReportDistributionService
      * @param array $reportData Report data
      * @param array $config Configuration
      * @return array Execution result
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function executeFtpDistribution(array $distribution, array $reportData, array $config): array
     {
@@ -509,6 +554,9 @@ class ReportDistributionService
      * @param array $config Configuration
      * @return array Execution result
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function executeS3Distribution(array $distribution, array $reportData, array $config): array
     {
         // Generate report file
@@ -538,6 +586,9 @@ class ReportDistributionService
      * @param array $reportData Report data
      * @param array $config Configuration
      * @return array Execution result
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function executeWebhookDistribution(array $distribution, array $reportData, array $config): array
     {
@@ -585,6 +636,9 @@ class ReportDistributionService
      * @param array $config Configuration
      * @return array Execution result
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function executeDownloadDistribution(array $distribution, array $reportData, array $config): array
     {
         // Generate report file
@@ -613,6 +667,9 @@ class ReportDistributionService
      * @param string $format File format
      * @return string File content
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function generateReportFile(array $reportData, string $format): string
     {
         switch ($format) {
@@ -639,6 +696,9 @@ class ReportDistributionService
      * @param array $reportData Report data
      * @return string PDF content
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function generatePdfReport(array $reportData): string
     {
         // Simple PDF generation using HTML
@@ -653,6 +713,9 @@ class ReportDistributionService
      * 
      * @param array $reportData Report data
      * @return string HTML content
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function generateHtmlReport(array $reportData): string
     {
@@ -727,6 +790,9 @@ class ReportDistributionService
      * @param array $reportData Report data
      * @return string Excel content (CSV format for now)
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function generateExcelReport(array $reportData): string
     {
         // Generate CSV format for Excel compatibility
@@ -772,6 +838,9 @@ class ReportDistributionService
      * @param array $reportData Report data
      * @return string CSV content
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function generateCsvReport(array $reportData): string
     {
         // Generate CSV content
@@ -810,6 +879,9 @@ class ReportDistributionService
      * @param int $reportId Report ID
      * @return array Report data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getReportData(int $reportId): array
     {
         // This would typically fetch from a reports database or storage
@@ -846,6 +918,9 @@ class ReportDistributionService
      * @param array $queueData Queue data
      * @return bool Success status
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function insertIntoQueue(array $queueData): bool
     {
         $tableName = $this->getDistributionQueueTableName();
@@ -868,6 +943,9 @@ class ReportDistributionService
      * 
      * @param array $distributionData Distribution data
      * @return int Distribution ID
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function insertDistribution(array $distributionData): int
     {
@@ -894,6 +972,9 @@ class ReportDistributionService
      * @param array $distributionData Distribution data
      * @return bool Success status
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function updateDistributionById(int $distributionId, array $distributionData): bool
     {
         $tableName = $this->getDistributionTableName();
@@ -919,6 +1000,9 @@ class ReportDistributionService
      * @param int $distributionId Distribution ID
      * @return bool Success status
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function deleteDistributionById(int $distributionId): bool
     {
         $tableName = $this->getDistributionTableName();
@@ -942,6 +1026,9 @@ class ReportDistributionService
      * 
      * @return string Table name
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getDistributionHistoryTableName(): string
     {
         return $this->tablePrefix . 'report_distribution_history';
@@ -959,6 +1046,9 @@ class ReportDistributionService
 
     /**
      * Ensures the tables exist.
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function ensureTablesExist(): void
     {

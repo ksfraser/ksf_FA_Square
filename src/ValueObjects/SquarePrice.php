@@ -135,6 +135,9 @@ class SquarePrice
      * 
      * @return int
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getCents(): int
     {
         return $this->priceCents;
@@ -154,6 +157,9 @@ class SquarePrice
      * Gets the original price before any transformations.
      * 
      * @return float
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getOriginalPrice(): float
     {
@@ -175,6 +181,9 @@ class SquarePrice
      * 
      * @return bool
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function wasCapped(): bool
     {
         return $this->wasCapped;
@@ -195,6 +204,9 @@ class SquarePrice
      * 
      * @param string $itemId Optional item ID for context
      * @return string|null Warning message or null if no transformation
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getWarningMessage(string $itemId = ''): ?string
     {
@@ -225,6 +237,9 @@ class SquarePrice
      * Gets a log message for debugging.
      * 
      * @return string
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getLogMessage(): string
     {

@@ -18,6 +18,9 @@ class InvoiceCreator implements InvoiceCreatorInterface
         $this->tablePrefix = $tablePrefix;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function createSalesInvoice(
         int $debtorNo,
         int $branchNo,
@@ -38,6 +41,9 @@ class InvoiceCreator implements InvoiceCreatorInterface
         return $orderNo;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function recordPayment(int $invoiceNo, float $amount, \DateTimeInterface $date, int $posId): int
     {
         $sql = "INSERT INTO {$this->tablePrefix}debtor_trans (type, trans_no, tran_date, debtor_no, amount, reference, tpe, alloc, rate, ov_amount, ov_gst, ov_freight, ov_discount, cheque_no)
@@ -54,6 +60,9 @@ class InvoiceCreator implements InvoiceCreatorInterface
         return \db_insert_id();
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getNextReference(): string
     {
         $sql = "SELECT MAX(reference) + 1 AS next_ref FROM {$this->tablePrefix}sales_orders";
@@ -76,6 +85,9 @@ class InvoiceCreator implements InvoiceCreatorInterface
         return (int)$reference;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function addOrderLine(int $orderNo, array $item): void
     {
         $sql = "INSERT INTO {$this->tablePrefix}sales_order_details (order_no, stk_code, unit_price, quantity, discount_percent, price_type, src_id, trans_id)

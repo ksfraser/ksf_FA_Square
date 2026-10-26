@@ -166,6 +166,9 @@ class ExportRequest
      * 
      * @return array
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function toArray(): array
     {
         return [
@@ -191,6 +194,9 @@ class ExportRequest
      * 
      * @return bool
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function isExportAction(): bool
     {
         return $this->action === 'i_export';
@@ -207,6 +213,9 @@ class ExportRequest
         return $this->locationId;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getCategory(): int
     {
         return $this->category;
@@ -222,6 +231,9 @@ class ExportRequest
         return $this->stockLike;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function shouldUploadImages(): bool
     {
         return $this->uploadImages;
@@ -237,6 +249,9 @@ class ExportRequest
         return $this->maxItems;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function shouldSendInactive(): bool
     {
         return $this->sendInactive;
@@ -252,6 +267,9 @@ class ExportRequest
         return $this->fullSync;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function shouldSortRecent(): bool
     {
         return $this->sortRecent;
@@ -267,6 +285,9 @@ class ExportRequest
         return $this->salesType;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function shouldOnlyNew(): bool
     {
         return $this->onlyNew;

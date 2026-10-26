@@ -18,6 +18,9 @@ interface TransactionReviewInterface
      * @param array $reviewData Review data
      * @return array Review results
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function reviewTransaction(array $reviewData): array;
 
     /**
@@ -39,6 +42,9 @@ interface TransactionReviewInterface
      * @param array $rejectionData Rejection data
      * @return array Rejection results
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function rejectReview(string $reviewId, string $rejecterId, string $reason, array $rejectionData = []): array;
 
     /**
@@ -56,6 +62,9 @@ interface TransactionReviewInterface
      * @param string $approverId Approver ID
      * @param array $approvalData Approval data
      * @return array Approval results
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function approveMatch(string $matchId, string $approverId, array $approvalData = []): array;
 
@@ -76,6 +85,9 @@ interface TransactionReviewInterface
      * @param array $filters Filter parameters
      * @return array Review queue
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getReviewQueue(array $filters = []): array;
 
     /**
@@ -91,6 +103,9 @@ interface TransactionReviewInterface
      * 
      * @param array $filters Filter parameters
      * @return array Review history
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getReviewHistory(array $filters = []): array;
 
@@ -108,6 +123,9 @@ interface TransactionReviewInterface
      * @param array $filters Filter parameters
      * @return array Review report
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function generateReviewReport(array $filters = []): array;
 
     /**
@@ -124,6 +142,9 @@ interface TransactionReviewInterface
 
     /**
      * Clears match queue.
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function clearMatchQueue(): void;
 

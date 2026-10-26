@@ -40,6 +40,9 @@ class PredictiveAnalyticsService
      * @param int $forecastPeriod Forecast period in days
      * @return array Sales forecast data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getSalesForecast(array $filters, int $forecastPeriod = 30): array
     {
         try {
@@ -75,6 +78,9 @@ class PredictiveAnalyticsService
      * @param array $filters Filter parameters
      * @return array Customer churn prediction data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getCustomerChurnPrediction(array $filters): array
     {
         try {
@@ -104,6 +110,9 @@ class PredictiveAnalyticsService
      * 
      * @param array $filters Filter parameters
      * @return array Inventory demand forecast data
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getInventoryDemandForecast(array $filters): array
     {
@@ -135,6 +144,9 @@ class PredictiveAnalyticsService
      * @param array $filters Filter parameters
      * @return array Financial forecast data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getFinancialForecast(array $filters): array
     {
         try {
@@ -164,6 +176,9 @@ class PredictiveAnalyticsService
      * 
      * @param array $filters Filter parameters
      * @return array Anomaly detection data
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getAnomalyDetection(array $filters): array
     {
@@ -195,6 +210,9 @@ class PredictiveAnalyticsService
      * @param array $filters Filter parameters
      * @return array CLV prediction data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getCustomerLifetimeValuePrediction(array $filters): array
     {
         try {
@@ -224,6 +242,9 @@ class PredictiveAnalyticsService
      * 
      * @param array $filters Filter parameters
      * @return array Market basket analysis data
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getMarketBasketAnalysis(array $filters): array
     {
@@ -255,6 +276,9 @@ class PredictiveAnalyticsService
      * @param array $filters Filter parameters
      * @return array Trend analysis data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getTrendAnalysis(array $filters): array
     {
         try {
@@ -284,6 +308,9 @@ class PredictiveAnalyticsService
      * 
      * @param array $filters Filter parameters
      * @return array Seasonality analysis data
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getSeasonalityAnalysis(array $filters): array
     {
@@ -315,6 +342,9 @@ class PredictiveAnalyticsService
      * @param array $filters Filter parameters
      * @return array Correlation analysis data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getCorrelationAnalysis(array $filters): array
     {
         try {
@@ -344,6 +374,9 @@ class PredictiveAnalyticsService
      * 
      * @param array $filters Filter parameters
      * @return array Clustering analysis data
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getClusteringAnalysis(array $filters): array
     {
@@ -376,6 +409,9 @@ class PredictiveAnalyticsService
      * @param int $forecastPeriod Forecast period in days
      * @return array Time series forecast data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getTimeSeriesForecast(array $filters, int $forecastPeriod = 30): array
     {
         try {
@@ -407,6 +443,9 @@ class PredictiveAnalyticsService
      * @param array $filters Filter parameters
      * @return array Sentiment analysis data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getSentimentAnalysis(array $filters): array
     {
         try {
@@ -437,6 +476,9 @@ class PredictiveAnalyticsService
      * @param array $filters Filter parameters
      * @return array Recommendation data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getRecommendations(array $filters): array
     {
         try {
@@ -463,6 +505,9 @@ class PredictiveAnalyticsService
 
     // Private helper methods for data processing and algorithms
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getHistoricalSalesData(array $filters): array
     {
         // Implementation for getting historical sales data
@@ -491,6 +536,9 @@ class PredictiveAnalyticsService
         return $forecast;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function calculateConfidenceIntervals(array $forecast): array
     {
         $confidenceIntervals = [];
@@ -509,6 +557,9 @@ class PredictiveAnalyticsService
         return $confidenceIntervals;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function calculateStandardDeviation(array $values): float
     {
         $mean = array_sum($values) / count($values);
@@ -536,6 +587,9 @@ class PredictiveAnalyticsService
         ];
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getCustomerBehaviorData(array $filters): array
     {
         // Implementation for getting customer behavior data
@@ -575,6 +629,9 @@ class PredictiveAnalyticsService
         return $churnRisk;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function generateRetentionStrategies(array $churnRisk): array
     {
         $strategies = [];
@@ -610,6 +667,9 @@ class PredictiveAnalyticsService
         return $strategies;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getHistoricalDemandData(array $filters): array
     {
         // Implementation for getting historical demand data
@@ -639,6 +699,9 @@ class PredictiveAnalyticsService
         return $forecast;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function generateReorderRecommendations(array $forecast): array
     {
         $recommendations = [];
@@ -658,6 +721,9 @@ class PredictiveAnalyticsService
         return $recommendations;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getHistoricalFinancialData(array $filters): array
     {
         // Implementation for getting historical financial data
@@ -700,6 +766,9 @@ class PredictiveAnalyticsService
         return $forecast;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function generateFinancialInsights(array $forecast): array
     {
         $totalForecast = array_sum(array_column($forecast, 'forecast_revenue'));
@@ -715,6 +784,9 @@ class PredictiveAnalyticsService
         ];
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getTimeSeriesData(array $filters): array
     {
         // Implementation for getting time series data
@@ -751,6 +823,9 @@ class PredictiveAnalyticsService
         return $anomalies;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function generateAnomalyAlerts(array $anomalies): array
     {
         $alerts = [];
@@ -767,6 +842,9 @@ class PredictiveAnalyticsService
         return $alerts;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getCustomerTransactionData(array $filters): array
     {
         // Implementation for getting customer transaction data
@@ -800,6 +878,9 @@ class PredictiveAnalyticsService
         return $clvPrediction;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function generateCustomerSegments(array $clvPrediction): array
     {
         $segments = [
@@ -815,6 +896,9 @@ class PredictiveAnalyticsService
         return $segments;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getTransactionData(array $filters): array
     {
         // Implementation for getting transaction data
@@ -857,6 +941,9 @@ class PredictiveAnalyticsService
         return array_slice($itemPairs, 0, 20); // Top 20 pairs
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function generateProductRecommendations(array $basketAnalysis): array
     {
         $recommendations = [];
@@ -874,6 +961,9 @@ class PredictiveAnalyticsService
         return $recommendations;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function applyTrendAnalysis(array $timeSeriesData): array
     {
         $trends = [];
@@ -894,6 +984,9 @@ class PredictiveAnalyticsService
         return $trends;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function generateTrendInsights(array $trends): array
     {
         $upTrends = count(array_filter($trends, function($t) { return $t['trend'] === 'up'; }));
@@ -908,6 +1001,9 @@ class PredictiveAnalyticsService
         ];
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function applySeasonalityAnalysis(array $timeSeriesData): array
     {
         $seasonality = [];
@@ -934,6 +1030,9 @@ class PredictiveAnalyticsService
         return $seasonality;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function generateSeasonalInsights(array $seasonality): array
     {
         $peakMonth = max($seasonality, function($a, $b) {
@@ -953,6 +1052,9 @@ class PredictiveAnalyticsService
         ];
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getMultiDimensionalData(array $filters): array
     {
         // Implementation for getting multi-dimensional data
@@ -995,6 +1097,9 @@ class PredictiveAnalyticsService
         return $correlations;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function calculateCorrelation(array $x, array $y): float
     {
         if (count($x) !== count($y) || count($x) < 2) return 0;
@@ -1017,6 +1122,9 @@ class PredictiveAnalyticsService
         return is_nan($correlation) ? 0 : $correlation;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function generateCorrelationInsights(array $correlations): array
     {
         $strongCorrelations = count(array_filter($correlations, function($c) { return $c['strength'] === 'strong'; }));
@@ -1035,6 +1143,9 @@ class PredictiveAnalyticsService
         return $this->customerAnalytics->getLifetimeValue($filters);
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function applyClusteringAnalysis(array $customerData): array
     {
         // Simple K-means clustering
@@ -1075,6 +1186,9 @@ class PredictiveAnalyticsService
         return $clusters;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function generateClusteringInsights(array $clusters): array
     {
         $insights = [];
@@ -1095,6 +1209,9 @@ class PredictiveAnalyticsService
         return $insights;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function applyTimeSeriesForecasting(array $timeSeriesData, int $forecastPeriod): array
     {
         // Simple exponential smoothing
@@ -1115,6 +1232,9 @@ class PredictiveAnalyticsService
         return $forecast;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function generateTimeSeriesInsights(array $forecast): array
     {
         $totalForecast = array_sum(array_column($forecast, 'forecast_value'));
@@ -1130,6 +1250,9 @@ class PredictiveAnalyticsService
         ];
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getCustomerFeedbackData(array $filters): array
     {
         // Implementation for getting customer feedback data
@@ -1154,6 +1277,9 @@ class PredictiveAnalyticsService
         return $sentiment;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function generateSentimentInsights(array $sentiment): array
     {
         $total = array_sum($sentiment);
@@ -1169,6 +1295,9 @@ class PredictiveAnalyticsService
         ];
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getRecommendationData(array $filters): array
     {
         // Implementation for getting recommendation data
@@ -1201,6 +1330,9 @@ class PredictiveAnalyticsService
         return $recommendations;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function findSimilarCustomers($customer, $allCustomers): array
     {
         $similar = [];
@@ -1218,6 +1350,9 @@ class PredictiveAnalyticsService
         return $similar;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getRecommendedProducts($similarCustomers, $transactionData): array
     {
         $recommendedProducts = [];
@@ -1238,6 +1373,9 @@ class PredictiveAnalyticsService
         return array_slice($recommendedProducts, 0, 5); // Top 5 recommendations
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function generateRecommendationInsights(array $recommendations): array
     {
         $totalRecommendations = count($recommendations);

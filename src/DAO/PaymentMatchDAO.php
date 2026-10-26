@@ -31,6 +31,9 @@ class PaymentMatchDAO
      *
      * @return string
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getTableName(): string
     {
         return $this->tablePrefix . 'ksf_import_square_payments';
@@ -75,6 +78,9 @@ class PaymentMatchDAO
      * @param float|null $totalCollected
      * @return int
      * @throws Exception
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function insertMatch(
         string $squarePaymentId,
@@ -123,6 +129,9 @@ class PaymentMatchDAO
      * @param string $squarePaymentId
      * @return array|null
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getBySquarePaymentId(string $squarePaymentId): ?array
     {
         $tableName = $this->getTableName();
@@ -143,6 +152,9 @@ class PaymentMatchDAO
      * @param int $transType
      * @param int $transNo
      * @return array
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getByFaTransaction(int $transType, int $transNo): array
     {
@@ -168,6 +180,9 @@ class PaymentMatchDAO
      *
      * @param string $squarePaymentId
      * @return bool
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function isMatched(string $squarePaymentId): bool
     {

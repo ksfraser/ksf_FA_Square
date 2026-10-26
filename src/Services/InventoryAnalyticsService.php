@@ -26,6 +26,9 @@ class InventoryAnalyticsService
      * @param array $filters Filter parameters
      * @return array Inventory summary
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getInventorySummary(array $filters): array
     {
         $tableName = $this->getInventoryTableName();
@@ -112,6 +115,9 @@ class InventoryAnalyticsService
      * @param array $filters Filter parameters
      * @return array Stock turnover
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getStockTurnover(array $filters): array
     {
         $tableName = $this->getInventoryTableName();
@@ -177,6 +183,9 @@ class InventoryAnalyticsService
      * @param array $filters Filter parameters
      * @return array Inventory accuracy
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getInventoryAccuracy(array $filters): array
     {
         $tableName = $this->getInventoryTableName();
@@ -221,6 +230,9 @@ class InventoryAnalyticsService
      * 
      * @param array $filters Filter parameters
      * @return array Slow-moving items
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getSlowMovingItems(array $filters): array
     {
@@ -291,6 +303,9 @@ class InventoryAnalyticsService
      * 
      * @param array $filters Filter parameters
      * @return array Stock alerts
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getStockAlerts(array $filters): array
     {
@@ -379,6 +394,9 @@ class InventoryAnalyticsService
      * 
      * @param array $filters Filter parameters
      * @return array Efficiency metrics
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getEfficiencyMetrics(array $filters): array
     {
@@ -472,6 +490,9 @@ class InventoryAnalyticsService
      * @param array $filters Filter parameters
      * @return string Date condition
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function buildDateCondition(array $filters): string
     {
         $conditions = ["1=1"];
@@ -498,6 +519,9 @@ class InventoryAnalyticsService
      * @param int $total Total
      * @return float Percentage
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function calculatePercentage(int $value, int $total): float
     {
         if ($total == 0) return 0;
@@ -518,6 +542,9 @@ class InventoryAnalyticsService
      * Gets sales table name.
      * 
      * @return string Table name
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function getSalesTableName(): string
     {

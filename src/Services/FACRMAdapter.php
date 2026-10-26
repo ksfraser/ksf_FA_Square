@@ -26,6 +26,9 @@ class FACRMAdapter implements CRMAdapterInterface
         $this->communicationDao = $communicationDao;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function updateContact(array $contactData): bool
     {
         try {
@@ -64,6 +67,9 @@ class FACRMAdapter implements CRMAdapterInterface
         }
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getCustomerHistory(string $customerId): array
     {
         try {
@@ -79,6 +85,9 @@ class FACRMAdapter implements CRMAdapterInterface
         }
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function trackCommunication(array $communication): bool
     {
         try {

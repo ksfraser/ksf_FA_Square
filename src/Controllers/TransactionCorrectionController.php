@@ -49,6 +49,9 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
      * @param array $request HTTP request data
      * @return array HTTP response
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function handleRequest(array $request): array
     {
         try {
@@ -79,6 +82,9 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
      * @param array $request HTTP request data
      * @return array HTTP response
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function handlePostRequest(string $action, array $request): array
     {
         switch ($action) {
@@ -103,6 +109,9 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
      * @param string $action Action to perform
      * @param array $request HTTP request data
      * @return array HTTP response
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function handleGetRequest(string $action, array $request): array
     {
@@ -135,6 +144,9 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
      * @param array $request HTTP request data
      * @return array HTTP response
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function handlePutRequest(string $action, array $request): array
     {
         switch ($action) {
@@ -154,6 +166,9 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
      * @param array $request HTTP request data
      * @return array HTTP response
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function handleDeleteRequest(string $action, array $request): array
     {
         switch ($action) {
@@ -169,6 +184,9 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
      * 
      * @param array $request HTTP request data
      * @return array HTTP response
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function correctTransaction(array $request): array
     {
@@ -207,6 +225,9 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
      * @param array $request HTTP request data
      * @return array HTTP response
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function handleCorrectFaTransaction(array $request): array
     {
         try {
@@ -244,6 +265,9 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
      * @param array $request HTTP request data
      * @return array HTTP response
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function handleGetCorrectionPreview(array $request): array
     {
         try {
@@ -274,6 +298,9 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
      * 
      * @param array $request HTTP request data
      * @return array HTTP response
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function handleSimulateCorrection(array $request): array
     {
@@ -309,6 +336,9 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
      * @param array $request HTTP request data
      * @return array HTTP response
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function validateCorrection(array $request): array
     {
         try {
@@ -328,6 +358,9 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
      * 
      * @param array $request HTTP request data
      * @return array HTTP response
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function handleGetCorrectionHistory(array $request): array
     {
@@ -352,6 +385,9 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
      * @param array $request HTTP request data
      * @return array HTTP response
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function index(array $request): array
     {
         try {
@@ -369,6 +405,9 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
      * @param array $request HTTP request data
      * @return array HTTP response
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function handleGetCorrectionStatistics(array $request): array
     {
         try {
@@ -385,6 +424,9 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
      * 
      * @param array $request HTTP request data
      * @return array HTTP response
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getCapabilities(array $request): array
     {
@@ -409,6 +451,9 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
      * @param array $request HTTP request data
      * @return array HTTP response
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getRecommendations(array $request): array
     {
         try {
@@ -431,6 +476,9 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
      * 
      * @param array $request HTTP request data
      * @return array HTTP response
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getCorrectionImpact(array $request): array
     {
@@ -464,6 +512,9 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
      * @param array $request HTTP request data
      * @return array HTTP response
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getAvailableDebtors(array $request): array
     {
         try {
@@ -486,6 +537,9 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
      * 
      * @param array $request HTTP request data
      * @return array HTTP response
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function handleUpdateConfiguration(array $request): array
     {
@@ -514,6 +568,9 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
      * @param array $request HTTP request data
      * @return array HTTP response
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function handlePerformRollback(array $request): array
     {
         try {
@@ -536,6 +593,9 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
      * 
      * @param array $request HTTP request data
      * @return array HTTP response
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function deleteCorrection(array $request): array
     {
@@ -562,6 +622,9 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
      * @param string $message Success message
      * @return array HTTP response
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function createSuccessResponse(array $data, string $message): array
     {
         return [
@@ -579,6 +642,9 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
      * @param string $message Error message
      * @return array HTTP response
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function createErrorResponse(int $status, string $message): array
     {
         return [
@@ -595,6 +661,9 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
         return $this->correctionService->correctDebtorAssignment($transactionId, $newDebtorId, $correctionData);
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function correctFaTransaction(int $transactionId, int $newDebtorId, array $correctionData = []): array
     {
         return $this->correctionService->correctFaTransaction($transactionId, $newDebtorId, $correctionData);
@@ -610,6 +679,9 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
         return $this->correctionService->canCorrectTransaction($transaction);
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function determineTransactionSource(array $transaction): string
     {
         return $this->correctionService->determineTransactionSource($transaction);
@@ -625,6 +697,9 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
         $this->correctionService->validateCorrectionRequest($transactionId, $newDebtorId);
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getCorrectionHistory(int $transactionId): array
     {
         return $this->correctionService->getCorrectionHistory($transactionId);
@@ -640,6 +715,9 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
         return $this->correctionService->debtorExists($debtorId);
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function hasActiveCorrection(int $transactionId): bool
     {
         return $this->correctionService->hasActiveCorrection($transactionId);
@@ -655,6 +733,9 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
         return $this->correctionService->cloneTransactionCart($transaction);
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function voidOriginalTransaction(array $transaction): array
     {
         return $this->correctionService->voidOriginalTransaction($transaction);
@@ -670,6 +751,9 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
         $this->correctionService->linkTransactions($originalTransaction, $newTransaction);
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function updateTransactionHistory(array $originalTransaction, array $newTransaction): void
     {
         $this->correctionService->updateTransactionHistory($originalTransaction, $newTransaction);
@@ -685,6 +769,9 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
         $this->correctionService->trackTransactionHistory($transactionId, $result, $transactionSource);
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getSourceDetectionCapabilities(): array
     {
         return $this->correctionService->getSourceDetectionCapabilities();
@@ -700,6 +787,9 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
         return $this->correctionService->getConfiguration();
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function updateConfiguration(array $configuration): bool
     {
         return $this->correctionService->updateConfiguration($configuration);
@@ -715,6 +805,9 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
         return $this->correctionService->supportsAttachmentHandling($transaction);
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function validateCorrectionData(array $correctionData): array
     {
         return $this->correctionService->validateCorrectionData($correctionData);
@@ -730,6 +823,9 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
         return $this->correctionService->getCorrectionPreview($transactionId, $newDebtorId, $correctionData);
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function simulateCorrection(array $transaction, int $newDebtorId, array $correctionData = []): array
     {
         return $this->correctionService->simulateCorrection($transaction, $newDebtorId, $correctionData);
@@ -745,6 +841,9 @@ class TransactionCorrectionController implements TransactionCorrectionInterface
         return $this->correctionService->validateCorrectionImpact($transaction, $newDebtorId);
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getErrorHandlingCapabilities(): array
     {
         return $this->correctionService->getErrorHandlingCapabilities();

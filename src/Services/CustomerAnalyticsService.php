@@ -26,6 +26,9 @@ class CustomerAnalyticsService
      * @param array $filters Filter parameters
      * @return array Customer summary
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getCustomerSummary(array $filters): array
     {
         $tableName = $this->getCustomerTableName();
@@ -62,6 +65,9 @@ class CustomerAnalyticsService
      * 
      * @param array $filters Filter parameters
      * @return array Customer lifetime value
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getCustomerLifetimeValue(array $filters): array
     {
@@ -124,6 +130,9 @@ class CustomerAnalyticsService
      * @param array $filters Filter parameters
      * @return array Customer segments
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getCustomerSegments(array $filters): array
     {
         $customers = $this->getCustomerLifetimeValue($filters);
@@ -171,6 +180,9 @@ class CustomerAnalyticsService
      * 
      * @param array $filters Filter parameters
      * @return array Customer acquisition
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getCustomerAcquisition(array $filters): array
     {
@@ -239,6 +251,9 @@ class CustomerAnalyticsService
      * @param array $filters Filter parameters
      * @return array Customer retention
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getCustomerRetention(array $filters): array
     {
         $tableName = $this->getCustomerTableName();
@@ -297,6 +312,9 @@ class CustomerAnalyticsService
      * 
      * @param array $filters Filter parameters
      * @return array Satisfaction metrics
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getSatisfactionMetrics(array $filters): array
     {
@@ -367,6 +385,9 @@ class CustomerAnalyticsService
      * @param array $filters Filter parameters
      * @return string Date condition
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function buildDateCondition(array $filters): string
     {
         $conditions = ["1=1"];
@@ -394,6 +415,9 @@ class CustomerAnalyticsService
      * @param int $totalTransactions Total transactions
      * @return int LTV score (0-100)
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function calculateLTVScore(float $totalSpent, int $daysAsCustomer, int $totalTransactions): int
     {
         if ($daysAsCustomer == 0) return 0;
@@ -415,6 +439,9 @@ class CustomerAnalyticsService
      * @param int $total Total
      * @return float Percentage
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function calculatePercentage(int $value, int $total): float
     {
         if ($total == 0) return 0;
@@ -435,6 +462,9 @@ class CustomerAnalyticsService
      * Gets sales table name.
      * 
      * @return string Table name
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function getSalesTableName(): string
     {

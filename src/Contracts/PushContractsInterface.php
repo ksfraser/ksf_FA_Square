@@ -4,6 +4,9 @@ namespace ksfraser\FrontAccounting\Square\Contracts;
 
 interface PushContractsInterface
 {
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function pushCatalog(array $catalogData): void;
     public function pushCustomer(array $customerData): void;
     public function pushOrder(array $orderData): void;

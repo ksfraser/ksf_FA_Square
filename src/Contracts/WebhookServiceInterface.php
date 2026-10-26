@@ -29,6 +29,9 @@ interface WebhookServiceInterface
      * @return array Array of \Square\Models\WebhookSubscription objects
      * @throws \ksfraser\FrontAccounting\Square\Exceptions\WebhookCreationException
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function listSubscriptions(): array;
 
     /**
@@ -47,6 +50,9 @@ interface WebhookServiceInterface
      * @param string $id Subscription ID
      * @return bool True if deletion was successful
      * @throws \ksfraser\FrontAccounting\Square\Exceptions\WebhookCreationException
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function deleteSubscription(string $id): bool;
 

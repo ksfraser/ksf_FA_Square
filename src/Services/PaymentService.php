@@ -46,6 +46,9 @@ class PaymentService implements PaymentServiceInterface
      * @return int Payment ID
      * @throws PaymentProcessingException on processing failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function recordSquarePayment(array $squarePayment): int
     {
         try {
@@ -94,6 +97,9 @@ class PaymentService implements PaymentServiceInterface
      * @return int Payment ID
      * @throws PaymentProcessingException on processing failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function recordImportedPayment(array $squarePayment, int $debtorNo): int
     {
         try {
@@ -124,6 +130,9 @@ class PaymentService implements PaymentServiceInterface
      * @param array $squarePayment Square payment data
      * @param array $customer FA customer data (debtor_no, person_id)
      * @return int Payment ID
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function persistPayment(array $squarePayment, array $customer): int
     {
@@ -160,6 +169,9 @@ class PaymentService implements PaymentServiceInterface
      * @param array $squareRefund Square refund data
      * @return int Refund ID
      * @throws RefundProcessingException on processing failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function processSquareRefund(array $squareRefund): int
     {
@@ -213,6 +225,9 @@ class PaymentService implements PaymentServiceInterface
      * @param array $payments Square payment data
      * @return array Reconciliation results
      * @throws ReconciliationException on reconciliation failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function reconcileSquarePayments(array $payments): array
     {
@@ -290,6 +305,9 @@ class PaymentService implements PaymentServiceInterface
      * @param string $squarePaymentId Square payment ID
      * @return array|null Payment data or null if not found
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getPaymentBySquareId(string $squarePaymentId): ?array
     {
         return $this->paymentMappingDao->getPaymentBySquareId($squarePaymentId);
@@ -313,6 +331,9 @@ class PaymentService implements PaymentServiceInterface
      * @return int Mapping ID
      * @throws PaymentMappingException on creation failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function createPaymentMapping(array $mappingData): int
     {
         try {
@@ -330,6 +351,9 @@ class PaymentService implements PaymentServiceInterface
      * Gets payment reconciliation statistics.
      * 
      * @return array Statistics array
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getPaymentStatistics(): array
     {
@@ -367,6 +391,9 @@ class PaymentService implements PaymentServiceInterface
      * @param array $squareRefund Square refund data
      * @throws RefundProcessingException on validation failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function validateSquareRefund(array $squareRefund): void
     {
         if (empty($squareRefund)) {
@@ -396,6 +423,9 @@ class PaymentService implements PaymentServiceInterface
      * @param array $mappingData Mapping data
      * @throws PaymentMappingException on validation failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function validateMappingData(array $mappingData): void
     {
         if (empty($mappingData)) {
@@ -417,6 +447,9 @@ class PaymentService implements PaymentServiceInterface
      * @param array $squarePayment Square payment data
      * @return bool Success status
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function updatePaymentStatus(int $faPaymentId, array $squarePayment): bool
     {
         $updateData = [
@@ -432,6 +465,9 @@ class PaymentService implements PaymentServiceInterface
      * 
      * @param string $squareStatus Square status
      * @return string FA status
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function mapSquareStatusToFaStatus(string $squareStatus): string
     {
@@ -450,6 +486,9 @@ class PaymentService implements PaymentServiceInterface
      * 
      * @param array $eventData Event data
      * @return int Event ID
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function logPaymentEvent(array $eventData): int
     {

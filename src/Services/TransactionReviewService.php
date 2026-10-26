@@ -47,6 +47,9 @@ class TransactionReviewService
      * @param array $reviewData Additional review data (optional)
      * @return array Review results
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function reviewTransaction(int $transactionId, array $reviewData = []): array
     {
         try {
@@ -98,6 +101,9 @@ class TransactionReviewService
      * @param int $transactionId Transaction ID
      * @return array|null Transaction details or null when not found
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getTransactionForReview(int $transactionId): ?array
     {
         // This would be implemented with actual transaction retrieval
@@ -126,6 +132,9 @@ class TransactionReviewService
      * @param array $transaction Transaction details
      * @return string Transaction source
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function determineTransactionSource(array $transaction): string
     {
         if (isset($transaction['source']) && $transaction['source'] === 'square') {
@@ -146,6 +155,9 @@ class TransactionReviewService
      * @param string $approverId Approver ID
      * @param array $approvalData Approval data
      * @return array Approval results
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function approveReview(string $reviewId, string $approverId, array $approvalData = []): array
     {
@@ -189,6 +201,9 @@ class TransactionReviewService
      * @param array $rejectionData Rejection data
      * @return array Rejection results
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function rejectReview(string $reviewId, string $rejecterId, string $reason, array $rejectionData = []): array
     {
         try {
@@ -229,6 +244,9 @@ class TransactionReviewService
      * @param array $matchData Match data
      * @return array Match results
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function matchTransactions(array $matchData): array
     {
         try {
@@ -260,6 +278,9 @@ class TransactionReviewService
      * @param string $approverId Approver ID
      * @param array $approvalData Approval data
      * @return array Approval results
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function approveMatch(string $matchId, string $approverId, array $approvalData = []): array
     {
@@ -303,6 +324,9 @@ class TransactionReviewService
      * @param array $rejectionData Rejection data
      * @return array Rejection results
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function rejectMatch(string $matchId, string $rejecterId, string $reason, array $rejectionData = []): array
     {
         try {
@@ -343,6 +367,9 @@ class TransactionReviewService
      * @param array $filters Filter parameters
      * @return array Review queue
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getReviewQueue(array $filters = []): array
     {
         $filteredQueue = $this->reviewQueue;
@@ -373,6 +400,9 @@ class TransactionReviewService
      * @param array $filters Filter parameters
      * @return array Match queue
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getMatchQueue(array $filters = []): array
     {
         $filteredQueue = $this->matchQueue;
@@ -394,6 +424,9 @@ class TransactionReviewService
      * 
      * @param array $filters Filter parameters
      * @return array Review history
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getReviewHistory(array $filters = []): array
     {
@@ -425,6 +458,9 @@ class TransactionReviewService
      * @param array $filters Filter parameters
      * @return array Match history
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getMatchHistory(array $filters = []): array
     {
         $filteredHistory = $this->matchHistory ?? [];
@@ -455,6 +491,9 @@ class TransactionReviewService
      * @param array $filters Filter parameters
      * @return array Review report
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function generateReviewReport(array $filters = []): array
     {
         $report = [
@@ -474,6 +513,9 @@ class TransactionReviewService
      * 
      * @param array $reviewData Review data
      * @throws \Exception on validation failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function validateReviewData(array $reviewData): void
     {
@@ -504,6 +546,9 @@ class TransactionReviewService
      * @param array $matchData Match data
      * @throws \Exception on validation failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function validateMatchData(array $matchData): void
     {
         if (empty($matchData)) {
@@ -533,6 +578,9 @@ class TransactionReviewService
      * @param array $reviewData Review data
      * @return array Review entry
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function createReviewEntry(array $reviewData): array
     {
         $review = [
@@ -557,6 +605,9 @@ class TransactionReviewService
      * @param array $matchData Match data
      * @return array Match entry
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function createMatchEntry(array $matchData): array
     {
         $match = [
@@ -580,6 +631,9 @@ class TransactionReviewService
      * @param array $reviewData Review data
      * @return string Priority level
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function calculateReviewPriority(array $reviewData): string
     {
         $amount = $reviewData['amount'];
@@ -599,6 +653,9 @@ class TransactionReviewService
      * @param array $reviewData Review data
      * @return bool True if auto-review should be performed
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function shouldAutoReview(array $reviewData): bool
     {
         $amount = $reviewData['amount'];
@@ -612,6 +669,9 @@ class TransactionReviewService
      * 
      * @param array $review Review data
      * @return array Auto-review result
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function performAutoReview(array $review): array
     {
@@ -635,6 +695,9 @@ class TransactionReviewService
      * @param array $review Review data
      * @return array Approval result
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function processApproval(array $review): array
     {
         // This would be implemented with actual approval processing logic
@@ -653,6 +716,9 @@ class TransactionReviewService
      * 
      * @param array $review Review data
      * @return array Rejection result
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function processRejection(array $review): array
     {
@@ -673,6 +739,9 @@ class TransactionReviewService
      * 
      * @param array $match Match data
      * @return array Match result
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function performMatching(array $match): array
     {
@@ -702,6 +771,9 @@ class TransactionReviewService
      * @param array $match Match data
      * @return array Approval result
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function processMatchApproval(array $match): array
     {
         // This would be implemented with actual match approval processing logic
@@ -721,6 +793,9 @@ class TransactionReviewService
      * 
      * @param array $match Match data
      * @return array Rejection result
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function processMatchRejection(array $match): array
     {
@@ -743,6 +818,9 @@ class TransactionReviewService
      * @param array $match Match data
      * @return float Confidence score
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function calculateMatchConfidence(array $match): float
     {
         // This would be implemented with actual confidence calculation logic
@@ -760,6 +838,9 @@ class TransactionReviewService
      * 
      * @param array $match Match data
      * @return float Match score
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function checkAmountMatch(array $match): float
     {
@@ -785,6 +866,9 @@ class TransactionReviewService
      * @param array $match Match data
      * @return float Match score
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function checkDateMatch(array $match): float
     {
         // This would be implemented with actual date matching logic
@@ -808,6 +892,9 @@ class TransactionReviewService
      * 
      * @param array $review Review data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function addToReviewQueue(array $review): void
     {
         $this->reviewQueue[] = $review;
@@ -828,6 +915,9 @@ class TransactionReviewService
      * 
      * @param array $match Match data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function addToMatchQueue(array $match): void
     {
         $this->matchQueue[] = $match;
@@ -847,6 +937,9 @@ class TransactionReviewService
      * Adds to review history.
      * 
      * @param array $review Review data
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function addToReviewHistory(array $review): void
     {
@@ -869,6 +962,9 @@ class TransactionReviewService
      * @param string $reviewId Review ID
      * @return array|null Review or null
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function findReviewById(string $reviewId): ?array
     {
         foreach ($this->reviewQueue as $review) {
@@ -885,6 +981,9 @@ class TransactionReviewService
      * @param string $matchId Match ID
      * @return array|null Match or null
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function findMatchById(string $matchId): ?array
     {
         foreach ($this->matchQueue as $match) {
@@ -899,6 +998,9 @@ class TransactionReviewService
      * Logs review.
      * 
      * @param array $review Review data
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function logReview(array $review): void
     {
@@ -919,6 +1021,9 @@ class TransactionReviewService
      * Logs match.
      * 
      * @param array $match Match data
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function logMatch(array $match): void
     {
@@ -941,6 +1046,9 @@ class TransactionReviewService
      * @param array $filters Filter parameters
      * @return array Queue summary
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getQueueSummary(array $filters = []): array
     {
         $queue = $this->getReviewQueue($filters);
@@ -962,6 +1070,9 @@ class TransactionReviewService
      * @param array $filters Filter parameters
      * @return array History summary
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getHistorySummary(array $filters = []): array
     {
         $history = $this->getReviewHistory($filters);
@@ -979,6 +1090,9 @@ class TransactionReviewService
      * Gets review statistics.
      * 
      * @return array Review statistics
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function getReviewStatistics(): array
     {
@@ -1000,6 +1114,9 @@ class TransactionReviewService
      * 
      * @return float Average review time in seconds
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function calculateAverageReviewTime(): float
     {
         $totalTime = 0;
@@ -1019,6 +1136,9 @@ class TransactionReviewService
      * Calculates average match confidence.
      * 
      * @return float Average match confidence
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function calculateAverageMatchConfidence(): float
     {
@@ -1044,6 +1164,9 @@ class TransactionReviewService
      * 
      * @return float Success rate
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function calculateSuccessRate(): float
     {
         if (empty($this->reviewHistory)) {
@@ -1060,6 +1183,9 @@ class TransactionReviewService
      * Generates recommendations.
      * 
      * @return array Recommendations
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function generateRecommendations(): array
     {
@@ -1111,6 +1237,9 @@ class TransactionReviewService
      * 
      * @return array Configuration
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getConfig(): array
     {
         return $this->config;
@@ -1129,6 +1258,9 @@ class TransactionReviewService
     /**
      * Clears review queue.
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function clearReviewQueue(): void
     {
         $this->reviewQueue = [];
@@ -1144,6 +1276,9 @@ class TransactionReviewService
 
     /**
      * Clears review history.
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function clearReviewHistory(): void
     {

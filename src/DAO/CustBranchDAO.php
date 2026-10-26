@@ -30,6 +30,9 @@ class CustBranchDAO
      * @param string $branchName Branch name
      * @return array|null Branch data or null if not found
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getByDebtorNoAndName(int $debtorNo, string $branchName): ?array
     {
         $sql = "SELECT * FROM {$this->tablePrefix}cust_branch "
@@ -51,6 +54,9 @@ class CustBranchDAO
      * @param int $branchCode Branch code
      * @return array|null Branch data or null if not found
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getByDebtorNoAndBranchCode(int $debtorNo, int $branchCode): ?array
     {
         $sql = "SELECT * FROM {$this->tablePrefix}cust_branch "
@@ -70,6 +76,9 @@ class CustBranchDAO
      *
      * @param int $debtorNo Debtor number
      * @return array Array of branch data
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getByDebtorNo(int $debtorNo): array
     {

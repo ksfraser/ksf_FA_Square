@@ -32,6 +32,9 @@ class CRMAdapter implements CRMAdapterInterface
      * @param string $customerId CRM customer ID
      * @return array Customer history
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getCustomerHistory(string $customerId): array
     {
         return [];
@@ -53,6 +56,9 @@ class CRMAdapter implements CRMAdapterInterface
      * 
      * @param array $squareCustomer Square customer data
      * @return array FA customer data
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function convertToFacustomer(array $squareCustomer): array
     {

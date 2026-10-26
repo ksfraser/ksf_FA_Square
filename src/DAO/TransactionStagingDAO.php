@@ -55,6 +55,9 @@ class TransactionStagingDAO
      *
      * @return string
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getTableName(): string
     {
         return $this->tablePrefix . 'ksf_import_square_transactions';
@@ -82,6 +85,9 @@ class TransactionStagingDAO
      * Creates the table from scratch.
      *
      * @throws Exception
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function createTable(): void
     {
@@ -173,6 +179,9 @@ class TransactionStagingDAO
      * Upgrades existing table by adding new columns.
      * Safe for existing production data.
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function upgradeTable(): void
     {
         $tableName = $this->getTableName();
@@ -221,6 +230,9 @@ class TransactionStagingDAO
      * @param array $data Transaction data
      * @return int Inserted ID
      * @throws Exception
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function insert(array $data): int
     {
@@ -288,6 +300,9 @@ class TransactionStagingDAO
      * @param string $transactionId
      * @return array|null
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getByTransactionId(string $transactionId): ?array
     {
         $tableName = $this->getTableName();
@@ -307,6 +322,9 @@ class TransactionStagingDAO
      *
      * @param string $paymentId
      * @return array|null
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getByPaymentId(string $paymentId): ?array
     {
@@ -330,6 +348,9 @@ class TransactionStagingDAO
      * @param string|null $fromDate
      * @param string|null $toDate
      * @return array
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getByStatus(
         string $status,
@@ -375,6 +396,9 @@ class TransactionStagingDAO
      * @return void
      * @throws Exception
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function updateStatus(int $id, string $status, ?array $extraFields = null): void
     {
         $tableName = $this->getTableName();
@@ -403,6 +427,9 @@ class TransactionStagingDAO
      *
      * @param string $transactionId
      * @return bool
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function exists(string $transactionId): bool
     {
@@ -446,6 +473,9 @@ class TransactionStagingDAO
      * @param int $id
      * @return array|null
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getById(int $id): ?array
     {
         $tableName = $this->getTableName();
@@ -467,6 +497,9 @@ class TransactionStagingDAO
      * @param array $data
      * @return void
      * @throws Exception
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function update(int $id, array $data): void
     {
@@ -514,6 +547,9 @@ class TransactionStagingDAO
      * @return void
      * @throws Exception
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function delete(int $id): void
     {
         $tableName = $this->getTableName();
@@ -528,6 +564,9 @@ class TransactionStagingDAO
      * Gets the list of allowed fields for insert/update.
      *
      * @return array
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function getAllowedFields(): array
     {

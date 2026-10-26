@@ -26,6 +26,9 @@ class CustomerHistoryDAO
      * @param array $historyData History data
      * @return int History ID
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function recordUpdate(array $historyData): int
     {
         $tableName = $this->getTableName();
@@ -50,6 +53,9 @@ class CustomerHistoryDAO
      * @param int $debtorNo Debtor number
      * @param int $limit Maximum number of history records to return
      * @return array Customer history
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getCustomerHistory(int $debtorNo, int $limit = 50): array
     {
@@ -80,6 +86,9 @@ class CustomerHistoryDAO
      * @param int $limit Maximum number of records to return
      * @return array History records
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getHistoryByAction(string $action, int $limit = 100): array
     {
         $tableName = $this->getTableName();
@@ -106,6 +115,9 @@ class CustomerHistoryDAO
      * Gets history statistics.
      * 
      * @return array Statistics array
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getHistoryStatistics(): array
     {
@@ -153,6 +165,9 @@ class CustomerHistoryDAO
     /**
      * Ensures the table exists.
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function ensureTableExists(): void
     {
         $tableName = $this->getTableName();
@@ -183,6 +198,9 @@ class CustomerHistoryDAO
      * Gets the table name.
      * 
      * @return string Table name
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function getTableName(): string
     {

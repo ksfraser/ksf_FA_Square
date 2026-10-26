@@ -26,6 +26,9 @@ class SalesOrdersDAO
      * @param int $orderId Order ID
      * @return array|null Order data or null if not found
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getOrder(int $orderId): ?array
     {
         $tableName = $this->getOrdersTableName();
@@ -48,6 +51,9 @@ class SalesOrdersDAO
      * 
      * @param string $squareOrderId Square order ID
      * @return array|null Order data or null if not found
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getBySquareId(string $squareOrderId): ?array
     {
@@ -77,6 +83,9 @@ class SalesOrdersDAO
      * @param string $squareOrderId Square order/payment ID
      * @return bool True when the order has already been imported
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function orderExists(string $squareOrderId): bool
     {
         $tableName = $this->getSalesMatchTableName();
@@ -97,6 +106,9 @@ class SalesOrdersDAO
      * 
      * @param array $orderData Order data
      * @return int Order ID
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function insertOrder(array $orderData): int
     {
@@ -129,6 +141,9 @@ class SalesOrdersDAO
      * @param array $data Update data
      * @return bool Success status
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function updateOrder(int $orderId, array $data): bool
     {
         $tableName = $this->getOrdersTableName();
@@ -154,6 +169,9 @@ class SalesOrdersDAO
      * @param int $orderId Order ID
      * @return array Order items
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getOrderItems(int $orderId): array
     {
         $tableName = $this->getOrderItemsTableName();
@@ -178,6 +196,9 @@ class SalesOrdersDAO
      * 
      * @param array $itemData Item data
      * @return int Item ID
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function insertOrderItem(array $itemData): int
     {
@@ -210,6 +231,9 @@ class SalesOrdersDAO
      * @param array $data Update data
      * @return bool Success status
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function updateMappingBySquareId(string $squareOrderId, array $data): bool
     {
         $tableName = $this->getMappingsTableName();
@@ -236,6 +260,9 @@ class SalesOrdersDAO
      * @param array $data Update data
      * @return bool Success status
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function updateMappingByCreditNoteId(int $creditNoteId, array $data): bool
     {
         $tableName = $this->getMappingsTableName();
@@ -261,6 +288,9 @@ class SalesOrdersDAO
      * @param array $eventData Event data
      * @return int Event ID
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function logOrderEvent(array $eventData): int
     {
         $tableName = $this->getEventLogTableName();
@@ -285,6 +315,9 @@ class SalesOrdersDAO
      * Gets order statistics.
      * 
      * @return array Statistics array
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getOrderStatistics(): array
     {
@@ -344,6 +377,9 @@ class SalesOrdersDAO
     /**
      * Ensures all tables exist.
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function ensureTablesExist(): void
     {
         $this->ensureOrdersTableExists();
@@ -391,6 +427,9 @@ class SalesOrdersDAO
     /**
      * Ensures order items table exists.
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function ensureOrderItemsTableExists(): void
     {
         $tableName = $this->getOrderItemsTableName();
@@ -425,6 +464,9 @@ class SalesOrdersDAO
     /**
      * Ensures mappings table exists.
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function ensureMappingsTableExists(): void
     {
         $tableName = $this->getMappingsTableName();
@@ -455,6 +497,9 @@ class SalesOrdersDAO
 
     /**
      * Ensures event log table exists.
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function ensureEventLogTableExists(): void
     {
@@ -490,6 +535,9 @@ class SalesOrdersDAO
      * 
      * @return string Table name
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getOrdersTableName(): string
     {
         return $this->tablePrefix . 'square_sales_orders';
@@ -510,6 +558,9 @@ class SalesOrdersDAO
      * 
      * @return string Table name
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getMappingsTableName(): string
     {
         return $this->tablePrefix . 'square_order_mappings';
@@ -529,6 +580,9 @@ class SalesOrdersDAO
      * Gets event log table name.
      * 
      * @return string Table name
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function getEventLogTableName(): string
     {

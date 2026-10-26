@@ -46,6 +46,9 @@ class BusinessIntelligenceService implements BusinessIntelligenceInterface
      * @return array Sales analytics data
      * @throws AnalyticsException on processing failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getSalesAnalytics(array $filters): array
     {
         try {
@@ -92,6 +95,9 @@ class BusinessIntelligenceService implements BusinessIntelligenceInterface
      * @param array $filters Filter parameters
      * @return array Customer analytics data
      * @throws AnalyticsException on processing failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getCustomerAnalytics(array $filters): array
     {
@@ -140,6 +146,9 @@ class BusinessIntelligenceService implements BusinessIntelligenceInterface
      * @return array Inventory analytics data
      * @throws AnalyticsException on processing failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getInventoryAnalytics(array $filters): array
     {
         try {
@@ -186,6 +195,9 @@ class BusinessIntelligenceService implements BusinessIntelligenceInterface
      * @param array $filters Filter parameters
      * @return array Financial analytics data
      * @throws AnalyticsException on processing failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getFinancialAnalytics(array $filters): array
     {
@@ -234,6 +246,9 @@ class BusinessIntelligenceService implements BusinessIntelligenceInterface
      * @return array Performance metrics
      * @throws AnalyticsException on processing failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getPerformanceMetrics(array $filters): array
     {
         try {
@@ -279,6 +294,9 @@ class BusinessIntelligenceService implements BusinessIntelligenceInterface
      * @return array Report results
      * @throws ReportGenerationException on generation failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function generateCustomReport(array $reportData): array
     {
         try {
@@ -303,6 +321,9 @@ class BusinessIntelligenceService implements BusinessIntelligenceInterface
      * 
      * @param array $filters Filter parameters
      * @throws AnalyticsException on validation failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function validateFilters(array $filters): void
     {
@@ -336,6 +357,9 @@ class BusinessIntelligenceService implements BusinessIntelligenceInterface
      * @param array $reportData Report data
      * @throws ReportGenerationException on validation failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function validateReportData(array $reportData): void
     {
         if (empty($reportData)) {
@@ -364,6 +388,9 @@ class BusinessIntelligenceService implements BusinessIntelligenceInterface
      * @param array $report Report results
      * @return int Log ID
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function logReportGeneration(array $reportData, array $report): int
     {
         $tableName = $this->getReportLogsTableName();
@@ -391,6 +418,9 @@ class BusinessIntelligenceService implements BusinessIntelligenceInterface
      * @param array $filters Filter parameters
      * @return array System performance metrics
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getSystemPerformanceMetrics(array $filters): array
     {
         $metrics = [
@@ -409,6 +439,9 @@ class BusinessIntelligenceService implements BusinessIntelligenceInterface
      * Calculates average response time.
      * 
      * @return float Average response time in seconds
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function calculateAverageResponseTime(): float
     {
@@ -434,6 +467,9 @@ class BusinessIntelligenceService implements BusinessIntelligenceInterface
      * 
      * @return float Uptime as percentage
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function calculateUptime(): float
     {
         // This would normally query system logs
@@ -458,6 +494,9 @@ class BusinessIntelligenceService implements BusinessIntelligenceInterface
      * 
      * @return array Memory usage information
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getMemoryUsage(): array
     {
         // Stand-in values until live system monitoring is wired in
@@ -472,6 +511,9 @@ class BusinessIntelligenceService implements BusinessIntelligenceInterface
      * Gets disk usage.
      * 
      * @return array Disk usage information
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function getDiskUsage(): array
     {
@@ -488,6 +530,9 @@ class BusinessIntelligenceService implements BusinessIntelligenceInterface
      * Gets report logs table name.
      * 
      * @return string Table name
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function getReportLogsTableName(): string
     {

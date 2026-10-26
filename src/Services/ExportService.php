@@ -81,6 +81,9 @@ class ExportService
      * 
      * @throws Exception if table creation fails
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function ensureTableExists(): void
     {
         $this->squareTokenDao->ensureTableExists();
@@ -115,6 +118,9 @@ class ExportService
      * 
      * @return int
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getExistingSquareItemsCount(): int
     {
         return count($this->existingSquareItems);
@@ -131,6 +137,9 @@ class ExportService
      * @param bool $ksfGenCatalogueInstalled
      * @return resource
      * @throws Exception
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function fetchFAItems(
         ?int $categoryId = null,
@@ -159,6 +168,9 @@ class ExportService
      * @param string $locationId Square location ID
      * @param bool $uploadImages Whether to upload images
      * @return array Result with status and messages
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function processItem(
         array $item,
@@ -293,6 +305,9 @@ class ExportService
      * 
      * @param array $existingSquareItems Existing Square items
      * @return array Results with deleted items and errors
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function checkItemsToDelete(array $existingSquareItems): array
     {

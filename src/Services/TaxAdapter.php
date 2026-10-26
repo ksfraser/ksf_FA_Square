@@ -27,6 +27,9 @@ class TaxAdapter
      * @param array|null $mapping Mapping data
      * @return array Square tax data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function convertFATaxToSquare(array $faTax, ?array $mapping): array
     {
         $squareTax = [
@@ -50,6 +53,9 @@ class TaxAdapter
      * 
      * @param array $squareTax Square tax data
      * @return array FA tax data
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function convertToFATax(array $squareTax): array
     {
@@ -88,6 +94,9 @@ class TaxAdapter
      * @param array $taxes Taxes
      * @return array Square tax calculations
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function convertLineItemsToSquareTaxes(array $lineItems, array $taxes): array
     {
         $squareTaxes = [];
@@ -119,6 +128,9 @@ class TaxAdapter
      * @param array $squareTaxes Square taxes
      * @param array $lineItems Line items
      * @return array FA tax calculations
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function convertSquareTaxesToFATaxCalculations(array $squareTaxes, array $lineItems): array
     {
@@ -156,6 +168,9 @@ class TaxAdapter
      * @param array $lineItem Line item data
      * @return float Tax percentage
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getTaxPercentage(array $tax, array $lineItem): float
     {
         if (isset($tax['percentage'])) {
@@ -175,6 +190,9 @@ class TaxAdapter
      * 
      * @param array $taxCalculations Tax calculations
      * @return array Formatted tax summary
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function formatTaxSummary(array $taxCalculations): array
     {
@@ -212,6 +230,9 @@ class TaxAdapter
      * @param array $taxCalculation Tax calculation
      * @return bool Validation result
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function validateTaxCalculation(array $taxCalculation): bool
     {
         $requiredFields = ['tax_rate_id', 'amount'];
@@ -235,6 +256,9 @@ class TaxAdapter
      * @param float $amount Amount
      * @param float $rate Tax rate
      * @return float Tax amount
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function calculateTax(float $amount, float $rate): float
     {

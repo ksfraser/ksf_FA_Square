@@ -37,6 +37,9 @@ class CacheService
      * @param string $key Cache key
      * @return mixed|null Cached value or null if not found
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function get(string $key)
     {
         try {
@@ -73,6 +76,9 @@ class CacheService
      * @param int $ttl Time to live in seconds
      * @return bool Success status
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function set(string $key, $value, int $ttl = 3600): bool
     {
         try {
@@ -99,6 +105,9 @@ class CacheService
      * 
      * @param string $key Cache key
      * @return bool Success status
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function delete(string $key): bool
     {
@@ -127,6 +136,9 @@ class CacheService
      * 
      * @param string $key Cache key
      * @return bool True if key exists
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function exists(string $key): bool
     {
@@ -161,6 +173,9 @@ class CacheService
      * 
      * @return bool Success status
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function clear(): bool
     {
         try {
@@ -188,6 +203,9 @@ class CacheService
      * @param array $keys Cache keys
      * @return array Cached values
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getMultiple(array $keys): array
     {
         $results = [];
@@ -205,6 +223,9 @@ class CacheService
      * @param array $items Key-value pairs
      * @param int $ttl Time to live in seconds
      * @return bool Success status
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function setMultiple(array $items, int $ttl = 3600): bool
     {
@@ -225,6 +246,9 @@ class CacheService
      * @param array $keys Cache keys
      * @return bool Success status
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function deleteMultiple(array $keys): bool
     {
         $success = true;
@@ -244,6 +268,9 @@ class CacheService
      * @param string $key Cache key
      * @param int $increment Increment value
      * @return int New counter value
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function increment(string $key, int $increment = 1): int
     {
@@ -281,6 +308,9 @@ class CacheService
      * @param int $decrement Decrement value
      * @return int New counter value
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function decrement(string $key, int $decrement = 1): int
     {
         try {
@@ -315,6 +345,9 @@ class CacheService
      * 
      * @return array Configuration result
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function enableDataCaching(): array
     {
         try {
@@ -342,6 +375,9 @@ class CacheService
      * 
      * @return array Configuration result
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function enablePageCaching(): array
     {
         try {
@@ -367,6 +403,9 @@ class CacheService
      * 
      * @return array Cache statistics
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getStats(): array
     {
         $stats = [
@@ -389,6 +428,9 @@ class CacheService
      * Connects to Redis.
      * 
      * @throws \Exception on connection failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function connectRedis(): void
     {
@@ -418,6 +460,9 @@ class CacheService
      * @param string $key Cache key
      * @return mixed|null Cached value
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getFromRedis(string $key)
     {
         if ($this->redis) {
@@ -435,6 +480,9 @@ class CacheService
      * @param int $ttl Time to live
      * @return bool Success status
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function setInRedis(string $key, $value, int $ttl): bool
     {
         if ($this->redis) {
@@ -449,6 +497,9 @@ class CacheService
      * @param string $key Cache key
      * @return bool Success status
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function deleteFromRedis(string $key): bool
     {
         if ($this->redis) {
@@ -462,6 +513,9 @@ class CacheService
      * 
      * @param string $key Cache key
      * @return bool True if key exists
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function existsInRedis(string $key): bool
     {
@@ -491,6 +545,9 @@ class CacheService
      * @param int $increment Increment value
      * @return int New counter value
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function incrementInRedis(string $key, int $increment): int
     {
         if ($this->redis) {
@@ -505,6 +562,9 @@ class CacheService
      * @param string $key Cache key
      * @param int $decrement Decrement value
      * @return int New counter value
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function decrementInRedis(string $key, int $decrement): int
     {
@@ -533,6 +593,9 @@ class CacheService
      * 
      * @return int Key count
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getRedisKeyCount(): int
     {
         if ($this->redis) {
@@ -547,6 +610,9 @@ class CacheService
      * @param string $key Cache key
      * @param mixed $value Value to cache
      * @param int $ttl Time to live
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function setLocalCache(string $key, $value, int $ttl): void
     {
@@ -567,6 +633,9 @@ class CacheService
      * 
      * @param string $key Cache key
      * @return string Local cache key
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function getLocalKey(string $key): string
     {
@@ -598,6 +667,9 @@ class CacheService
      * 
      * @return float Hit rate
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function calculateLocalCacheHitRate(): float
     {
         // This is a simplified implementation
@@ -622,6 +694,9 @@ class CacheService
      * 
      * @param int $bytes Bytes to format
      * @return string Formatted bytes
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function formatBytes(int $bytes): string
     {

@@ -26,6 +26,9 @@ class FinancialAnalyticsService
      * @param array $filters Filter parameters
      * @return array Revenue summary
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getRevenueSummary(array $filters): array
     {
         $salesTable = $this->getSalesTableName();
@@ -102,6 +105,9 @@ class FinancialAnalyticsService
      * 
      * @param array $filters Filter parameters
      * @return array Profit analysis
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getProfitAnalysis(array $filters): array
     {
@@ -188,6 +194,9 @@ class FinancialAnalyticsService
      * @param array $filters Filter parameters
      * @return array Cash flow
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getCashFlow(array $filters): array
     {
         $paymentsTable = $this->getPaymentsTableName();
@@ -262,6 +271,9 @@ class FinancialAnalyticsService
      * 
      * @param array $filters Filter parameters
      * @return array Expense analysis
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getExpenseAnalysis(array $filters): array
     {
@@ -362,6 +374,9 @@ class FinancialAnalyticsService
      * @param array $filters Filter parameters
      * @return array Financial health
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getFinancialHealth(array $filters): array
     {
         $salesTable = $this->getSalesTableName();
@@ -446,6 +461,9 @@ class FinancialAnalyticsService
      * @param array $filters Filter parameters
      * @return array Performance metrics
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getPerformanceMetrics(array $filters): array
     {
         $salesTable = $this->getSalesTableName();
@@ -524,6 +542,9 @@ class FinancialAnalyticsService
      * @param int $expenseCount Expense count
      * @return array Health score components
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function calculateFinancialHealthScore(float $revenue, float $expenses, float $netCashFlow, int $salesCount, int $expenseCount): array
     {
         // Calculate ratios
@@ -557,6 +578,9 @@ class FinancialAnalyticsService
      * @param float $score Health score
      * @return string Rating
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getHealthRating(float $score): string
     {
         if ($score >= 80) return 'Excellent';
@@ -571,6 +595,9 @@ class FinancialAnalyticsService
      * 
      * @param array $filters Filter parameters
      * @return string Date condition
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function buildDateCondition(array $filters): string
     {
@@ -596,6 +623,9 @@ class FinancialAnalyticsService
      * 
      * @return string Table name
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getSalesTableName(): string
     {
         return $this->tablePrefix . 'sales';
@@ -615,6 +645,9 @@ class FinancialAnalyticsService
      * Gets payments table name.
      * 
      * @return string Table name
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function getPaymentsTableName(): string
     {

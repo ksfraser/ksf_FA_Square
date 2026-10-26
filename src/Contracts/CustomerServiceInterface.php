@@ -29,6 +29,9 @@ interface CustomerServiceInterface
      * @return array Created/updated FA debtor
      * @throws \ksfraser\FrontAccounting\Square\Exceptions\CustomerSyncException
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function syncCustomerFromSquareToFA(\Square\Models\Customer $squareCustomer): array;
 
     /**
@@ -45,6 +48,9 @@ interface CustomerServiceInterface
      * @param string $email Email address
      * @param string $phone Phone number (optional)
      * @return array|null Matched FA debtor
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function matchCustomer(string $email, ?string $phone = null): ?array;
 

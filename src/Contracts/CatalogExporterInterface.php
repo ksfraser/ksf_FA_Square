@@ -8,6 +8,9 @@ use Square\Models\InventoryCount;
 
 interface CatalogExporterInterface
 {
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function upsertProduct(
         string $sku,
         string $name,
@@ -22,6 +25,9 @@ interface CatalogExporterInterface
 
     public function batchUpsertProducts(array $products): array;
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function pushInventory(string $catalogObjectId, string $locationId, float $quantity): void;
 
     public function batchPushInventory(array $inventoryChanges): void;

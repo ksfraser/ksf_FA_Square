@@ -30,6 +30,9 @@ class CustomerMatchStrategy
         $this->debtorsMasterDao = $debtorsMasterDao;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getCrmAdapter(): CRMAdapterInterface
     {
         return $this->crmAdapter;
@@ -50,6 +53,9 @@ class CustomerMatchStrategy
      *
      * @param array $squareCustomer Square customer data
      * @return array|null Matched FA debtor or null if no match
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function match(array $squareCustomer): ?array
     {

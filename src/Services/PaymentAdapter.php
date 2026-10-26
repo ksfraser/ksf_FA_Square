@@ -27,6 +27,9 @@ class PaymentAdapter
      * @param array $customer FA customer data
      * @return array FA payment data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function convertToFAPayment(array $squarePayment, array $customer): array
     {
         $amount = $squarePayment['amount_money']['amount'] / 100; // Convert cents to decimal
@@ -55,6 +58,9 @@ class PaymentAdapter
      * @param array $squareRefund Square refund data
      * @param array $originalPayment Original payment data
      * @return array FA refund data
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function convertToFARefund(array $squareRefund, array $originalPayment): array
     {
@@ -85,6 +91,9 @@ class PaymentAdapter
      * @param array $faPayment FA payment data
      * @return array Square payment data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function convertToSquarePayment(array $faPayment): array
     {
         return [
@@ -107,6 +116,9 @@ class PaymentAdapter
      * @param string $squareMethod Square payment method
      * @return string FA payment method
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function mapSquarePaymentMethod(string $squareMethod): string
     {
         $methodMapping = [
@@ -127,6 +139,9 @@ class PaymentAdapter
      * @param string $faMethod FA payment method
      * @return string Square payment method
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function mapFaPaymentMethodToSquare(string $faMethod): string
     {
         $methodMapping = [
@@ -145,6 +160,9 @@ class PaymentAdapter
      * 
      * @param string $squareStatus Square status
      * @return string FA status
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function mapSquareStatusToFaStatus(string $squareStatus): string
     {
@@ -168,6 +186,9 @@ class PaymentAdapter
      * @param string $faStatus FA status
      * @return string Square status
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function mapFaStatusToSquareStatus(string $faStatus): string
     {
         $statusMapping = [
@@ -188,6 +209,9 @@ class PaymentAdapter
      * @param string $paymentMethod Payment method
      * @return string Bank account
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getBankAccount(string $paymentMethod): string
     {
         $bankMapping = [
@@ -206,6 +230,9 @@ class PaymentAdapter
      * 
      * @param int $debtorNo FA debtor number
      * @return string Square customer ID
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getSquareCustomerId(int $debtorNo): string
     {
@@ -247,6 +274,9 @@ class PaymentAdapter
      * @param array $paymentData Payment data
      * @return array Fee calculations
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function calculateFees(array $paymentData): array
     {
         $amount = $paymentData['amount'];
@@ -276,6 +306,9 @@ class PaymentAdapter
      * 
      * @param array $payments Payment data
      * @return array Formatted payment summary
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function formatPaymentSummary(array $payments): array
     {
@@ -313,6 +346,9 @@ class PaymentAdapter
      * @param array $squarePayment Square payment
      * @param array $faPayment FA payment
      * @return array Reconciliation status
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getReconciliationStatus(array $squarePayment, array $faPayment): array
     {

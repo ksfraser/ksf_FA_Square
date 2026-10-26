@@ -26,6 +26,9 @@ class ReportTemplateService
      * @param array $templateData Template data
      * @return array Created template
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function createTemplate(array $templateData): array
     {
         try {
@@ -55,6 +58,9 @@ class ReportTemplateService
      * @param int $templateId Template ID
      * @param array $templateData Template data
      * @return array Updated template
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function updateTemplate(int $templateId, array $templateData): array
     {
@@ -89,6 +95,9 @@ class ReportTemplateService
      * @param int $templateId Template ID
      * @return bool Success status
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function deleteTemplate(int $templateId): bool
     {
         try {
@@ -112,6 +121,9 @@ class ReportTemplateService
      * @param int $templateId Template ID
      * @return array Template data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getTemplateById(int $templateId): ?array
     {
         $tableName = $this->getTemplateTableName();
@@ -131,6 +143,9 @@ class ReportTemplateService
      * 
      * @param array $filters Filter parameters
      * @return array Templates
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getTemplates(array $filters): array
     {
@@ -177,6 +192,9 @@ class ReportTemplateService
      * @param string $templateName Template name
      * @return array Template data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getTemplateByName(string $templateName): ?array
     {
         $tableName = $this->getTemplateTableName();
@@ -196,6 +214,9 @@ class ReportTemplateService
      * 
      * @param array $templateData Template data
      * @throws \Exception on validation failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function validateTemplateData(array $templateData): void
     {
@@ -243,6 +264,9 @@ class ReportTemplateService
      * @param array $templateData Template data
      * @return int Template ID
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function insertTemplate(array $templateData): int
     {
         $tableName = $this->getTemplateTableName();
@@ -274,6 +298,9 @@ class ReportTemplateService
      * @param array $templateData Template data
      * @return bool Success status
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function updateTemplateById(int $templateId, array $templateData): bool
     {
         $tableName = $this->getTemplateTableName();
@@ -299,6 +326,9 @@ class ReportTemplateService
      * @param int $templateId Template ID
      * @return bool Success status
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function deleteTemplateById(int $templateId): bool
     {
         $tableName = $this->getTemplateTableName();
@@ -319,6 +349,9 @@ class ReportTemplateService
 
     /**
      * Ensures the table exists.
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function ensureTableExists(): void
     {

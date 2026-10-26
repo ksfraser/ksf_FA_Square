@@ -51,6 +51,9 @@ class TaxRateResolver
      *
      * @since 2.4.4
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function resolveForItem(bool $exempt, ?int $taxGroupId): float
     {
         if ($exempt || $taxGroupId === null || $taxGroupId <= 0) {
@@ -66,6 +69,9 @@ class TaxRateResolver
      * @return float Combined tax percentage
      *
      * @since 2.4.4
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function resolveGroupRate(int $taxGroupId): float
     {

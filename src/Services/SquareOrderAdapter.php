@@ -26,6 +26,9 @@ class SquareOrderAdapter
      * @param array $squareOrder Square order data
      * @return array FA sales order data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function convertToFASalesOrder(array $squareOrder): array
     {
         $customer = $squareOrder['customer'] ?? [];
@@ -46,6 +49,9 @@ class SquareOrderAdapter
      * @param array $customer FA customer data
      * @param array $taxData Tax calculation data
      * @return array FA order data
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function convertToFAOrder(array $squareOrder, array $customer, array $taxData): array
     {
@@ -73,6 +79,9 @@ class SquareOrderAdapter
      * @param array $squareItem Square order line item
      * @param int $orderId FA order ID
      * @return array FA order item data
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function convertToFAOrderItem(array $squareItem, int $orderId): array
     {
@@ -107,6 +116,9 @@ class SquareOrderAdapter
      * 
      * @param string $squareItemId Square item ID
      * @return string FA item code
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function getFAItemCode(string $squareItemId): string
     {
@@ -144,6 +156,9 @@ class SquareOrderAdapter
      * @param array $faItems FA order items
      * @return array Square line items
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function convertLineItemsToSquare(array $faItems): array
     {
         $squareItems = [];
@@ -173,6 +188,9 @@ class SquareOrderAdapter
      * @param array $faTaxes FA tax data
      * @return array Square taxes
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function convertTaxesToSquare(array $faTaxes): array
     {
         $squareTaxes = [];
@@ -195,6 +213,9 @@ class SquareOrderAdapter
      * 
      * @param string $faItemCode FA item code
      * @return string Square item ID
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function getSquareItemId(string $faItemCode): string
     {

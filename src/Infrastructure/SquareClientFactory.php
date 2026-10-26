@@ -10,6 +10,10 @@ use Square\Environment;
 
 class SquareClientFactory
 {
+    /**
+     * @since 2.0.0
+     * @BABOK Related: FR-SQ-001
+     */
     public static function create(SettingsInterface $settings): SquareClient
     {
         $accessToken = $settings->getAccessToken();

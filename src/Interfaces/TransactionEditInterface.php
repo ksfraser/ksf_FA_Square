@@ -18,6 +18,9 @@ interface TransactionEditInterface
      * @param array $editData Edit data
      * @return array Edit results
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function editTransaction(array $editData): array;
 
     /**
@@ -39,6 +42,9 @@ interface TransactionEditInterface
      * @param array $rejectionData Rejection data
      * @return array Rejection results
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function rejectEdit(string $editId, string $rejecterId, string $reason, array $rejectionData = []): array;
 
     /**
@@ -57,6 +63,9 @@ interface TransactionEditInterface
      * @param array $filters Filter parameters
      * @return array Edit queue
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getEditQueue(array $filters = []): array;
 
     /**
@@ -72,6 +81,9 @@ interface TransactionEditInterface
      * 
      * @param int $userId User ID
      * @return array Edit permissions
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getEditPermissions(int $userId): array;
 
@@ -90,6 +102,9 @@ interface TransactionEditInterface
      * @param array $filters Filter parameters
      * @return array Edit report
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function generateEditReport(array $filters = []): array;
 
     /**
@@ -106,6 +121,9 @@ interface TransactionEditInterface
      * @param array $editData Edit data
      * @throws \Exception on permission failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function checkEditPermissions(array $editData): void;
 
     /**
@@ -120,6 +138,9 @@ interface TransactionEditInterface
      * Gets configuration.
      * 
      * @return array Configuration
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getConfig(): array;
 
@@ -137,6 +158,9 @@ interface TransactionEditInterface
 
     /**
      * Clears edit history.
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function clearEditHistory(): void;
 

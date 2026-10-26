@@ -25,5 +25,8 @@ interface StockEventServiceInterface
      * @param array $stockMoves Array of stock movement data
      * @throws StockEventException on sync failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function syncStockMovements(string $squareLocationId, array $stockMoves): void;
 }

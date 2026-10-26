@@ -19,6 +19,9 @@ interface TransactionMatchingInterface
      * @param array $faTransactions FA transactions data
      * @return array Match results
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function matchTransactions(array $squareTransaction, array $faTransactions): array;
 
     /**
@@ -40,6 +43,9 @@ interface TransactionMatchingInterface
      * @param array $rejectionData Rejection data
      * @return array Rejection results
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function rejectMatch(string $matchId, string $rejecterId, string $reason, array $rejectionData = []): array;
 
     /**
@@ -56,6 +62,9 @@ interface TransactionMatchingInterface
      * @param array $filters Filter parameters
      * @return array Matching history
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getMatchingHistory(array $filters = []): array;
 
     /**
@@ -71,6 +80,9 @@ interface TransactionMatchingInterface
      * @param array $filters Filter parameters
      * @return array Match report
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function generateMatchReport(array $filters = []): array;
 
     /**
@@ -85,6 +97,9 @@ interface TransactionMatchingInterface
      * Gets configuration.
      * 
      * @return array Configuration
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getConfig(): array;
 
@@ -102,6 +117,9 @@ interface TransactionMatchingInterface
 
     /**
      * Clears matching history.
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function clearMatchingHistory(): void;
 }

@@ -109,6 +109,9 @@ class ImportRequest
      * 
      * @return array
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function toArray(): array
     {
         return [
@@ -127,6 +130,9 @@ class ImportRequest
      * Checks if this is an import action request.
      * 
      * @return bool
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function isImportAction(): bool
     {
@@ -152,6 +158,9 @@ class ImportRequest
     }
 
     // Getters
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getAction(): string
     {
         return $this->action;
@@ -167,6 +176,9 @@ class ImportRequest
         return $this->fromDate;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getToDate(): string
     {
         return $this->toDate;
@@ -182,6 +194,9 @@ class ImportRequest
         return $this->adjustmentItem;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getTipsItem(): string
     {
         return $this->tipsItem;

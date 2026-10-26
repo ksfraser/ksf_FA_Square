@@ -27,12 +27,21 @@ class OrderImporter implements OrderImporterInterface
      */
     private $settings;
 
+    /**
+     * @param SquareClient $client
+     * @param SettingsInterface $settings
+     * @since 2.0.0
+     * @BABOK Related: FR-SQ-001
+     */
     public function __construct(SquareClient $client, SettingsInterface $settings)
     {
         $this->client = $client;
         $this->settings = $settings;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function listPayments(
         \DateTimeInterface $from,
         \DateTimeInterface $to,
@@ -86,6 +95,9 @@ class OrderImporter implements OrderImporterInterface
         }
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getPaymentWithOrder(string $paymentId): array
     {
         try {
@@ -112,6 +124,9 @@ class OrderImporter implements OrderImporterInterface
         }
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getOrder(string $orderId): ?Order
     {
         try {
@@ -127,6 +142,9 @@ class OrderImporter implements OrderImporterInterface
         }
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getOrders(array $orderIds): array
     {
         try {

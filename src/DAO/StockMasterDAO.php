@@ -38,6 +38,9 @@ class StockMasterDAO
      * @return resource Database query result
      * @throws Exception if query fails
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getItemsForExport(
         ?int $categoryId = null,
         ?string $stockLike = null,
@@ -135,6 +138,9 @@ class StockMasterDAO
      * @param int $salesType Sales type ID
      * @return float Price
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getItemPrice(string $stockId, string $currency, int $salesType): float
     {
         return get_kit_price($stockId, $currency, $salesType);
@@ -167,6 +173,9 @@ class StockMasterDAO
      * @return array|null Item row or null when the item does not exist
      * @throws Exception if query fails
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getItemForSync(string $stockId): ?array
     {
         $sql = "SELECT item.stock_id, item.description, item.units, item.inactive, item.category_id, "
@@ -190,6 +199,9 @@ class StockMasterDAO
      * @param string $stockId Stock ID
      * @return int Count of active items
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function countActiveStockItems(string $stockId): int
     {
         $sql = "SELECT COUNT(*) AS cnt FROM {$this->tablePrefix}stock_master WHERE stock_id = " . \db_escape($stockId) . " AND inactive = 0";
@@ -208,6 +220,9 @@ class StockMasterDAO
      *
      * @param int $categoryId FA stock category ID
      * @return string|null Category description or null when not found
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getCategoryName(int $categoryId): ?string
     {

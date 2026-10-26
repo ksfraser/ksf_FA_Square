@@ -36,6 +36,9 @@ class ItemStagingDAO
      *
      * @return string
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getTableName(): string
     {
         return $this->tablePrefix . 'ksf_import_square_items';
@@ -62,6 +65,9 @@ class ItemStagingDAO
      * Creates the table from scratch.
      *
      * @throws Exception
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function createTable(): void
     {
@@ -123,6 +129,9 @@ class ItemStagingDAO
     /**
      * Upgrades existing table by adding new columns.
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function upgradeTable(): void
     {
         $tableName = $this->getTableName();
@@ -154,6 +163,9 @@ class ItemStagingDAO
      * @param array $data Item data
      * @return int Inserted ID
      * @throws Exception
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function insert(array $data): int
     {
@@ -206,6 +218,9 @@ class ItemStagingDAO
      * @param string $transactionId
      * @return array
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getByTransactionId(string $transactionId): array
     {
         $tableName = $this->getTableName();
@@ -229,6 +244,9 @@ class ItemStagingDAO
      *
      * @param string $paymentId
      * @return array
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getByPaymentId(string $paymentId): array
     {
@@ -255,6 +273,9 @@ class ItemStagingDAO
      * @return void
      * @throws Exception
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function deleteByTransactionId(string $transactionId): void
     {
         $tableName = $this->getTableName();
@@ -270,6 +291,9 @@ class ItemStagingDAO
      *
      * @param int $id
      * @return array|null
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getById(int $id): ?array
     {
@@ -292,6 +316,9 @@ class ItemStagingDAO
      * @param array $data
      * @return void
      * @throws Exception
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function update(int $id, array $data): void
     {
@@ -336,6 +363,9 @@ class ItemStagingDAO
      * @return void
      * @throws Exception
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function delete(int $id): void
     {
         $tableName = $this->getTableName();
@@ -350,6 +380,9 @@ class ItemStagingDAO
      * Gets the list of allowed fields for insert/update.
      *
      * @return array
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function getAllowedFields(): array
     {

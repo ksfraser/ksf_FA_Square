@@ -29,6 +29,9 @@ interface CRMIntegrationInterface
      * @return array CRM contact history
      * @throws CRMIntegrationException on failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getCRMContactHistory(int $debtorNo): array;
 
     /**
@@ -45,6 +48,9 @@ interface CRMIntegrationInterface
      * @param array $squareCustomer Square customer data
      * @return array FA debtor data
      * @throws CRMIntegrationException on failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function syncCustomerFromSquareToFA(array $squareCustomer): array;
 }

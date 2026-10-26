@@ -56,6 +56,9 @@ class PaymentRepositoryAdapter implements PaymentRepositoryInterface
         return (int)\db_insert_id();
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function findById(int $id): ?StagingPayment
     {
         $tableName = $this->tablePrefix . 'staging_payments';
@@ -81,6 +84,9 @@ class PaymentRepositoryAdapter implements PaymentRepositoryInterface
         return null;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function findByStatus(string $status, ?string $source = null): array
     {
         $tableName = $this->tablePrefix . 'staging_payments';
@@ -101,6 +107,9 @@ class PaymentRepositoryAdapter implements PaymentRepositoryInterface
         return $models;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function findByDateRange(\DateTimeInterface $from, \DateTimeInterface $to, ?string $source = null): array
     {
         $tableName = $this->tablePrefix . 'staging_payments';
@@ -122,6 +131,9 @@ class PaymentRepositoryAdapter implements PaymentRepositoryInterface
         return $models;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function findByTransaction(int $stagingTransactionId): array
     {
         $tableName = $this->tablePrefix . 'staging_payments';
@@ -139,6 +151,9 @@ class PaymentRepositoryAdapter implements PaymentRepositoryInterface
         return $models;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function updateStatus(int $id, string $status, ?float $confidence = null, ?string $error = null): void
     {
         $tableName = $this->tablePrefix . 'staging_payments';
@@ -153,6 +168,9 @@ class PaymentRepositoryAdapter implements PaymentRepositoryInterface
         \db_query($sql);
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function updateFaReference(int $id, int $faTransType, int $faTransNo, ?string $faBankAccount = null): void
     {
         $tableName = $this->tablePrefix . 'staging_payments';
@@ -167,6 +185,9 @@ class PaymentRepositoryAdapter implements PaymentRepositoryInterface
         \db_query($sql);
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function updateBySource(StagingPayment $payment): bool
     {
         $tableName = $this->tablePrefix . 'staging_payments';
@@ -183,6 +204,9 @@ class PaymentRepositoryAdapter implements PaymentRepositoryInterface
         return \db_affected_rows() > 0;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getQueueForReconciliation(?string $source = null, int $limit = 100): array
     {
         $tableName = $this->tablePrefix . 'staging_payments';
@@ -203,6 +227,9 @@ class PaymentRepositoryAdapter implements PaymentRepositoryInterface
         return $models;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function countByStatus(?string $source = null): array
     {
         $tableName = $this->tablePrefix . 'staging_payments';
@@ -236,6 +263,9 @@ class PaymentRepositoryAdapter implements PaymentRepositoryInterface
  * @since 1.0.0
  * @deprecated 1.1.0 Use StagingPayment DTO via hooks
  */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function toModel(array $row): StagingPayment
     {
         $payment = new StagingPayment($row['source'] ?? 'square_api');

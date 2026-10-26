@@ -30,6 +30,9 @@ class LocationMappingDAO
      * 
      * @return string Table name
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getTableName(): string
     {
         return $this->tablePrefix . 'square_location_mappings';
@@ -64,6 +67,9 @@ class LocationMappingDAO
      * 
      * @return array Mappings as [square_location_id => [fa_loc_code, ...]]
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getMappingsBySquareLocation(): array
     {
         $tableName = $this->getTableName();
@@ -89,6 +95,9 @@ class LocationMappingDAO
      * 
      * @return string|null Square location ID or null if not configured
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getAllLocationsMapping(): ?string
     {
         $tableName = $this->getTableName();
@@ -109,6 +118,9 @@ class LocationMappingDAO
      * @param string $faLocCode FA location code
      * @return string|null Square location ID or null if not found
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getSquareLocationId(string $faLocCode): ?string
     {
         $tableName = $this->getTableName();
@@ -128,6 +140,9 @@ class LocationMappingDAO
      * 
      * @param int $stockId FA stock ID
      * @return string|null Square catalog object ID or null if not found
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getSquareItemId(int $stockId): ?string
     {
@@ -151,6 +166,9 @@ class LocationMappingDAO
      * @param string $stockId FA stock ID
      * @param array|null $faLocCodes FA location codes; null sums across all locations
      * @return float Quantity on hand
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getQohForLocations(string $stockId, ?array $faLocCodes): float
     {
@@ -188,6 +206,9 @@ class LocationMappingDAO
      * @param int $limit Maximum number of mappings to return
      * @return array Location mappings as rows with fa_loc_code and square_location_id keys
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getAllMappings(int $limit = 100): array
     {
         $tableName = $this->getTableName();
@@ -215,6 +236,9 @@ class LocationMappingDAO
      * @param string $squareLocationId Square location ID
      * @return bool Success status
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function setMapping(string $faLocCode, string $squareLocationId): bool
     {
         $tableName = $this->getTableName();
@@ -230,6 +254,9 @@ class LocationMappingDAO
      * 
      * @param string $faLocCode FA location code
      * @return bool Success status
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function removeMapping(string $faLocCode): bool
     {

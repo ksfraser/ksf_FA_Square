@@ -29,6 +29,9 @@ interface SalesOrderServiceInterface
      * @param array $updates Update data
      * @throws SalesOrderException on update failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function updateSalesOrder(int $orderId, array $updates): void;
 
     /**
@@ -46,6 +49,9 @@ interface SalesOrderServiceInterface
      * 
      * @param string $squareOrderId Square order ID
      * @return array|null FA sales order data or null if not found
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getSalesOrderBySquareId(string $squareOrderId): ?array;
 

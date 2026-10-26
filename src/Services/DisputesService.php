@@ -9,6 +9,9 @@ namespace ksfraser\FrontAccounting\Square\Services;
  */
 class DisputesService
 {
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function processDispute(array $disputeData): void
     {
         // Not staged, and not logged to CRM.

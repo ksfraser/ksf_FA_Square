@@ -12,11 +12,19 @@ class WebhookEventType
     const INVOICE_CREATED = 'invoice.created';
     const REFUND_CREATED = 'refund.created';
 
+    /**
+     * @since 2.0.0
+     * @BABOK Related: FR-SQ-001
+     */
     public static function from(string $event): string
     {
         return $event;
     }
 
+    /**
+     * @since 2.0.0
+     * @BABOK Related: FR-SQ-001
+     */
     public static function name(string $event): string
     {
         $map = [

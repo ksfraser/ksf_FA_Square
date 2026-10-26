@@ -39,6 +39,9 @@ class PerformanceOptimizationService
      * 
      * @return array Performance metrics
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function collectMetrics(): array
     {
         try {
@@ -73,6 +76,9 @@ class PerformanceOptimizationService
      * 
      * @return array System metrics
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function collectSystemMetrics(): array
     {
         $metrics = [];
@@ -99,6 +105,9 @@ class PerformanceOptimizationService
      * Collects application metrics.
      * 
      * @return array Application metrics
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function collectApplicationMetrics(): array
     {
@@ -127,6 +136,9 @@ class PerformanceOptimizationService
      * 
      * @return array Database metrics
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function collectDatabaseMetrics(): array
     {
         $metrics = [];
@@ -154,6 +166,9 @@ class PerformanceOptimizationService
      * 
      * @return array Cache metrics
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function collectCacheMetrics(): array
     {
         $metrics = [];
@@ -177,6 +192,9 @@ class PerformanceOptimizationService
      * Collects network metrics.
      * 
      * @return array Network metrics
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function collectNetworkMetrics(): array
     {
@@ -202,6 +220,9 @@ class PerformanceOptimizationService
      * 
      * @param array $metrics Metrics to store
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function storeMetrics(array $metrics): void
     {
         $timestamp = time();
@@ -217,6 +238,9 @@ class PerformanceOptimizationService
      * @param int $startTime Start timestamp
      * @param int $endTime End timestamp
      * @return array Metrics in time range
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getMetricsByTimeRange(int $startTime, int $endTime): array
     {
@@ -236,6 +260,9 @@ class PerformanceOptimizationService
      * 
      * @return array Current metrics
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getCurrentMetrics(): array
     {
         if (empty($this->metrics)) {
@@ -251,6 +278,9 @@ class PerformanceOptimizationService
      * 
      * @param int $timeRange Time range in seconds
      * @return array Performance report
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function generatePerformanceReport(int $timeRange = 3600): array
     {
@@ -283,6 +313,9 @@ class PerformanceOptimizationService
      * @param array $metrics Performance metrics
      * @return array Analysis results
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function analyzePerformance(array $metrics): array
     {
         $analysis = [];
@@ -313,6 +346,9 @@ class PerformanceOptimizationService
      * 
      * @param array $metrics Performance metrics
      * @return array Bottlenecks
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function identifyBottlenecks(array $metrics): array
     {
@@ -367,6 +403,9 @@ class PerformanceOptimizationService
      * @param array $optimizations Optimizations to apply
      * @return array Optimization results
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function applyOptimizations(array $optimizations): array
     {
         $results = [];
@@ -391,6 +430,9 @@ class PerformanceOptimizationService
      * Monitors system performance.
      * 
      * @return array Monitoring results
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function monitorSystem(): array
     {
@@ -419,6 +461,9 @@ class PerformanceOptimizationService
      * 
      * @return array Recommendations
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getRecommendations(): array
     {
         return $this->recommendations;
@@ -442,6 +487,9 @@ class PerformanceOptimizationService
      * @param int $ttl Time to live in seconds
      * @return bool Success status
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function cacheData(string $key, $value, int $ttl = 3600): bool
     {
         try {
@@ -464,6 +512,9 @@ class PerformanceOptimizationService
      * 
      * @param string $key Cache key
      * @return mixed|null Cached data or null
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getCachedData(string $key)
     {
@@ -491,6 +542,9 @@ class PerformanceOptimizationService
     /**
      * Clears expired cache.
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function clearExpiredCache(): void
     {
         try {
@@ -513,6 +567,9 @@ class PerformanceOptimizationService
     /**
      * System metrics helper methods.
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getCpuUsage(): float
     {
         $stat = file_get_contents('/proc/stat');
@@ -528,6 +585,9 @@ class PerformanceOptimizationService
         return 100 - (($idle / $total) * 100);
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getMemoryUsage(): float
     {
         $meminfo = file_get_contents('/proc/meminfo');
@@ -552,6 +612,9 @@ class PerformanceOptimizationService
         return (($total - $free) / $total) * 100;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getDiskUsage(): float
     {
         $total = disk_total_space('/');
@@ -574,6 +637,9 @@ class PerformanceOptimizationService
         ];
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getProcessCount(): int
     {
         $output = shell_exec('ps -e | wc -l');
@@ -589,6 +655,9 @@ class PerformanceOptimizationService
         return 100.0; // Mock response time
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getRequestCount(): int
     {
         // This would be implemented with actual request counting
@@ -607,6 +676,9 @@ class PerformanceOptimizationService
         return 50.0; // Mock memory usage
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getApplicationCpuUsage(): float
     {
         // This would be implemented with actual CPU measurement
@@ -622,6 +694,9 @@ class PerformanceOptimizationService
         return 50; // Mock connection count
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getQueryCount(): int
     {
         // This would be implemented with actual query counting
@@ -640,6 +715,9 @@ class PerformanceOptimizationService
         return 0.1; // Mock lock wait time
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getTableCount(): int
     {
         // This would be implemented with actual table counting
@@ -655,6 +733,9 @@ class PerformanceOptimizationService
         return 0.8; // Mock hit rate
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getCacheMissRate(): float
     {
         // This would be implemented with actual cache hit/miss counting
@@ -676,6 +757,9 @@ class PerformanceOptimizationService
     /**
      * Network metrics helper methods.
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getNetworkThroughput(): array
     {
         // This would be implemented with actual network measurement
@@ -691,6 +775,9 @@ class PerformanceOptimizationService
         return 100; // Mock connection count
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getPacketLoss(): float
     {
         // This would be implemented with actual packet loss measurement
@@ -705,6 +792,9 @@ class PerformanceOptimizationService
 
     /**
      * Performance analysis helper methods.
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function analyzeSystemPerformance(array $metrics): array
     {
@@ -730,6 +820,9 @@ class PerformanceOptimizationService
         return $analysis;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function analyzeDatabasePerformance(array $metrics): array
     {
         $analysis = [
@@ -753,6 +846,9 @@ class PerformanceOptimizationService
         return $analysis;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function analyzeNetworkPerformance(array $metrics): array
     {
         $analysis = [
@@ -776,6 +872,9 @@ class PerformanceOptimizationService
         }
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function calculateOverallScore(array $analysis): int
     {
         $scores = [];
@@ -806,6 +905,9 @@ class PerformanceOptimizationService
     /**
      * Utility methods.
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function generateSummary(array $metrics): array
     {
         return [
@@ -827,6 +929,9 @@ class PerformanceOptimizationService
         return $trends;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function calculateTrend(array $values): array
     {
         if (empty($values)) {
@@ -845,6 +950,9 @@ class PerformanceOptimizationService
         }
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function applyOptimization(array $optimization): array
     {
         $result = [
@@ -860,6 +968,9 @@ class PerformanceOptimizationService
         return $result;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function sendAlerts(array $bottlenecks): void
     {
         foreach ($bottlenecks as $bottleneck) {

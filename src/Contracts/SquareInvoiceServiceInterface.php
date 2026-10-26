@@ -33,6 +33,9 @@ interface SquareInvoiceServiceInterface
      *               'created' is always true — a new Square Invoice is created
      *               for every FA invoice.
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function createInvoiceFromFA(
         int $faInvoiceNo,
         int $debtorNo,
@@ -49,6 +52,9 @@ interface SquareInvoiceServiceInterface
      * @param int    $version  Optimistic locking version
      * @return array ['status' => string, 'public_url' => string]
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function publishInvoice(string $squareInvoiceId, int $version): array;
 
     /**
@@ -64,6 +70,9 @@ interface SquareInvoiceServiceInterface
      *
      * @param string $squareInvoiceId
      * @return array|null Mapping row or null
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function findBySquareInvoiceId(string $squareInvoiceId): ?array;
 
@@ -82,6 +91,9 @@ interface SquareInvoiceServiceInterface
      * @param string $status
      * @return bool
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function updateMappingStatus(int $faInvoiceNo, string $status): bool;
 
     /**
@@ -96,6 +108,9 @@ interface SquareInvoiceServiceInterface
      * @param string $dueDate        YYYY-MM-DD
      * @return array ['square_invoice_id' => string, 'public_url' => string, 'status' => string]
      * @throws \Exception if the Square Invoice cannot be updated
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function updateInvoice(
         int $faInvoiceNo,

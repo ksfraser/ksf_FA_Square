@@ -26,6 +26,9 @@ class CustomerDAO
      * @param int $customerId Customer ID
      * @return array|null Customer data or null if not found
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getCustomerById(int $customerId): ?array
     {
         $tableName = $this->getCustomersTableName();
@@ -45,6 +48,9 @@ class CustomerDAO
      * 
      * @param array $filters Filter parameters
      * @return array Customers
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getCustomers(array $filters = []): array
     {
@@ -77,6 +83,9 @@ class CustomerDAO
      * Gets customers table name.
      * 
      * @return string Table name
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function getCustomersTableName(): string
     {

@@ -49,6 +49,9 @@ class TransactionRepositoryAdapter implements TransactionRepositoryInterface
  * @since 1.0.0
  * @deprecated 1.1.0 Use StagingOrder/StagingPayment/StagingRefund DTOs via hooks
  */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function insert(StagingTransaction $transaction): int
     {
         return $this->dao->insert($this->toSquareRow($transaction));
@@ -65,6 +68,9 @@ class TransactionRepositoryAdapter implements TransactionRepositoryInterface
 
     /**
      * {@inheritdoc}
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function findBySource(string $source, string $sourceTransactionId): ?StagingTransaction
     {
@@ -85,6 +91,9 @@ class TransactionRepositoryAdapter implements TransactionRepositoryInterface
     /**
      * {@inheritdoc}
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function findByDateRange(\DateTimeInterface $from, \DateTimeInterface $to, ?string $source = null): array
     {
         $rows = $this->dao->getByStatus(
@@ -98,6 +107,9 @@ class TransactionRepositoryAdapter implements TransactionRepositoryInterface
 
     /**
      * {@inheritdoc}
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function updateStatus(int $id, string $status, ?float $confidence = null, ?string $error = null): void
     {
@@ -123,6 +135,9 @@ class TransactionRepositoryAdapter implements TransactionRepositoryInterface
     /**
      * {@inheritdoc}
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function updateBySource(StagingTransaction $transaction): bool
     {
         $existing = $this->dao->getByTransactionId($transaction->getSourceTransactionId());
@@ -145,6 +160,9 @@ class TransactionRepositoryAdapter implements TransactionRepositoryInterface
 
     /**
      * {@inheritdoc}
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function countByStatus(?string $source = null): array
     {
@@ -191,6 +209,9 @@ class TransactionRepositoryAdapter implements TransactionRepositoryInterface
      *
      * @param array<string,mixed> $row
      * @return StagingTransaction
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function toStagingTransaction(array $row): StagingTransaction
     {

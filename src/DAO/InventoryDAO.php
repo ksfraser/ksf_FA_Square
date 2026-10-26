@@ -26,6 +26,9 @@ class InventoryDAO
      * @param int $itemId Item ID
      * @return array|null Item data or null if not found
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getItemById(int $itemId): ?array
     {
         $tableName = $this->getInventoryTableName();
@@ -46,6 +49,9 @@ class InventoryDAO
      * @param int $itemId Item ID
      * @param string $locationId Location ID
      * @return float Current stock level
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getStockLevel(int $itemId, string $locationId): float
     {
@@ -68,6 +74,9 @@ class InventoryDAO
      * 
      * @param array $filters Filter parameters
      * @return array Inventory items
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getInventoryItems(array $filters = []): array
     {
@@ -96,6 +105,9 @@ class InventoryDAO
      * Gets inventory table name.
      * 
      * @return string Table name
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function getInventoryTableName(): string
     {

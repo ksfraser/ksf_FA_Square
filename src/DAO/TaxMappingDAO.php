@@ -26,6 +26,9 @@ class TaxMappingDAO
      * @param int $faTaxId FA tax type ID
      * @return array|null Mapping data or null if not found
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getMappingByFaId(int $faTaxId): ?array
     {
         $tableName = $this->getMappingsTableName();
@@ -46,6 +49,9 @@ class TaxMappingDAO
      * @param string $squareTaxId Square tax rate ID
      * @return array|null Mapping data or null if not found
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getMappingBySquareId(string $squareTaxId): ?array
     {
         $tableName = $this->getMappingsTableName();
@@ -64,6 +70,9 @@ class TaxMappingDAO
      * Gets all mappings.
      * 
      * @return array All mappings
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getAllMappings(): array
     {
@@ -90,6 +99,9 @@ class TaxMappingDAO
      * @param array $mappingData Mapping data
      * @return int Mapping ID
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function insertMapping(array $mappingData): int
     {
         $tableName = $this->getMappingsTableName();
@@ -113,6 +125,9 @@ class TaxMappingDAO
      * @param int $id Mapping ID
      * @param array $data Update data
      * @return bool Success status
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function updateMapping(int $id, array $data): bool
     {
@@ -139,6 +154,9 @@ class TaxMappingDAO
      * @param int $id Mapping ID
      * @return bool Success status
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function deleteMapping(int $id): bool
     {
         $tableName = $this->getMappingsTableName();
@@ -153,6 +171,9 @@ class TaxMappingDAO
      * @param int $startId Start ID
      * @param int $endId End ID
      * @return array Mappings in range
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getMappingsByIdRange(int $startId, int $endId): array
     {
@@ -181,6 +202,9 @@ class TaxMappingDAO
      * @param string $pattern Square tax ID pattern
      * @return array Matching mappings
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getMappingsBySquareIdPattern(string $pattern): array
     {
         $tableName = $this->getMappingsTableName();
@@ -206,6 +230,9 @@ class TaxMappingDAO
      * Gets mapping statistics.
      * 
      * @return array Statistics array
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getMappingStatistics(): array
     {
@@ -251,6 +278,9 @@ class TaxMappingDAO
     /**
      * Ensures the table exists.
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function ensureTableExists(): void
     {
         $tableName = $this->getMappingsTableName();
@@ -281,6 +311,9 @@ class TaxMappingDAO
      * Gets mappings table name.
      * 
      * @return string Table name
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function getMappingsTableName(): string
     {

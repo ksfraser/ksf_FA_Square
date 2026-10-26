@@ -24,6 +24,9 @@ class StagingTableManager
         $this->tablePrefix = $tablePrefix;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function createStagingTables(): void
     {
         $this->createTransactionStagingTable();
@@ -40,6 +43,9 @@ class StagingTableManager
         \db_query("DROP TABLE IF EXISTS {$this->tablePrefix}square_import_log");
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function insertStagingTransaction(array $data): int
     {
         $table = "{$this->tablePrefix}square_staging_transactions";
@@ -63,6 +69,9 @@ class StagingTableManager
         return $rows;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function markProcessed(int $id): void
     {
         $table = "{$this->tablePrefix}square_staging_transactions";
@@ -107,6 +116,9 @@ class StagingTableManager
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function createItemStagingTable(): void
     {
         $table = "{$this->tablePrefix}square_staging_items";
@@ -128,6 +140,9 @@ class StagingTableManager
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function createCustomerMappingTable(): void
     {
         $table = "{$this->tablePrefix}square_customer_mappings";
@@ -142,6 +157,9 @@ class StagingTableManager
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function createImportLogTable(): void
     {
         $table = "{$this->tablePrefix}square_import_log";

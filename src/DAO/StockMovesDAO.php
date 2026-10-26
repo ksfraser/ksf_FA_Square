@@ -29,6 +29,9 @@ class StockMovesDAO
      * @param string $stockId Stock ID
      * @return string|null Modified timestamp or null if not found
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getLastModified(string $stockId): ?string
     {
         $sql = "SELECT modified_date FROM {$this->tablePrefix}stock_moves WHERE stock_id = " . \db_escape($stockId) . " ORDER BY tran_date DESC LIMIT 1";

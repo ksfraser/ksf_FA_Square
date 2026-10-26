@@ -26,6 +26,9 @@ class SalesAnalyticsService
      * @param array $filters Filter parameters
      * @return array Sales summary
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getSalesSummary(array $filters): array
     {
         $tableName = $this->getSalesTableName();
@@ -64,6 +67,9 @@ class SalesAnalyticsService
      * 
      * @param array $filters Filter parameters
      * @return array Sales trends
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getSalesTrends(array $filters): array
     {
@@ -109,6 +115,9 @@ class SalesAnalyticsService
      * @param array $filters Filter parameters
      * @return array Top products
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getTopProducts(array $filters): array
     {
         $tableName = $this->getSalesDetailsTableName();
@@ -151,6 +160,9 @@ class SalesAnalyticsService
      * 
      * @param array $filters Filter parameters
      * @return array Location performance
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getLocationPerformance(array $filters): array
     {
@@ -196,6 +208,9 @@ class SalesAnalyticsService
      * @param array $filters Filter parameters
      * @return array Payment method distribution
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getPaymentMethodDistribution(array $filters): array
     {
         $tableName = $this->getSalesTableName();
@@ -238,6 +253,9 @@ class SalesAnalyticsService
      * 
      * @param array $filters Filter parameters
      * @return array Performance metrics
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getPerformanceMetrics(array $filters): array
     {
@@ -309,6 +327,9 @@ class SalesAnalyticsService
      * @param array $filters Filter parameters
      * @return string Date condition
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function buildDateCondition(array $filters): string
     {
         $conditions = ["1=1"];
@@ -335,6 +356,9 @@ class SalesAnalyticsService
      * @param float $total Total
      * @return float Percentage
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function calculatePercentage(int $value, float $total): float
     {
         if ($total == 0) return 0;
@@ -358,6 +382,9 @@ class SalesAnalyticsService
      * 
      * @return string Table name
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getSalesTableName(): string
     {
         return $this->tablePrefix . 'sales';
@@ -377,6 +404,9 @@ class SalesAnalyticsService
      * Stores analytics data directly in Square analytics table (not native FA).
      *
      * @param array $analyticsData Analytics array
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function storeAnalyticsDirect(array $analyticsData): void
     {

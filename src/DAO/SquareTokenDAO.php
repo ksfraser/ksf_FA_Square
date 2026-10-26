@@ -36,6 +36,9 @@ class SquareTokenDAO
      * 
      * @throws Exception if table creation/alteration fails
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function ensureTableExists(): void
     {
         $tableName = $this->tablePrefix . '0_square_tokens';
@@ -66,6 +69,9 @@ class SquareTokenDAO
 
     /**
      * Ensures the environment column exists (for upgrades).
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function ensureEnvironmentColumnExists(): void
     {
@@ -98,6 +104,9 @@ class SquareTokenDAO
      * @param string|null $faLastUpdated FA last updated timestamp
      * @return void
      * @throws Exception if database operation fails
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function upsertToken(
         string $stockId,
@@ -132,6 +141,9 @@ class SquareTokenDAO
      * @param string $stockId FA stock ID
      * @return string|null FA last updated timestamp or null if not found
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getFaLastUpdated(string $stockId): ?string
     {
         $stockMovesDao = new StockMovesDAO($this->tablePrefix);
@@ -163,6 +175,9 @@ class SquareTokenDAO
      * 
      * @return array Array of token rows
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getAllTokens(): array
     {
         $tableName = $this->tablePrefix . '0_square_tokens';
@@ -183,6 +198,9 @@ class SquareTokenDAO
      * Gets the current environment.
      * 
      * @return string 'sandbox' or 'production'
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getEnvironment(): string
     {

@@ -31,6 +31,9 @@ class SalesMatchDAO
      *
      * @return string
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getTableName(): string
     {
         return $this->tablePrefix . 'ksf_import_square_sales';
@@ -75,6 +78,9 @@ class SalesMatchDAO
      * @param int|null $salesDeliveryNo
      * @return int
      * @throws Exception
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function insertMatch(
         string $squareTransactionId,
@@ -139,6 +145,9 @@ class SalesMatchDAO
      * @param string $squareTransactionId
      * @return array|null
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getBySquareTransactionId(string $squareTransactionId): ?array
     {
         $tableName = $this->getTableName();
@@ -158,6 +167,9 @@ class SalesMatchDAO
      *
      * @param int $salesInvoiceNo
      * @return array
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getByInvoiceNo(int $salesInvoiceNo): array
     {
@@ -182,6 +194,9 @@ class SalesMatchDAO
      *
      * @param string $squareTransactionId
      * @return bool
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function isMatched(string $squareTransactionId): bool
     {

@@ -47,6 +47,9 @@ class SalesOrderService implements SalesOrderServiceInterface
      * @return array Sales order summary
      * @throws SalesOrderException on creation failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function createSalesOrder(array $squareOrder): array
     {
         $faOrder = $this->createSalesOrderFromSquare($squareOrder);
@@ -63,6 +66,9 @@ class SalesOrderService implements SalesOrderServiceInterface
      * @param array $squareOrder Square order data
      * @return array FA sales order data
      * @throws SalesOrderException on creation failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function createSalesOrderFromSquare(array $squareOrder): array
     {
@@ -134,6 +140,9 @@ class SalesOrderService implements SalesOrderServiceInterface
      * @param array $updates Update data
      * @throws SalesOrderException on update failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function updateSalesOrder(int $orderId, array $updates): void
     {
         try {
@@ -169,6 +178,9 @@ class SalesOrderService implements SalesOrderServiceInterface
      * @param string $reason Reason for the credit note
      * @return array FA credit note data
      * @throws SalesOrderException on creation failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function createSalesCreditNote(int $originalOrderId, string $reason): array
     {
@@ -250,6 +262,9 @@ class SalesOrderService implements SalesOrderServiceInterface
      * @param string $squareOrderId Square order ID
      * @return array|null FA sales order data or null if not found
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getSalesOrderBySquareId(string $squareOrderId): ?array
     {
         return $this->salesOrdersDao->getBySquareId($squareOrderId);
@@ -270,6 +285,9 @@ class SalesOrderService implements SalesOrderServiceInterface
      * 
      * @param array $squareOrder Square order data
      * @throws SalesOrderException on validation failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function validateSquareOrder(array $squareOrder): void
     {
@@ -306,6 +324,9 @@ class SalesOrderService implements SalesOrderServiceInterface
      * @param array $updates Update data
      * @throws SalesOrderException on validation failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function validateOrderUpdate(array $updates): void
     {
         $allowedFields = ['reference', 'notes', 'total', 'tax_included', 'order_date', 'due_date'];
@@ -326,6 +347,9 @@ class SalesOrderService implements SalesOrderServiceInterface
      *
      * @param array $customerData Customer data from Square order
      * @return Customer
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function buildSquareCustomerModel(array $customerData): Customer
     {

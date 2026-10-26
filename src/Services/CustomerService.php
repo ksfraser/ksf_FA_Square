@@ -89,6 +89,9 @@ class CustomerService implements CustomerServiceInterface
      * @return Customer Created/updated Square customer
      * @throws CustomerSyncException If sync fails
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function syncCustomerFromFAToSquare(array $debtor): Customer
     {
         $this->validateDebtorData($debtor);
@@ -124,6 +127,9 @@ class CustomerService implements CustomerServiceInterface
      * @return array Updated debtor, or a staging reference with status='staged'
      * @throws CustomerSyncException If sync fails
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function syncCustomerFromSquareToFA(Customer $squareCustomer): array
     {
         $this->validateSquareCustomerData($squareCustomer);
@@ -153,6 +159,9 @@ class CustomerService implements CustomerServiceInterface
      *
      * @param string $email Email address to search for
      * @return Customer|null
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function findCustomerByEmail(string $email): ?Customer
     {
@@ -191,6 +200,9 @@ class CustomerService implements CustomerServiceInterface
      *
      * @param int $debtorNo FA debtor number
      * @return array|null Matched FA debtor
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getCustomerByDebtorNo(int $debtorNo): ?array
     {
@@ -232,6 +244,9 @@ class CustomerService implements CustomerServiceInterface
      * @return array Array of Customer objects
      * @throws CustomerSyncException
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getAllCustomers(): array
     {
         try {
@@ -256,6 +271,9 @@ class CustomerService implements CustomerServiceInterface
      * @param array $debtor Debtor data
      * @throws CustomerSyncException If validation fails
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function validateDebtorData(array $debtor): void
     {
         if (empty($debtor['name'] ?? '')) {
@@ -272,6 +290,9 @@ class CustomerService implements CustomerServiceInterface
      *
      * @param Customer $customer Square customer
      * @throws CustomerSyncException If validation fails
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function validateSquareCustomerData(Customer $customer): void
     {
@@ -299,6 +320,9 @@ class CustomerService implements CustomerServiceInterface
      *
      * @param array $debtor Debtor data
      * @return Customer Created customer
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function createSquareCustomer(array $debtor): Customer
     {
@@ -339,6 +363,9 @@ class CustomerService implements CustomerServiceInterface
      * @param Customer $existingCustomer Existing customer
      * @param array $debtor Debtor data
      * @return Customer Updated customer
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function updateSquareCustomer(Customer $existingCustomer, array $debtor): Customer
     {
@@ -386,6 +413,9 @@ class CustomerService implements CustomerServiceInterface
      * @return array Staging reference: status, staging_id, source_customer_id
      * @throws CustomerSyncException If staging cannot be attempted
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function stageCustomerForReview(Customer $squareCustomer): array
     {
         $firstName = $squareCustomer->getGivenName() ?? '';
@@ -409,6 +439,9 @@ class CustomerService implements CustomerServiceInterface
      * @param \Ksfraser\StagingDto\StagingCustomer $dto Customer DTO
      * @return array Staging reference
      * @throws CustomerSyncException If ISU is absent or rejects the payload
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function stageCustomerDto(\Ksfraser\StagingDto\StagingCustomer $dto): array
     {
@@ -484,6 +517,9 @@ class CustomerService implements CustomerServiceInterface
      * @param Customer $squareCustomer Square customer
      * @return array Updated debtor
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function updateDebtor(array $existingDebtor, Customer $squareCustomer): array
     {
         $updateData = [
@@ -508,6 +544,9 @@ class CustomerService implements CustomerServiceInterface
      * @param string $email Email address
      * @return array|null
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function findDebtorByEmail(string $email): ?array
     {
         if (empty($email)) {
@@ -524,6 +563,9 @@ class CustomerService implements CustomerServiceInterface
      *
      * @param string $phone Phone number
      * @return array|null
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function findDebtorByPhone(string $phone): ?array
     {
@@ -543,6 +585,9 @@ class CustomerService implements CustomerServiceInterface
      * @param string $part Name part to extract (given_name, family_name)
      * @param string $default Default value
      * @return string
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function extractName(array $debtor, string $part, string $default = ''): string
     {
@@ -566,6 +611,9 @@ class CustomerService implements CustomerServiceInterface
      *
      * @param array $debtor Debtor data
      * @return Address|null
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function buildAddress(array $debtor): ?Address
     {
@@ -611,6 +659,9 @@ class CustomerService implements CustomerServiceInterface
      * @param array $errors API errors
      * @return string Error message
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getApiErrorMessage(array $errors): string
     {
         $messages = array_map(function ($error) {
@@ -632,6 +683,9 @@ class CustomerService implements CustomerServiceInterface
        *
        * @return array Per-customer outcome: status staged|failed
        */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
       public function refreshAllCustomers(): array
       {
           $allCustomers = $this->getAllCustomers();

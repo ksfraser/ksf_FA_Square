@@ -36,6 +36,9 @@ class MonitoringService
      * 
      * @return array Collected metrics
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function collectMetrics(): array
     {
         try {
@@ -76,6 +79,9 @@ class MonitoringService
      * 
      * @return array CPU metrics
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function collectCpuMetrics(): array
     {
         $metrics = [];
@@ -103,6 +109,9 @@ class MonitoringService
      * Collects memory metrics.
      * 
      * @return array Memory metrics
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function collectMemoryMetrics(): array
     {
@@ -137,6 +146,9 @@ class MonitoringService
      * 
      * @return array Disk metrics
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function collectDiskMetrics(): array
     {
         $metrics = [];
@@ -165,6 +177,9 @@ class MonitoringService
      * Collects network metrics.
      * 
      * @return array Network metrics
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function collectNetworkMetrics(): array
     {
@@ -197,6 +212,9 @@ class MonitoringService
      * 
      * @return array Process metrics
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function collectProcessMetrics(): array
     {
         $metrics = [];
@@ -225,6 +243,9 @@ class MonitoringService
      * Collects application metrics.
      * 
      * @return array Application metrics
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function collectApplicationMetrics(): array
     {
@@ -256,6 +277,9 @@ class MonitoringService
      * 
      * @return array Database metrics
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function collectDatabaseMetrics(): array
     {
         $metrics = [];
@@ -286,6 +310,9 @@ class MonitoringService
      * 
      * @param array $metrics Metrics to store
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function storeMetrics(array $metrics): void
     {
         $timestamp = time();
@@ -305,6 +332,9 @@ class MonitoringService
      * @param int $endTime End timestamp
      * @return array Metrics in time range
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getMetricsByTimeRange(int $startTime, int $endTime): array
     {
         $metrics = [];
@@ -323,6 +353,9 @@ class MonitoringService
      * 
      * @return array Current metrics
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getCurrentMetrics(): array
     {
         if (empty($this->metrics)) {
@@ -337,6 +370,9 @@ class MonitoringService
      * Sets monitoring thresholds.
      * 
      * @param array $thresholds Threshold configuration
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function setThresholds(array $thresholds): void
     {
@@ -387,6 +423,9 @@ class MonitoringService
      * 
      * @param array $alert Alert data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function triggerAlert(array $alert): void
     {
         $this->alerts[] = $alert;
@@ -404,6 +443,9 @@ class MonitoringService
      * Gets active alerts.
      * 
      * @return array Active alerts
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getActiveAlerts(): array
     {
@@ -423,6 +465,9 @@ class MonitoringService
      * 
      * @param int $timeRange Time range in seconds
      * @return array Monitoring report
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function generateReport(int $timeRange = 3600): array
     {
@@ -452,6 +497,9 @@ class MonitoringService
      * 
      * @return array System health status
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getSystemHealth(): array
     {
         $metrics = $this->getCurrentMetrics();
@@ -471,6 +519,9 @@ class MonitoringService
 
     /**
      * Initializes default thresholds.
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function initializeThresholds(): void
     {
@@ -508,6 +559,9 @@ class MonitoringService
     /**
      * CPU-related helper methods.
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getCpuUsage(): float
     {
         // Get CPU usage from /proc/stat
@@ -529,6 +583,9 @@ class MonitoringService
         ];
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getCpuTemperature(): float
     {
         // Read from /sys/class/thermal/thermal_zone0/temp
@@ -547,6 +604,9 @@ class MonitoringService
         return isset($matches[1]) ? (int)$matches[1] : 0;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function readProcStat(): array
     {
         $stat = file_get_contents('/proc/stat');
@@ -575,6 +635,9 @@ class MonitoringService
     /**
      * Memory-related helper methods.
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getTotalMemory(): int
     {
         $meminfo = $this->readMeminfo();
@@ -593,6 +656,9 @@ class MonitoringService
         return isset($meminfo['MemFree']) ? $meminfo['MemFree'] * 1024 : 0;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getSwapUsage(): array
     {
         $meminfo = $this->readMeminfo();
@@ -623,6 +689,9 @@ class MonitoringService
 
     /**
      * Disk-related helper methods.
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function getDiskUsage(): array
     {
@@ -666,6 +735,9 @@ class MonitoringService
         ];
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getIoWaitPercentage(): float
     {
         // Read from /proc/stat
@@ -688,6 +760,9 @@ class MonitoringService
 
     /**
      * Network-related helper methods.
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function getNetworkInterfaces(): array
     {
@@ -714,6 +789,9 @@ class MonitoringService
         return $interfaces;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getNetworkThroughput(): array
     {
         $interfaces = $this->getNetworkInterfaces();
@@ -746,6 +824,9 @@ class MonitoringService
         ];
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getConnectionStatistics(): array
     {
         // Count active connections
@@ -763,6 +844,9 @@ class MonitoringService
 
     /**
      * Process-related helper methods.
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function getProcessCount(): int
     {
@@ -798,6 +882,9 @@ class MonitoringService
         return $processes;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getProcessCpuUsage(): array
     {
         $output = shell_exec('ps -eo pid,pcpu,comm --sort=-pcpu | head -10');
@@ -820,6 +907,9 @@ class MonitoringService
         return $processes;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getRunningProcessCount(): int
     {
         $output = shell_exec('ps -eo state | grep -c R');
@@ -835,6 +925,9 @@ class MonitoringService
         return intval($uptime) ?: 0;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getApplicationResponseTime(): float
     {
         // This would be implemented with actual HTTP requests
@@ -853,6 +946,9 @@ class MonitoringService
         return 1000; // Mock request count
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getActiveSessionCount(): int
     {
         // This would be implemented with actual session tracking
@@ -867,6 +963,9 @@ class MonitoringService
 
     /**
      * Database-related helper methods.
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function getDatabaseConnectionCount(): int
     {
@@ -886,6 +985,9 @@ class MonitoringService
         return 5; // Mock slow query count
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getDatabaseSize(): int
     {
         // This would be implemented with actual database size tracking
@@ -911,6 +1013,9 @@ class MonitoringService
     /**
      * Utility methods.
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function cleanOldMetrics(): void
     {
         $cutoffTime = time() - ($this->config['metrics_retention_days'] * 24 * 60 * 60);
@@ -935,6 +1040,9 @@ class MonitoringService
         file_put_contents($this->config['log_file'], $logMessage, FILE_APPEND);
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function sendAlertNotification(array $alert): void
     {
         // This would be implemented with actual alert notification system
@@ -954,6 +1062,9 @@ class MonitoringService
         return $summary;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function generateRecommendations(array $metrics, array $alerts): array
     {
         $recommendations = [];
@@ -991,6 +1102,9 @@ class MonitoringService
         return $recommendations;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function calculateHealthScore(array $metrics, array $alerts): int
     {
         $score = 100;
@@ -1016,6 +1130,9 @@ class MonitoringService
         return max(0, $score);
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function determineHealthStatus(int $score, array $alerts): string
     {
         if ($score >= 90) {

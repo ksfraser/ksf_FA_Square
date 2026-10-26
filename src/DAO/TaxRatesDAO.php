@@ -26,6 +26,9 @@ class TaxRatesDAO
      * @param int $id Tax type ID
      * @return array|null Tax rate data or null if not found
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getTaxRateById(int $id): ?array
     {
         $tableName = $this->getTaxRatesTableName();
@@ -44,6 +47,9 @@ class TaxRatesDAO
      * Gets all tax rates.
      * 
      * @return array All tax rates
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getAllTaxRates(): array
     {
@@ -69,6 +75,9 @@ class TaxRatesDAO
      * 
      * @return array Active tax rates
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getActiveTaxRates(): array
     {
         $tableName = $this->getTaxRatesTableName();
@@ -93,6 +102,9 @@ class TaxRatesDAO
      * 
      * @param array $taxData Tax rate data
      * @return int Tax type ID
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function insertTaxRate(array $taxData): int
     {
@@ -125,6 +137,9 @@ class TaxRatesDAO
      * @param array $data Update data
      * @return bool Success status
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function updateTaxRate(int $id, array $data): bool
     {
         $tableName = $this->getTaxRatesTableName();
@@ -150,6 +165,9 @@ class TaxRatesDAO
      * @param int $id Tax type ID
      * @return bool Success status
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function deleteTaxRate(int $id): bool
     {
         $tableName = $this->getTaxRatesTableName();
@@ -163,6 +181,9 @@ class TaxRatesDAO
      * 
      * @param string $name Tax rate name
      * @return array Matching tax rates
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getTaxRatesByName(string $name): array
     {
@@ -191,6 +212,9 @@ class TaxRatesDAO
      * @param float $rate Tax rate
      * @return array Matching tax rates
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getTaxRatesByRate(float $rate): array
     {
         $tableName = $this->getTaxRatesTableName();
@@ -216,6 +240,9 @@ class TaxRatesDAO
      * Gets tax rate statistics.
      * 
      * @return array Statistics array
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getTaxRateStatistics(): array
     {
@@ -266,6 +293,9 @@ class TaxRatesDAO
     /**
      * Ensures the table exists.
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function ensureTableExists(): void
     {
         $tableName = $this->getTaxRatesTableName();
@@ -300,6 +330,9 @@ class TaxRatesDAO
      * Gets tax rates table name.
      * 
      * @return string Table name
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function getTaxRatesTableName(): string
     {

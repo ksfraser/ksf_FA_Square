@@ -44,6 +44,9 @@ class TransactionHistoryService
      * @param int $transactionId Transaction ID
      * @return array Correction history
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getTransactionHistory(int $transactionId): array
     {
         $records = $this->readCorrectionRecords();
@@ -88,6 +91,9 @@ class TransactionHistoryService
      * @param int $toTransactionId End transaction ID
      * @return array Gap detection results
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function detectTransactionGaps(int $fromTransactionId, int $toTransactionId): array
     {
         $fromHistory = $this->getTransactionHistory($fromTransactionId);
@@ -112,6 +118,9 @@ class TransactionHistoryService
      * Gets correction coverage over the tracked date range.
      * 
      * @return array Date range coverage
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getDateRangeCoverage(): array
     {
@@ -143,6 +152,9 @@ class TransactionHistoryService
      * 
      * @return array Correction records
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function readCorrectionRecords(): array
     {
         $path = sys_get_temp_dir() . '/ksf_corrections.jsonl';
@@ -170,6 +182,9 @@ class TransactionHistoryService
      * @param array $record Correction ledger record
      * @return array Correction history entry
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function correctionToEntry(array $record): array
     {
         $timestamp = (int)($record['timestamp'] ?? time());
@@ -191,6 +206,9 @@ class TransactionHistoryService
      * 
      * @param array $transactionData Transaction data
      * @return array Record result
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function recordTransactionHistory(array $transactionData): array
     {
@@ -218,6 +236,9 @@ class TransactionHistoryService
      * 
      * @param array $importData Import data
      * @return array Gap detection results
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function detectImportGaps(array $importData): array
     {
@@ -258,6 +279,9 @@ class TransactionHistoryService
      * @param array $importData Import data
      * @return array Record result
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function recordImportHistory(array $importData): array
     {
         try {
@@ -287,6 +311,9 @@ class TransactionHistoryService
      * @param array $dateRange Date range
      * @param array $filters Filter parameters
      * @return array Transaction history
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getTransactionHistoryByDateRange(array $dateRange, array $filters = []): array
     {
@@ -327,6 +354,9 @@ class TransactionHistoryService
      * @param array $filters Filter parameters
      * @return array Import gaps
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getImportGaps(array $filters = []): array
     {
         $filteredGaps = $this->gapDetection;
@@ -365,6 +395,9 @@ class TransactionHistoryService
      * @param array $filters Filter parameters
      * @return array Import history
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getImportHistory(array $filters = []): array
     {
         $filteredHistory = $this->importHistory;
@@ -400,6 +433,9 @@ class TransactionHistoryService
      * @param string $status New status
      * @param array $updateData Update data
      * @return array Update result
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function updateGapStatus(string $gapId, string $status, array $updateData = []): array
     {
@@ -442,6 +478,9 @@ class TransactionHistoryService
      * @param array $filters Filter parameters
      * @return array History report
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function generateHistoryReport(array $filters = []): array
     {
         $report = [
@@ -462,6 +501,9 @@ class TransactionHistoryService
      * 
      * @param array $transactionData Transaction data
      * @throws \Exception on validation failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function validateTransactionData(array $transactionData): void
     {
@@ -487,6 +529,9 @@ class TransactionHistoryService
      * 
      * @param array $importData Import data
      * @throws \Exception on validation failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function validateImportData(array $importData): void
     {
@@ -521,6 +566,9 @@ class TransactionHistoryService
      * @param array $transactionData Transaction data
      * @return array History entry
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function createHistoryEntry(array $transactionData): array
     {
         $entry = [
@@ -541,6 +589,9 @@ class TransactionHistoryService
      * 
      * @param array $importData Import data
      * @return array Import entry
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function createImportEntry(array $importData): array
     {
@@ -567,6 +618,9 @@ class TransactionHistoryService
      * @param array $gap Gap data
      * @param array $importData Import data
      * @return array Gap entry
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function createGapEntry(array $gap, array $importData): array
     {
@@ -596,6 +650,9 @@ class TransactionHistoryService
      * @param array $importData Import data
      * @return array Gap entries
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function createGapEntries(array $gaps, array $importData): array
     {
         $entries = [];
@@ -613,6 +670,9 @@ class TransactionHistoryService
      * 
      * @param array $gap Gap data
      * @return string Priority level
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function calculateGapPriority(array $gap): string
     {
@@ -635,6 +695,9 @@ class TransactionHistoryService
      * @param array $importData Import data
      * @return array Date range
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getImportDateRange(array $importData): array
     {
         return [
@@ -648,6 +711,9 @@ class TransactionHistoryService
      * 
      * @param array $dateRange Date range
      * @return array Existing imports
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function getExistingImports(array $dateRange): array
     {
@@ -668,6 +734,9 @@ class TransactionHistoryService
      * @param array $dateRange Date range
      * @param array $existingImports Existing imports
      * @return array Gaps
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function findDateGaps(array $dateRange, array $existingImports): array
     {
@@ -728,6 +797,9 @@ class TransactionHistoryService
      * @param array $import2 Import 2
      * @return bool True if imports overlap
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function importsOverlap(array $import1, array $import2): bool
     {
         return $import1['start_time'] < $import2['end'] && $import1['end_time'] > $import2['start'];
@@ -750,6 +822,9 @@ class TransactionHistoryService
      * Adds to import history.
      * 
      * @param array $entry Import entry
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function addToImportHistory(array $entry): void
     {
@@ -775,6 +850,9 @@ class TransactionHistoryService
      * @param string $gapId Gap ID
      * @return array|null Gap or null
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function findGapById(string $gapId): ?array
     {
         foreach ($this->gapDetection as $gap) {
@@ -789,6 +867,9 @@ class TransactionHistoryService
      * Logs record.
      * 
      * @param array $entry History entry
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function logRecord(array $entry): void
     {
@@ -808,6 +889,9 @@ class TransactionHistoryService
      * Logs import.
      * 
      * @param array $entry Import entry
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function logImport(array $entry): void
     {
@@ -829,6 +913,9 @@ class TransactionHistoryService
      * Logs gap detection.
      * 
      * @param array $entry Gap entry
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function logGapDetection(array $entry): void
     {
@@ -852,6 +939,9 @@ class TransactionHistoryService
      * @param array $filters Filter parameters
      * @return array Transaction summary
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getTransactionSummary(array $filters = []): array
     {
         $history = $this->getTransactionHistoryByDateRange([
@@ -874,6 +964,9 @@ class TransactionHistoryService
      * @param array $filters Filter parameters
      * @return array Import summary
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getImportSummary(array $filters = []): array
     {
         $history = $this->getImportHistory($filters);
@@ -895,6 +988,9 @@ class TransactionHistoryService
      * @param array $filters Filter parameters
      * @return array Gap summary
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getGapSummary(array $filters = []): array
     {
         $gaps = $this->getImportGaps($filters);
@@ -914,6 +1010,9 @@ class TransactionHistoryService
      * 
      * @return array History statistics
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getHistoryStatistics(): array
     {
         return [
@@ -930,6 +1029,9 @@ class TransactionHistoryService
      * Generates recommendations.
      * 
      * @return array Recommendations
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function generateRecommendations(): array
     {
@@ -978,6 +1080,9 @@ class TransactionHistoryService
      * @param string $typeField Type field
      * @return array Counts by type
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function countByType(array $data, string $typeField): array
     {
         $counts = [];
@@ -995,6 +1100,9 @@ class TransactionHistoryService
      * 
      * @param array $data Data to count
      * @return array Counts by status
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function countByStatus(array $data): array
     {
@@ -1015,6 +1123,9 @@ class TransactionHistoryService
      * @param string $dateField Date field
      * @return array Counts by day
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function countByDay(array $data, string $dateField): array
     {
         $counts = [];
@@ -1029,6 +1140,9 @@ class TransactionHistoryService
 
     /**
      * Cleans old history.
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function cleanOldHistory(): void
     {
@@ -1049,6 +1163,9 @@ class TransactionHistoryService
      * 
      * @return array Configuration
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getConfig(): array
     {
         return $this->config;
@@ -1067,6 +1184,9 @@ class TransactionHistoryService
     /**
      * Clears transaction history.
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function clearTransactionHistory(): void
     {
         $this->transactionHistory = [];
@@ -1082,6 +1202,9 @@ class TransactionHistoryService
 
     /**
      * Clears gap detection.
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function clearGapDetection(): void
     {

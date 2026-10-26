@@ -23,6 +23,9 @@ class CustomerMatcher implements CustomerMatcherInterface
         $this->mappings = [];
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function findOrCreateDebtor(array $customerData): int
     {
         $name = $customerData['name'] ?? '';
@@ -50,6 +53,9 @@ class CustomerMatcher implements CustomerMatcherInterface
         return $debtorNo;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function findOrCreateBranch(int $debtorNo, array $branchData): int
     {
         $branchCode = $branchData['branch_code'] ?? 'DEFAULT';
@@ -73,6 +79,9 @@ class CustomerMatcher implements CustomerMatcherInterface
         return (int)\db_insert_id();
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function matchSquareCustomerToFaDebtor(string $squareCustomerId): ?int
     {
         $sql = "SELECT fa_debtor_no FROM {$this->tablePrefix}square_customer_mappings WHERE square_customer_id = '" . \db_escape($squareCustomerId) . "'";
@@ -91,6 +100,9 @@ class CustomerMatcher implements CustomerMatcherInterface
         \db_query($sql);
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getNextDebtorNo(): int
     {
         $sql = "SELECT MAX(debtor_no) + 1 AS next_no FROM {$this->tablePrefix}debtors_master";

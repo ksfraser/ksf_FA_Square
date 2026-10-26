@@ -44,6 +44,9 @@ class DatabaseService
      * @return PDO Database connection
      * @throws \Exception on connection failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getConnection(): PDO
     {
         if ($this->pdo === null) {
@@ -64,6 +67,9 @@ class DatabaseService
      * @param array $parameters Query parameters
      * @return PDOStatement Statement object
      * @throws \Exception on query execution failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function query(string $sql, array $parameters = []): PDOStatement
     {
@@ -94,6 +100,9 @@ class DatabaseService
      * @param array $parameters Query parameters
      * @return array Query results
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function queryAll(string $sql, array $parameters = []): array
     {
         $statement = $this->query($sql, $parameters);
@@ -121,6 +130,9 @@ class DatabaseService
      * @param array $parameters Query parameters
      * @return mixed|null Single value or null
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function queryValue(string $sql, array $parameters = [])
     {
         $statement = $this->query($sql, $parameters);
@@ -135,6 +147,9 @@ class DatabaseService
      * @param array $data Data to insert
      * @return int Inserted ID
      * @throws \Exception on insertion failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function insert(string $table, array $data): int
     {
@@ -158,6 +173,9 @@ class DatabaseService
      * @return int Number of affected rows
      * @throws \Exception on update failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function update(string $table, array $data, string $where, array $whereParameters = []): int
     {
         $setFields = array_map(fn($field) => "{$field} = :{$field}", array_keys($data));
@@ -177,6 +195,9 @@ class DatabaseService
      * @param array $whereParameters WHERE parameters
      * @return int Number of affected rows
      * @throws \Exception on deletion failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function delete(string $table, string $where, array $whereParameters = []): int
     {
@@ -201,6 +222,9 @@ class DatabaseService
      * 
      * @return bool Success status
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function commit(): bool
     {
         return $this->getConnection()->commit();
@@ -220,6 +244,9 @@ class DatabaseService
      * Gets table list.
      * 
      * @return array Table list
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getTableList(): array
     {
@@ -254,6 +281,9 @@ class DatabaseService
      * @param string $table Table name
      * @return bool Success status
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function analyzeTable(string $table): bool
     {
         $sql = "ANALYZE TABLE {$table}";
@@ -279,6 +309,9 @@ class DatabaseService
      * 
      * @param string $table Table name
      * @return bool Success status
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function rebuildTableIndexes(string $table): bool
     {
@@ -308,6 +341,9 @@ class DatabaseService
      * 
      * @return array Query statistics
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getQueryStats(): array
     {
         return $this->queryStats;
@@ -325,6 +361,9 @@ class DatabaseService
      * Gets database size.
      * 
      * @return array Database size information
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getDatabaseSize(): array
     {
@@ -354,6 +393,9 @@ class DatabaseService
      * @param float $minExecutionTime Minimum execution time in seconds
      * @return array Slow queries
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getSlowQueries(float $minExecutionTime = 1.0): array
     {
         $slowQueries = [];
@@ -374,6 +416,9 @@ class DatabaseService
      * @param float $executionTime Execution time
      * @param int $parameterCount Parameter count
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function trackQuery(string $sql, float $executionTime, int $parameterCount): void
     {
         $this->queryStats[] = [
@@ -389,6 +434,9 @@ class DatabaseService
      * 
      * @param mixed $value Value to get type for
      * @return int PDO type constant
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function getPdoType($value): int
     {
@@ -407,6 +455,9 @@ class DatabaseService
      * Gets connection status.
      * 
      * @return array Connection status
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getConnectionStatus(): array
     {
@@ -430,6 +481,9 @@ class DatabaseService
 
     /**
      * Closes the database connection.
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function closeConnection(): void
     {
@@ -458,6 +512,9 @@ class DatabaseService
      * 
      * @return array Database variables
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getDatabaseVariables(): array
     {
         try {
@@ -479,6 +536,9 @@ class DatabaseService
      * Gets current database status.
      * 
      * @return array Database status
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getDatabaseStatus(): array
     {
@@ -502,6 +562,9 @@ class DatabaseService
      * 
      * @param string $backupFile Backup file path
      * @return bool Success status
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function createBackup(string $backupFile): bool
     {
@@ -534,6 +597,9 @@ class DatabaseService
      * @param string $backupFile Backup file path
      * @return bool Success status
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function restoreBackup(string $backupFile): bool
     {
         try {
@@ -564,6 +630,9 @@ class DatabaseService
      * 
      * @param string $table Table name
      * @return array Table statistics
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getTableStatistics(string $table): array
     {
@@ -597,6 +666,9 @@ class DatabaseService
      * 
      * @return array Database schema information
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getSchemaInfo(): array
     {
         try {
@@ -621,6 +693,9 @@ class DatabaseService
      * 
      * @return bool True if connection is valid
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function isValidConnection(): bool
     {
         try {
@@ -636,6 +711,9 @@ class DatabaseService
      * 
      * @param string $string String to escape
      * @return string Escaped string
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function escape(string $string): string
     {
@@ -659,6 +737,9 @@ class DatabaseService
      * Gets database error message.
      * 
      * @return string Error message
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getErrorMessage(): string
     {

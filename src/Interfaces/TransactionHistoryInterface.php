@@ -18,6 +18,9 @@ interface TransactionHistoryInterface
      * @param array $transactionData Transaction data
      * @return array Record result
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function recordTransactionHistory(array $transactionData): array;
 
     /**
@@ -33,6 +36,9 @@ interface TransactionHistoryInterface
      * 
      * @param array $importData Import data
      * @return array Record result
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function recordImportHistory(array $importData): array;
 
@@ -50,6 +56,9 @@ interface TransactionHistoryInterface
      * 
      * @param array $filters Filter parameters
      * @return array Import gaps
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getImportGaps(array $filters = []): array;
 
@@ -69,6 +78,9 @@ interface TransactionHistoryInterface
      * @param array $updateData Update data
      * @return array Update result
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function updateGapStatus(string $gapId, string $status, array $updateData = []): array;
 
     /**
@@ -84,6 +96,9 @@ interface TransactionHistoryInterface
      * 
      * @return array History statistics
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getHistoryStatistics(): array;
 
     /**
@@ -97,6 +112,9 @@ interface TransactionHistoryInterface
      * Sets configuration.
      * 
      * @param array $config Configuration to set
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function setConfig(array $config): void;
 
@@ -112,6 +130,9 @@ interface TransactionHistoryInterface
 
     /**
      * Clears gap detection.
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function clearGapDetection(): void;
 }

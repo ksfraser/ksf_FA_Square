@@ -68,6 +68,9 @@ class RefundService implements RefundServiceInterface
      * @return Refund Created refund
      * @throws RefundProcessingException If refund creation fails
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function createRefund(Payment $payment, int $amountInCents, string $reason, ?string $locationId = null): Refund
     {
         $this->validateRefundData($payment, $amountInCents, $reason);
@@ -126,6 +129,9 @@ class RefundService implements RefundServiceInterface
      * @return array Array of Refund objects
      * @throws RefundProcessingException If listing fails
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function listRefunds(?string $beginTime = null, ?string $endTime = null, ?string $locationId = null): array
     {
         try {
@@ -164,6 +170,9 @@ class RefundService implements RefundServiceInterface
      * @param string $paymentId Payment ID to cancel
      * @return bool True if cancellation was successful
      * @throws RefundProcessingException If cancellation fails
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function cancelPayment(string $paymentId): bool
     {
@@ -212,6 +221,9 @@ class RefundService implements RefundServiceInterface
      * @return int Credit note ID
      * @throws RefundProcessingException If recording fails
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function recordRefundInFA(Refund $refund, int $invoiceId): int
     {
         try {
@@ -259,6 +271,9 @@ class RefundService implements RefundServiceInterface
      * @param array $refunds Array of refund data
      * @return array Results array with success/failure status
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function processRefundBatch(array $refunds): array
     {
         $results = [];
@@ -297,6 +312,9 @@ class RefundService implements RefundServiceInterface
      * @param string $reason Refund reason
      * @throws RefundProcessingException If validation fails
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function validateRefundData(Payment $payment, int $amountInCents, string $reason): void
     {
         if (empty($payment->getId())) {
@@ -325,6 +343,9 @@ class RefundService implements RefundServiceInterface
      * @param Payment $payment Payment object
      * @return string|null Location ID
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function extractLocationId(Payment $payment): ?string
     {
         // Try to get location ID from payment
@@ -345,6 +366,9 @@ class RefundService implements RefundServiceInterface
      * @param string|null $beginTime Start time (ISO 8601)
      * @param string|null $endTime End time (ISO 8601)
      * @return array Statistics array
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getRefundStatistics(?string $beginTime = null, ?string $endTime = null): array
     {
@@ -389,6 +413,9 @@ class RefundService implements RefundServiceInterface
      * @param array $errors API errors
      * @return string Error message
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getApiErrorMessage(array $errors): string
     {
         $messages = array_map(function ($error) {
@@ -427,6 +454,9 @@ class RefundService implements RefundServiceInterface
      * @param Payment $payment
      * @param string $reason
      * @return int Staging ID, or 0 if not staged
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function stageRefund(
         $refundId,

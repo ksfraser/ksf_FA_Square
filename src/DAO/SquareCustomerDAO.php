@@ -26,6 +26,9 @@ class SquareCustomerDAO
      * @param string $squareCustomerId Square customer ID
      * @return array|null Customer data or null if not found
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getBySquareId(string $squareCustomerId): ?array
     {
         $tableName = $this->getTableName();
@@ -45,6 +48,9 @@ class SquareCustomerDAO
      * 
      * @param int $debtorNo FA debtor number
      * @return array|null Customer data or null if not found
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getByDebtorNo(int $debtorNo): ?array
     {
@@ -66,6 +72,9 @@ class SquareCustomerDAO
      * @param string $squareCustomerId Square customer ID
      * @param array $data Update data
      * @return bool Success status
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function updateMappingBySquareId(string $squareCustomerId, array $data): bool
     {
@@ -93,6 +102,9 @@ class SquareCustomerDAO
      * @param array $data Update data
      * @return bool Success status
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function updateMappingByDebtorNo(int $debtorNo, array $data): bool
     {
         $tableName = $this->getTableName();
@@ -117,6 +129,9 @@ class SquareCustomerDAO
      * 
      * @param array $data Mapping data
      * @return int Mapping ID
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function insertMapping(array $data): int
     {
@@ -143,6 +158,9 @@ class SquareCustomerDAO
      * @param int $limit Maximum number of mappings to return
      * @return array Customer mappings
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getAllMappings(int $limit = 100): array
     {
         $tableName = $this->getTableName();
@@ -166,6 +184,9 @@ class SquareCustomerDAO
      * Gets customer mapping statistics.
      * 
      * @return array Statistics array
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getMappingStatistics(): array
     {
@@ -213,6 +234,9 @@ class SquareCustomerDAO
     /**
      * Ensures the table exists.
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function ensureTableExists(): void
     {
         $tableName = $this->getTableName();
@@ -245,6 +269,9 @@ class SquareCustomerDAO
      * Gets the table name.
      * 
      * @return string Table name
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function getTableName(): string
     {

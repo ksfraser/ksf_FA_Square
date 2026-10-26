@@ -35,6 +35,9 @@ class ProductAttributesDAO
      * @param string $stockId Stock ID
      * @return array<int, array<string, mixed>> List of modifier lists
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getModifierLists(string $stockId): array
     {
         if (!$this->tableExists('product_modifier_lists') || !$this->tableExists('product_modifier_list_assignments')) {
@@ -68,6 +71,9 @@ class ProductAttributesDAO
      * @param int $modifierListId Modifier list ID
      * @return array<int, array<string, mixed>> List of modifiers
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getModifiers(int $modifierListId): array
     {
         if (!$this->tableExists('product_modifiers')) {
@@ -94,6 +100,9 @@ class ProductAttributesDAO
      * @param string $stockId Stock ID
      * @return string|null Measurement unit ID or null
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getMeasurementUnitId(string $stockId): ?string
     {
         if (!$this->tableExists('product_measurement_units')) {
@@ -117,6 +126,9 @@ class ProductAttributesDAO
      *
      * @param string $stockId Stock ID
      * @return array<int, array{attr_key: string, attr_value: string}> List of attributes
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getCustomAttributes(string $stockId): array
     {
@@ -145,6 +157,9 @@ class ProductAttributesDAO
      * @param int $categoryId FA stock category ID
      * @return int|null Parent category ID or null
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getCategoryParent(int $categoryId): ?int
     {
         if (!$this->tableExists('product_category_hierarchy')) {
@@ -169,6 +184,9 @@ class ProductAttributesDAO
      *
      * @param string $stockId Stock ID
      * @return array{product_type: string, service_duration_minutes: int|null}|null Fulfillment profile or null
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getFulfillment(string $stockId): ?array
     {
@@ -202,6 +220,9 @@ class ProductAttributesDAO
      * @param string $stockId Stock ID
      * @return string|null UPC or null
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getUpc(string $stockId): ?string
     {
         if (!$this->tableExists('product_identifiers')) {
@@ -225,6 +246,9 @@ class ProductAttributesDAO
      *
      * @param array $row Raw database row
      * @return array<string, mixed> Normalized modifier list
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function mapModifierList(array $row): array
     {
@@ -251,6 +275,9 @@ class ProductAttributesDAO
      * @param array $row Raw database row
      * @return array<string, mixed> Normalized modifier
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function mapModifier(array $row): array
     {
         return [
@@ -268,6 +295,9 @@ class ProductAttributesDAO
      *
      * @param string $table Table name without prefix
      * @return bool True when the table exists
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function tableExists(string $table): bool
     {

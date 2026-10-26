@@ -28,6 +28,9 @@ class StockEventDAO
      * @param string|null $error Error message if failed
      * @return int Event ID
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function logStockMove(array $stockMove, bool $success, ?string $error = null): int
     {
         $data = [
@@ -55,6 +58,9 @@ class StockEventDAO
      * @param string|null $error Error message if failed
      * @return int Event ID
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function logStockAdjustment(array $adjustment, bool $success, ?string $error = null): int
     {
         $data = [
@@ -81,6 +87,9 @@ class StockEventDAO
      * @param string|null $error Error message if failed
      * @return int Event ID
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function logStockCount(array $count, bool $success, ?string $error = null): int
     {
         $data = [
@@ -106,6 +115,9 @@ class StockEventDAO
      * @param array $move Stock move data
      * @return int Event ID
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function logUnmappedMove(array $move): int
     {
         $data = [
@@ -126,6 +138,9 @@ class StockEventDAO
      * 
      * @param array $adjustment Adjustment data
      * @return int Event ID
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function logUnmappedAdjustment(array $adjustment): int
     {
@@ -148,6 +163,9 @@ class StockEventDAO
      * @param array $count Count data
      * @return int Event ID
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function logUnmappedCount(array $count): int
     {
         $data = [
@@ -169,6 +187,9 @@ class StockEventDAO
      * @param int $limit Maximum number of events to return
      * @param bool $includeFailed Whether to include failed events
      * @return array Stock events
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getAllEvents(int $limit = 100, bool $includeFailed = true): array
     {
@@ -204,6 +225,9 @@ class StockEventDAO
      * @param int $limit Maximum number of events to return
      * @return array Failed stock events
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getFailedEvents(int $limit = 50): array
     {
         $tableName = $this->getTableName();
@@ -231,6 +255,9 @@ class StockEventDAO
      * Gets stock event statistics.
      * 
      * @return array Statistics array
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getEventStatistics(): array
     {
@@ -289,6 +316,9 @@ class StockEventDAO
      * @param array $data Event data
      * @return int Event ID
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function insertEvent(array $data): int
     {
         $tableName = $this->getTableName();
@@ -326,6 +356,9 @@ class StockEventDAO
      * Gets the table name.
      * 
      * @return string Table name
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function getTableName(): string
     {
@@ -379,6 +412,9 @@ class StockEventDAO
 
     /**
      * Ensures table columns exist.
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function ensureColumnsExist(): void
     {

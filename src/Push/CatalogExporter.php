@@ -42,12 +42,21 @@ class CatalogExporter implements CatalogExporterInterface
      */
     private $settings;
 
+    /**
+     * @param SquareClient $client
+     * @param SettingsInterface $settings
+     * @since 2.0.0
+     * @BABOK Related: FR-SQ-001
+     */
     public function __construct(SquareClient $client, SettingsInterface $settings)
     {
         $this->client = $client;
         $this->settings = $settings;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function upsertProduct(
         string $sku,
         string $name,
@@ -142,6 +151,9 @@ class CatalogExporter implements CatalogExporterInterface
         throw SquareException::apiError('upsertCatalogObject', 'Max retries exceeded');
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function batchUpsertProducts(array $products): array
     {
         $batches = [];
@@ -184,6 +196,9 @@ class CatalogExporter implements CatalogExporterInterface
         }
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function pushInventory(string $catalogObjectId, string $locationId, float $quantity): void
     {
         try {
@@ -214,6 +229,9 @@ class CatalogExporter implements CatalogExporterInterface
         }
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function batchPushInventory(array $inventoryChanges): void
     {
         $changes = [];
@@ -248,6 +266,9 @@ class CatalogExporter implements CatalogExporterInterface
         }
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getInventoryCount(string $catalogObjectId, string $locationId): ?\Square\Models\InventoryCount
     {
         try {
@@ -264,6 +285,9 @@ class CatalogExporter implements CatalogExporterInterface
         }
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function deleteProduct(string $catalogObjectId): void
     {
         try {
@@ -281,6 +305,9 @@ class CatalogExporter implements CatalogExporterInterface
         }
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function searchProductBySku(string $sku): ?CatalogObject
     {
         try {
@@ -302,6 +329,9 @@ class CatalogExporter implements CatalogExporterInterface
         }
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function listAllItems(): array
     {
         $items = [];
@@ -328,6 +358,9 @@ class CatalogExporter implements CatalogExporterInterface
         }
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function uploadImage(
         string $catalogObjectId,
         string $stockId,
@@ -404,6 +437,9 @@ class CatalogExporter implements CatalogExporterInterface
         }
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function sanitizeUtf8(string $value): string
     {
         if (preg_match('//u', $value)) {
@@ -554,6 +590,9 @@ class CatalogExporter implements CatalogExporterInterface
      * @return string Catalog object id of the modifier list
      * @throws SquareException when the upsert fails
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function resolveModifierList(array $modifierList, string $currency): string
     {
         $listData = new CatalogModifierList();
@@ -619,6 +658,9 @@ class CatalogExporter implements CatalogExporterInterface
         }
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function resolveCategory(string $categoryName, ?string $parentCategoryName = null): ?string
     {
         try {
@@ -662,6 +704,9 @@ class CatalogExporter implements CatalogExporterInterface
         }
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function resolveTax(string $taxName, float $taxRate): ?string
     {
         try {

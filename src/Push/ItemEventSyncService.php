@@ -100,6 +100,9 @@ class ItemEventSyncService
      *
      * @since 2.4.4
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function sync(string $stockId, string $event): array
     {
         $token = $this->settings->getAccessToken();
@@ -181,6 +184,9 @@ class ItemEventSyncService
      *
      * @since 2.4.4
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function buildAttributesBag(string $stockId, array $item): array
     {
         $measurementUnitId = $this->attributesDao->getMeasurementUnitId($stockId);
@@ -215,6 +221,9 @@ class ItemEventSyncService
      *
      * @param object $catalogObject Square CatalogObject
      * @return string|null
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function extractVariationId($catalogObject): ?string
     {

@@ -28,6 +28,9 @@ class StockMovementAdapter
      * @return bool Success status
      * @throws StockEventException on API failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function sendStockMove(string $locationId, array $stockMove): bool
     {
         try {
@@ -62,6 +65,9 @@ class StockMovementAdapter
      * @return bool Success status
      * @throws StockEventException on API failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function sendAdjustment(string $locationId, array $adjustment): bool
     {
         try {
@@ -95,6 +101,9 @@ class StockMovementAdapter
      * @param array $count Count data
      * @return bool Success status
      * @throws StockEventException on API failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function sendInventoryCount(string $locationId, array $count): bool
     {

@@ -40,6 +40,9 @@ class AdvancedReportingSystem
      * @param array $formattingOptions Formatting options
      * @return array Report results
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function generateAdvancedReport(array $reportData, array $formattingOptions): array
     {
         try {
@@ -81,6 +84,9 @@ class AdvancedReportingSystem
      * @param array $templateData Template data
      * @return array Template results
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function createReportTemplate(array $templateData): array
     {
         try {
@@ -106,6 +112,9 @@ class AdvancedReportingSystem
      * 
      * @param array $scheduleData Schedule data
      * @return array Schedule results
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function scheduleReport(array $scheduleData): array
     {
@@ -133,6 +142,9 @@ class AdvancedReportingSystem
      * @param array $distributionData Distribution data
      * @return array Distribution results
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function distributeReport(array $distributionData): array
     {
         try {
@@ -159,6 +171,9 @@ class AdvancedReportingSystem
      * @param array $filters Filter parameters
      * @return array Report history
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getReportHistory(array $filters): array
     {
         try {
@@ -182,6 +197,9 @@ class AdvancedReportingSystem
      * 
      * @param array $filters Filter parameters
      * @return array Report templates
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getReportTemplates(array $filters): array
     {
@@ -207,6 +225,9 @@ class AdvancedReportingSystem
      * @param array $filters Filter parameters
      * @return array Scheduled reports
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getScheduledReports(array $filters): array
     {
         try {
@@ -231,6 +252,9 @@ class AdvancedReportingSystem
      * @param array $filters Filter parameters
      * @return array Distribution history
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getDistributionHistory(array $filters): array
     {
         try {
@@ -254,6 +278,9 @@ class AdvancedReportingSystem
      * 
      * @param array $reportData Report data
      * @throws \Exception on validation failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function validateReportData(array $reportData): void
     {
@@ -280,6 +307,9 @@ class AdvancedReportingSystem
      * 
      * @param array $templateData Template data
      * @throws \Exception on validation failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function validateTemplateData(array $templateData): void
     {
@@ -309,6 +339,9 @@ class AdvancedReportingSystem
      * 
      * @param array $scheduleData Schedule data
      * @throws \Exception on validation failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function validateScheduleData(array $scheduleData): void
     {
@@ -344,6 +377,9 @@ class AdvancedReportingSystem
      * @param array $distributionData Distribution data
      * @throws \Exception on validation failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function validateDistributionData(array $distributionData): void
     {
         if (empty($distributionData)) {
@@ -378,6 +414,9 @@ class AdvancedReportingSystem
      * @param array $reportData Report data
      * @param array $formattingOptions Formatting options
      * @return array Formatted report data
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function applyFormatting(array $reportData, array $formattingOptions): array
     {
@@ -425,6 +464,9 @@ class AdvancedReportingSystem
      * @param array $reportData Report data
      * @return array Visualization data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function generateVisualizations(array $reportData): array
     {
         $visualizations = [];
@@ -459,6 +501,9 @@ class AdvancedReportingSystem
      * @param array $reportData Report data
      * @return array Executive summary
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function generateExecutiveSummary(array $reportData): array
     {
         $summary = [
@@ -490,6 +535,9 @@ class AdvancedReportingSystem
      * 
      * @param array $reportData Report data
      * @return array Recommendations
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function generateRecommendations(array $reportData): array
     {
@@ -525,6 +573,9 @@ class AdvancedReportingSystem
      * @param array $formattingOptions Formatting options
      * @return array Report metadata
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function generateReportMetadata(array $reportData, array $formattingOptions): array
     {
         return [
@@ -544,6 +595,9 @@ class AdvancedReportingSystem
      * 
      * @param array $filters Filter parameters
      * @return array Report history
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function getReportHistoryFromDatabase(array $filters): array
     {
@@ -589,6 +643,9 @@ class AdvancedReportingSystem
      * 
      * @return array Data sources
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getDataSources(): array
     {
         return [
@@ -606,6 +663,9 @@ class AdvancedReportingSystem
      * @param array $data Report data
      * @param array $format Currency format
      * @return array Formatted data
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function formatCurrencyData(array $data, array $format): array
     {
@@ -631,6 +691,9 @@ class AdvancedReportingSystem
      * @param string $format Date format
      * @return array Formatted data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function formatDateData(array $data, string $format): array
     {
         $formatted = [];
@@ -655,6 +718,9 @@ class AdvancedReportingSystem
      * @param array $format Number format
      * @return array Formatted data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function formatNumberData(array $data, array $format): array
     {
         $formatted = [];
@@ -677,6 +743,9 @@ class AdvancedReportingSystem
      * 
      * @param array $summary Summary data
      * @return array Chart data
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function generateSummaryChart(array $summary): array
     {
@@ -703,6 +772,9 @@ class AdvancedReportingSystem
      * 
      * @param array $trends Trend data
      * @return array Chart data
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function generateTrendChart(array $trends): array
     {
@@ -733,6 +805,9 @@ class AdvancedReportingSystem
      * @param array $categories Category data
      * @return array Chart data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function generateCategoryChart(array $categories): array
     {
         return [
@@ -759,6 +834,9 @@ class AdvancedReportingSystem
      * 
      * @param array $locations Location data
      * @return array Chart data
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function generateLocationChart(array $locations): array
     {
@@ -788,6 +866,9 @@ class AdvancedReportingSystem
      * @param array $payments Payment data
      * @return array Chart data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function generatePaymentChart(array $payments): array
     {
         return [
@@ -815,6 +896,9 @@ class AdvancedReportingSystem
      * @param array $summary Summary data
      * @return array Key metrics
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function extractKeyMetrics(array $summary): array
     {
         return [
@@ -831,6 +915,9 @@ class AdvancedReportingSystem
      * 
      * @param array $data Report data
      * @return array Insights
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function generateInsights(array $data): array
     {
@@ -875,6 +962,9 @@ class AdvancedReportingSystem
      * @param array $data Report data
      * @return array Highlights
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function generateHighlights(array $data): array
     {
         $highlights = [];
@@ -908,6 +998,9 @@ class AdvancedReportingSystem
      * @param array $salesData Sales data
      * @return array Recommendations
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function generateSalesRecommendations(array $salesData): array
     {
         return [
@@ -934,6 +1027,9 @@ class AdvancedReportingSystem
      * 
      * @param array $customerData Customer data
      * @return array Recommendations
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function generateCustomerRecommendations(array $customerData): array
     {
@@ -962,6 +1058,9 @@ class AdvancedReportingSystem
      * @param array $inventoryData Inventory data
      * @return array Recommendations
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function generateInventoryRecommendations(array $inventoryData): array
     {
         return [
@@ -989,6 +1088,9 @@ class AdvancedReportingSystem
      * @param array $financialData Financial data
      * @return array Recommendations
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function generateFinancialRecommendations(array $financialData): array
     {
         return [
@@ -1014,6 +1116,9 @@ class AdvancedReportingSystem
      * Gets report history table name.
      * 
      * @return string Table name
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function getReportHistoryTableName(): string
     {

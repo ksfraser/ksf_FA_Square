@@ -44,6 +44,9 @@ class EncryptionService
      * @return string Encrypted data
      * @throws \Exception on encryption failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function encrypt(string $data, ?string $key = null): string
     {
         try {
@@ -81,6 +84,9 @@ class EncryptionService
      * @param string|null $key Optional encryption key
      * @return string Decrypted data
      * @throws \Exception on decryption failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function decrypt(string $encryptedData, ?string $key = null): string
     {
@@ -128,6 +134,9 @@ class EncryptionService
      * @return string Hashed password
      * @throws \Exception on hashing failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function hashPassword(string $password, ?string $salt = null): string
     {
         try {
@@ -157,6 +166,9 @@ class EncryptionService
      * @param string|null $salt Optional salt
      * @return bool True if password matches hash
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function verifyPassword(string $password, string $hash, ?string $salt = null): bool
     {
         try {
@@ -174,6 +186,9 @@ class EncryptionService
      * 
      * @param int $length Salt length
      * @return string Generated salt
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function generateSalt(int $length = 32): string
     {
@@ -197,6 +212,9 @@ class EncryptionService
      * @param int $length String length
      * @return string Generated random string
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function generateRandomString(int $length = 32): string
     {
         $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -218,6 +236,9 @@ class EncryptionService
      * @param string|null $key Optional encryption key
      * @return string Path to encrypted file
      * @throws \Exception on file encryption failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function encryptFile(string $filePath, ?string $outputPath = null, ?string $key = null): string
     {
@@ -260,6 +281,9 @@ class EncryptionService
      * @return string Path to decrypted file
      * @throws \Exception on file decryption failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function decryptFile(string $filePath, ?string $outputPath = null, ?string $key = null): string
     {
         try {
@@ -299,6 +323,9 @@ class EncryptionService
      * @param string|null $salt Optional salt
      * @return string Secure hash
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function createHash(string $data, ?string $salt = null): string
     {
         $salt = $salt ?? $this->generateSalt();
@@ -312,6 +339,9 @@ class EncryptionService
      * @param string $data Data to verify
      * @param string $hash Hash to verify against
      * @return bool True if hash is valid
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function verifyHash(string $data, string $hash): bool
     {
@@ -338,6 +368,9 @@ class EncryptionService
      * @param array $data Data to encrypt
      * @param string|null $key Optional encryption key
      * @return string Encrypted data
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function encryptForTransmission(array $data, ?string $key = null): string
     {
@@ -373,6 +406,9 @@ class EncryptionService
      * @param string $encryptedData Encrypted data
      * @param string|null $key Optional encryption key
      * @return array Decrypted data
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function decryptFromTransmission(string $encryptedData, ?string $key = null): array
     {
@@ -410,6 +446,9 @@ class EncryptionService
      * 
      * @return array Key rotation results
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function rotateEncryptionKeys(): array
     {
         try {
@@ -438,6 +477,9 @@ class EncryptionService
      * 
      * @return array Algorithm information
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getAlgorithmInfo(): array
     {
         return [
@@ -453,6 +495,9 @@ class EncryptionService
      * Validates encryption configuration.
      * 
      * @return array Validation results
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function validateConfiguration(): array
     {
@@ -515,6 +560,9 @@ class EncryptionService
      * 
      * @throws \Exception on key initialization failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function initializeEncryptionKey(): void
     {
         try {
@@ -530,6 +578,9 @@ class EncryptionService
      * @return string Generated encryption key
      * @throws \Exception on key generation failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function generateEncryptionKey(): string
     {
         try {
@@ -544,6 +595,9 @@ class EncryptionService
      * 
      * @param string $hash Hash to extract salt from
      * @return string Extracted salt
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function extractSaltFromHash(string $hash): string
     {
@@ -569,6 +623,9 @@ class EncryptionService
      * 
      * @return string Current encryption key
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getEncryptionKey(): string
     {
         return $this->encryptionKey;
@@ -588,6 +645,9 @@ class EncryptionService
      * Gets encryption algorithm.
      * 
      * @return string Encryption algorithm
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getAlgorithm(): string
     {
@@ -609,6 +669,9 @@ class EncryptionService
      * 
      * @return int Encryption iterations
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getIterations(): int
     {
         return $this->iterations;
@@ -628,6 +691,9 @@ class EncryptionService
      * Gets configuration.
      * 
      * @return array Configuration
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getConfig(): array
     {

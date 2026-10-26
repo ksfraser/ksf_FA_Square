@@ -29,6 +29,9 @@ class SquareAnalyticsController
      * @param array $request Analytics request data
      * @return array Response data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function handleAnalyticsRequest(array $request): array
     {
         try {
@@ -74,6 +77,9 @@ class SquareAnalyticsController
      * @param array $filters Filter parameters
      * @return array Response data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function handleSalesAnalytics(array $filters): array
     {
         $analytics = $this->businessIntelligence->getSalesAnalytics($filters);
@@ -90,6 +96,9 @@ class SquareAnalyticsController
      * 
      * @param array $filters Filter parameters
      * @return array Response data
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function handleCustomerAnalytics(array $filters): array
     {
@@ -108,6 +117,9 @@ class SquareAnalyticsController
      * @param array $filters Filter parameters
      * @return array Response data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function handleInventoryAnalytics(array $filters): array
     {
         $analytics = $this->businessIntelligence->getInventoryAnalytics($filters);
@@ -124,6 +136,9 @@ class SquareAnalyticsController
      * 
      * @param array $filters Filter parameters
      * @return array Response data
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function handleFinancialAnalytics(array $filters): array
     {
@@ -142,6 +157,9 @@ class SquareAnalyticsController
      * @param array $filters Filter parameters
      * @return array Response data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function handlePerformanceMetrics(array $filters): array
     {
         $metrics = $this->businessIntelligence->getPerformanceMetrics($filters);
@@ -159,6 +177,9 @@ class SquareAnalyticsController
      * @param array $reportData Report data
      * @return array Response data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function handleCustomReport(array $reportData): array
     {
         $report = $this->businessIntelligence->generateCustomReport($reportData);
@@ -175,6 +196,9 @@ class SquareAnalyticsController
      * 
      * @param array $request Request data
      * @throws \Exception on validation failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function validateRequest(array $request): void
     {
@@ -206,6 +230,9 @@ class SquareAnalyticsController
      * @param \Exception $e Exception
      * @return array Error response
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function formatErrorResponse(\Exception $e): array
     {
         $response = [
@@ -229,6 +256,9 @@ class SquareAnalyticsController
      * 
      * @return array Default filters
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getDefaultFilters(): array
     {
         $currentYear = date('Y');
@@ -246,6 +276,9 @@ class SquareAnalyticsController
      * Gets available analytics endpoints.
      * 
      * @return array Available endpoints
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getAvailableEndpoints(): array
     {

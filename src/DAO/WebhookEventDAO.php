@@ -30,6 +30,9 @@ class WebhookEventDAO
      *
      * @return string
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getTableName(): string
     {
         return $this->tablePrefix . 'square_webhook_events';
@@ -54,6 +57,9 @@ class WebhookEventDAO
      * Creates the table from scratch.
      *
      * @throws Exception
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function createTable(): void
     {
@@ -86,6 +92,9 @@ class WebhookEventDAO
      * @param array $data Event data
      * @return int Inserted ID
      * @throws Exception
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function insertEvent(array $data): int
     {
@@ -130,6 +139,9 @@ class WebhookEventDAO
      * @param bool $onlyFailed Only return failed events
      * @return array Array of event records
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getAllEvents(int $limit = 1000, bool $onlyFailed = false): array
     {
         $tableName = $this->getTableName();
@@ -162,6 +174,9 @@ class WebhookEventDAO
      * @param int $limit Maximum number of events to return
      * @return array Array of event records
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getEventsByType(string $eventType, int $limit = 100): array
     {
         $tableName = $this->getTableName();
@@ -190,6 +205,9 @@ class WebhookEventDAO
      * @param string $toDate End date (Y-m-d)
      * @return array Array of event records
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getEventsByDateRange(string $fromDate, string $toDate): array
     {
         $tableName = $this->getTableName();
@@ -217,6 +235,9 @@ class WebhookEventDAO
      *
      * @param int $limit Maximum number of events to return
      * @return array Array of failed event records
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getFailedEvents(int $limit = 100): array
     {
@@ -252,6 +273,9 @@ class WebhookEventDAO
      * @return int Number of deleted events
      * @throws Exception
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function cleanupOldEvents(int $daysToKeep = 90): int
     {
         $tableName = $this->getTableName();
@@ -272,6 +296,9 @@ class WebhookEventDAO
      * @param string $eventId Event ID
      * @return array|null
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getEventById(string $eventId): ?array
     {
         $tableName = $this->getTableName();
@@ -290,6 +317,9 @@ class WebhookEventDAO
      * Gets event statistics.
      *
      * @return array Statistics array
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getEventStatistics(): array
     {

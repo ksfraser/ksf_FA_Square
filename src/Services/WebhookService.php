@@ -91,6 +91,9 @@ class WebhookService implements WebhookServiceInterface
      * @return WebhookSubscription Created subscription object
      * @throws WebhookCreationException If subscription creation fails
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function createSubscription(string $url, array $events): WebhookSubscription
     {
         $this->validateUrl($url);
@@ -144,6 +147,9 @@ class WebhookService implements WebhookServiceInterface
      * @return array Array of WebhookSubscription objects
      * @throws WebhookCreationException If listing fails
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function listSubscriptions(): array
     {
         try {
@@ -171,6 +177,9 @@ class WebhookService implements WebhookServiceInterface
      * @param WebhookSubscription $subscription Updated subscription data
      * @return WebhookSubscription Updated subscription object
      * @throws WebhookCreationException If update fails
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function updateSubscription(string $id, WebhookSubscription $subscription): WebhookSubscription
     {
@@ -206,6 +215,9 @@ class WebhookService implements WebhookServiceInterface
      * @return bool True if deletion was successful
      * @throws WebhookCreationException If deletion fails
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function deleteSubscription(string $id): bool
     {
         try {
@@ -238,6 +250,9 @@ class WebhookService implements WebhookServiceInterface
      * @param array $eventData Raw webhook event data
      * @return array Processing summary
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function processWebhook(array $eventData): array
     {
         $signature = $eventData['signature'] ?? '';
@@ -256,6 +271,9 @@ class WebhookService implements WebhookServiceInterface
      * @param string $signature Webhook signature for validation
      * @return bool True if event was handled successfully
      * @throws WebhookValidationException If validation fails
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function handleWebhookEvent(array $eventData, string $signature): bool
     {
@@ -320,6 +338,9 @@ class WebhookService implements WebhookServiceInterface
      * @param string $url URL to validate
      * @throws WebhookValidationException If URL is invalid
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function validateUrl(string $url): void
     {
         if (!filter_var($url, FILTER_VALIDATE_URL)) {
@@ -336,6 +357,9 @@ class WebhookService implements WebhookServiceInterface
      *
      * @param array $events Event types to validate
      * @throws WebhookValidationException If events are invalid
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function validateEvents(array $events): void
     {
@@ -364,6 +388,9 @@ class WebhookService implements WebhookServiceInterface
      * @param string $signature Signature to verify
      * @return bool True if signature is valid
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function validateWebhookSignature(array $eventData, string $signature): bool
     {
         // In a real implementation, this would use Square's signature validation
@@ -380,6 +407,9 @@ class WebhookService implements WebhookServiceInterface
      * Gets client location IDs for subscription.
      *
      * @return array Location IDs
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function getClientLocationIds(): array
     {
@@ -406,6 +436,9 @@ class WebhookService implements WebhookServiceInterface
      *
      * @param array $eventData Event data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function handlePaymentCreated(array $eventData): void
     {
         // Extract payment ID and process
@@ -423,6 +456,9 @@ class WebhookService implements WebhookServiceInterface
      *
      * @param array $eventData Event data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function handleOrderCreated(array $eventData): void
     {
         $orderId = $eventData['data']['order']['id'] ?? null;
@@ -437,6 +473,9 @@ class WebhookService implements WebhookServiceInterface
      *
      * @param array $eventData Event data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function handleCustomerCreated(array $eventData): void
     {
         $customerId = $eventData['data']['customer']['id'] ?? null;
@@ -450,6 +489,9 @@ class WebhookService implements WebhookServiceInterface
      * Handles customer.updated webhook event.
      *
      * @param array $eventData Event data
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function handleCustomerUpdated(array $eventData): void
     {
@@ -468,6 +510,9 @@ class WebhookService implements WebhookServiceInterface
      * service runnable until secure storage is wired in.
      *
      * @return string Webhook key
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function getWebhookKey(): string
     {

@@ -29,6 +29,9 @@ interface CRMAdapterInterface
      * @return array Customer history
      * @throws CRMIntegrationException on failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getCustomerHistory(string $customerId): array;
 
     /**

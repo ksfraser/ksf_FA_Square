@@ -44,6 +44,9 @@ class SecurityHardeningService
      * 
      * @return array Assessment results
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function performSecurityAssessment(): array
     {
         try {
@@ -75,6 +78,9 @@ class SecurityHardeningService
      * 
      * @return array Scan results
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function performVulnerabilityScan(): array
     {
         try {
@@ -95,6 +101,9 @@ class SecurityHardeningService
      * Monitors security events.
      * 
      * @return array Monitoring results
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function monitorSecurityEvents(): array
     {
@@ -117,6 +126,9 @@ class SecurityHardeningService
      * 
      * @param array $controls Controls to implement
      * @return array Implementation results
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function implementSecurityControls(array $controls): array
     {
@@ -144,6 +156,9 @@ class SecurityHardeningService
      * @param string $standard Compliance standard
      * @return array Compliance results
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function performComplianceCheck(string $standard): array
     {
         try {
@@ -167,6 +182,9 @@ class SecurityHardeningService
      * 
      * @param array $filters Filter parameters
      * @return array Security report
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function generateSecurityReport(array $filters = []): array
     {
@@ -195,6 +213,9 @@ class SecurityHardeningService
      * @param array $testParameters Test parameters
      * @return array Test results
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function performPenetrationTesting(array $testParameters = []): array
     {
         try {
@@ -218,6 +239,9 @@ class SecurityHardeningService
      * @param array $auditParameters Audit parameters
      * @return array Audit results
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function performSecurityAudit(array $auditParameters = []): array
     {
         try {
@@ -240,6 +264,9 @@ class SecurityHardeningService
      * 
      * @return array Network security assessment
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function assessNetworkSecurity(): array
     {
         $assessment = [
@@ -258,6 +285,9 @@ class SecurityHardeningService
      * Assesses application security.
      * 
      * @return array Application security assessment
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function assessApplicationSecurity(): array
     {
@@ -280,6 +310,9 @@ class SecurityHardeningService
      * 
      * @return array Database security assessment
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function assessDatabaseSecurity(): array
     {
         $assessment = [
@@ -299,6 +332,9 @@ class SecurityHardeningService
      * 
      * @return array Infrastructure security assessment
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function assessInfrastructureSecurity(): array
     {
         $assessment = [
@@ -317,6 +353,9 @@ class SecurityHardeningService
      * 
      * @return array Compliance assessment
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function assessCompliance(): array
     {
         $compliance = [
@@ -334,6 +373,9 @@ class SecurityHardeningService
      * Identifies vulnerabilities.
      * 
      * @return array Vulnerabilities
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function identifyVulnerabilities(): array
     {
@@ -359,6 +401,9 @@ class SecurityHardeningService
      * 
      * @return array Recommendations
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function generateRecommendations(): array
     {
         $recommendations = [];
@@ -383,6 +428,9 @@ class SecurityHardeningService
      * 
      * @return array Vulnerabilities
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function performVulnerabilityIdentification(): array
     {
         $vulnerabilities = [];
@@ -404,6 +452,9 @@ class SecurityHardeningService
      * 
      * @return array Risk assessment
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function performRiskAssessment(): array
     {
         $risk = [
@@ -421,6 +472,9 @@ class SecurityHardeningService
      * 
      * @return array Remediation plan
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function generateRemediationPlan(): array
     {
         $plan = [
@@ -437,6 +491,9 @@ class SecurityHardeningService
      * Collects security events.
      * 
      * @return array Security events
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function collectSecurityEvents(): array
     {
@@ -462,6 +519,9 @@ class SecurityHardeningService
      * 
      * @return array Security alerts
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function generateSecurityAlerts(): array
     {
         $alerts = [];
@@ -482,6 +542,9 @@ class SecurityHardeningService
      * Collects security metrics.
      * 
      * @return array Security metrics
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function collectSecurityMetrics(): array
     {
@@ -506,6 +569,9 @@ class SecurityHardeningService
      * Performs compliance checks.
      * 
      * @return array Compliance results
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function performComplianceChecks(): array
     {
@@ -534,6 +600,9 @@ class SecurityHardeningService
      * 
      * @return array Implemented controls
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getImplementedControls(): array
     {
         return $this->implementedControls;
@@ -551,6 +620,9 @@ class SecurityHardeningService
 
     /**
      * Network security assessment helper methods.
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function checkFirewallStatus(): array
     {
@@ -572,6 +644,9 @@ class SecurityHardeningService
         ];
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function checkNetworkSegmentation(): array
     {
         return [
@@ -590,6 +665,9 @@ class SecurityHardeningService
         ];
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function checkNetworkEncryption(): array
     {
         return [
@@ -612,6 +690,9 @@ class SecurityHardeningService
     /**
      * Application security assessment helper methods.
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function checkInputValidation(): array
     {
         return [
@@ -632,6 +713,9 @@ class SecurityHardeningService
         ];
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function checkAuthentication(): array
     {
         return [
@@ -652,6 +736,9 @@ class SecurityHardeningService
         ];
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function checkSessionManagement(): array
     {
         return [
@@ -672,6 +759,9 @@ class SecurityHardeningService
         ];
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function checkLogging(): array
     {
         return [
@@ -694,6 +784,9 @@ class SecurityHardeningService
     /**
      * Database security assessment helper methods.
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function checkDatabaseAccessControl(): array
     {
         return [
@@ -714,6 +807,9 @@ class SecurityHardeningService
         ];
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function checkDatabaseAuditing(): array
     {
         return [
@@ -734,6 +830,9 @@ class SecurityHardeningService
         ];
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function checkDatabasePatching(): array
     {
         return [
@@ -756,6 +855,9 @@ class SecurityHardeningService
     /**
      * Infrastructure security assessment helper methods.
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function checkOSSecurity(): array
     {
         return [
@@ -776,6 +878,9 @@ class SecurityHardeningService
         ];
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function checkSystemConfiguration(): array
     {
         return [
@@ -796,6 +901,9 @@ class SecurityHardeningService
         ];
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function checkInfrastructureCompliance(): array
     {
         return [
@@ -819,6 +927,9 @@ class SecurityHardeningService
         ];
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function checkGDPRCompliance(): array
     {
         return [
@@ -841,6 +952,9 @@ class SecurityHardeningService
         ];
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function checkSOXCompliance(): array
     {
         return [
@@ -866,6 +980,9 @@ class SecurityHardeningService
     /**
      * Vulnerability identification helper methods.
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function identifyNetworkVulnerabilities(): array
     {
         return [
@@ -888,6 +1005,9 @@ class SecurityHardeningService
         ];
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function identifyDatabaseVulnerabilities(): array
     {
         return [
@@ -913,6 +1033,9 @@ class SecurityHardeningService
     /**
      * Recommendation generation helper methods.
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function generateNetworkRecommendations(): array
     {
         return [
@@ -933,6 +1056,9 @@ class SecurityHardeningService
         ];
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function generateDatabaseRecommendations(): array
     {
         return [
@@ -956,6 +1082,9 @@ class SecurityHardeningService
     /**
      * Penetration testing helper methods.
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function runPenetrationTests(array $testParameters): array
     {
         $tests = [];
@@ -972,6 +1101,9 @@ class SecurityHardeningService
         return $tests;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function analyzePenetrationTestResults(): array
     {
         $findings = [];
@@ -988,6 +1120,9 @@ class SecurityHardeningService
         return $findings;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function generatePenetrationTestRecommendations(): array
     {
         $recommendations = [];
@@ -1006,6 +1141,9 @@ class SecurityHardeningService
 
     /**
      * Audit helper methods.
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function performSecurityReview(array $auditParameters): array
     {
@@ -1031,6 +1169,9 @@ class SecurityHardeningService
         return $review;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function generateAuditRecommendations(): array
     {
         $recommendations = [];
@@ -1046,6 +1187,9 @@ class SecurityHardeningService
 
     /**
      * Control implementation helper methods.
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function implementControl(array $control): array
     {
@@ -1065,6 +1209,9 @@ class SecurityHardeningService
     /**
      * Clean old assessments.
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function cleanOldAssessments(): void
     {
         $cutoffTime = time() - ($this->config['assessment_retention_days'] * 24 * 60 * 60);
@@ -1082,6 +1229,9 @@ class SecurityHardeningService
      * Generate security summary.
      * 
      * @return array Security summary
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function generateSecuritySummary(): array
     {
@@ -1101,6 +1251,9 @@ class SecurityHardeningService
      * Calculate overall security score.
      * 
      * @return int Overall security score
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function calculateOverallSecurityScore(): int
     {
@@ -1133,6 +1286,9 @@ class SecurityHardeningService
      * 
      * @return int Critical vulnerabilities
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function countCriticalVulnerabilities(): int
     {
         $total = 0;
@@ -1153,6 +1309,9 @@ class SecurityHardeningService
      * 
      * @param string $standard Optional compliance standard
      * @return int Compliance score
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function calculateComplianceScore(string $standard = ''): int
     {
@@ -1182,6 +1341,9 @@ class SecurityHardeningService
      * @param string $standard Compliance standard
      * @return array Compliance gaps
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function identifyComplianceGaps(string $standard): array
     {
         // This would be implemented with actual gap identification logic
@@ -1207,6 +1369,9 @@ class SecurityHardeningService
     /**
      * Placeholder methods for various security checks.
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getFirewallRulesCount(): int { return 100; }
     private function getBlockedIPsCount(): int { return 50; }
     private function getIntrusionAlertsCount(): int { return 10; }
@@ -1221,6 +1386,9 @@ class SecurityHardeningService
     private function getRolesCount(): int { return 20; }
     private function getPermissionsCount(): int { return 100; }
     private function getDatabaseUsersCount(): int { return 10; }
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getDatabaseRolesCount(): int { return 5; }
     private function getDatabasePermissionsCount(): int { return 50; }
     private function getOSVersion(): string { return 'Ubuntu 20.04'; }
@@ -1235,6 +1403,9 @@ class SecurityHardeningService
     private function prioritizeRemediationActions(): array { return []; }
     private function createRemediationTimeline(): array { return []; }
     private function estimateRemediationResources(): array { return []; }
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function defineRemediationSuccessCriteria(): array { return []; }
     private function collectAuthenticationEvents(): array { return []; }
     private function collectAuthorizationEvents(): array { return []; }
@@ -1249,6 +1420,9 @@ class SecurityHardeningService
     private function collectNetworkSecurityMetrics(): array { return []; }
     private function runWebApplicationTests(array $testParameters): array { return []; }
     private function runNetworkTests(array $testParameters): array { return []; }
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function runSystemTests(array $testParameters): array { return []; }
     private function analyzeWebApplicationFindings(): array { return []; }
     private function analyzeNetworkFindings(): array { return []; }

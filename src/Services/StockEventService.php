@@ -39,6 +39,9 @@ class StockEventService implements StockEventServiceInterface
     /**
      * Starts listening to stock events from FrontAccounting.
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function listenToStockEvents(): void
     {
         // Hook into FA's stock movement events
@@ -62,6 +65,9 @@ class StockEventService implements StockEventServiceInterface
      * @param array $stockMoves Array of stock movement data
      * @throws StockEventException on sync failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function syncStockMovements(string $squareLocationId, array $stockMoves): void
     {
         try {
@@ -82,6 +88,9 @@ class StockEventService implements StockEventServiceInterface
      * Handles stock move events from FrontAccounting.
      * 
      * @param array $move Stock move data
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function handleStockMove(array $move): void
     {
@@ -124,6 +133,9 @@ class StockEventService implements StockEventServiceInterface
      * 
      * @param array $adjustment Stock adjustment data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function handleStockAdjustment(array $adjustment): void
     {
         try {
@@ -160,6 +172,9 @@ class StockEventService implements StockEventServiceInterface
      * Handles stock count events from FrontAccounting.
      * 
      * @param array $count Stock count data
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function handleStockCount(array $count): void
     {
@@ -201,6 +216,9 @@ class StockEventService implements StockEventServiceInterface
      * @param string $squareLocationId Square location ID
      * @param array $move Stock move data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function syncSingleStockMove(string $squareLocationId, array $move): void
     {
         $stockMove = [
@@ -225,6 +243,9 @@ class StockEventService implements StockEventServiceInterface
      * @return string Square item ID
      * @throws StockEventException if mapping not found
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getSquareItemId(int $stockId): string
     {
         $mapping = $this->locationMappingDao->getSquareItemId($stockId);
@@ -239,6 +260,9 @@ class StockEventService implements StockEventServiceInterface
      * 
      * @param array $stockMoves Stock moves data
      * @throws StockEventException on validation failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function validateStockMoves(array $stockMoves): void
     {

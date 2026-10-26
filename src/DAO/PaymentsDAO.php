@@ -26,6 +26,9 @@ class PaymentsDAO
      * @param int $paymentId Payment ID
      * @return array|null Payment data or null if not found
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getPaymentById(int $paymentId): ?array
     {
         $tableName = $this->getPaymentsTableName();
@@ -46,6 +49,9 @@ class PaymentsDAO
      * @param string $reference Payment reference
      * @return array|null Payment data or null if not found
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getPaymentByReference(string $reference): ?array
     {
         $tableName = $this->getPaymentsTableName();
@@ -65,6 +71,9 @@ class PaymentsDAO
      * 
      * @param int $debtorNo Debtor number
      * @return array Payment data
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getPaymentsByDebtorNo(int $debtorNo): array
     {
@@ -92,6 +101,9 @@ class PaymentsDAO
      * @param string $endDate End date
      * @return array Payment data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getPaymentsByDateRange(string $startDate, string $endDate): array
     {
         $tableName = $this->getPaymentsTableName();
@@ -118,6 +130,9 @@ class PaymentsDAO
      * 
      * @param array $paymentData Payment data
      * @return int Payment ID
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function insertPayment(array $paymentData): int
     {
@@ -148,6 +163,9 @@ class PaymentsDAO
      * 
      * @param array $refundData Refund data
      * @return int Refund ID
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function insertRefund(array $refundData): int
     {
@@ -180,6 +198,9 @@ class PaymentsDAO
      * @param array $data Update data
      * @return bool Success status
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function updatePayment(int $paymentId, array $data): bool
     {
         $tableName = $this->getPaymentsTableName();
@@ -205,6 +226,9 @@ class PaymentsDAO
      * @param int $paymentId Payment ID
      * @return bool Success status
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function deletePayment(int $paymentId): bool
     {
         $tableName = $this->getPaymentsTableName();
@@ -218,6 +242,9 @@ class PaymentsDAO
      * 
      * @param string $paymentMethod Payment method
      * @return array Payment data
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getPaymentsByMethod(string $paymentMethod): array
     {
@@ -246,6 +273,9 @@ class PaymentsDAO
      * @param string $status Payment status
      * @return array Payment data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getPaymentsByStatus(string $status): array
     {
         $tableName = $this->getPaymentsTableName();
@@ -271,6 +301,9 @@ class PaymentsDAO
      * Gets payment statistics.
      * 
      * @return array Statistics array
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getPaymentStatistics(): array
     {
@@ -358,6 +391,9 @@ class PaymentsDAO
      * @param array $eventData Event data
      * @return int Event ID
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function logPaymentEvent(array $eventData): int
     {
         $tableName = $this->getEventLogTableName();
@@ -385,6 +421,9 @@ class PaymentsDAO
 
     /**
      * Ensures all tables exist.
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function ensureTablesExist(): void
     {
@@ -436,6 +475,9 @@ class PaymentsDAO
     /**
      * Ensures event log table exists.
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function ensureEventLogTableExists(): void
     {
         $tableName = $this->getEventLogTableName();
@@ -475,6 +517,9 @@ class PaymentsDAO
      * never collides with FrontAccounting's real payment records.
      * 
      * @return string Table name
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function getPaymentsTableName(): string
     {

@@ -42,6 +42,9 @@ class TaxService implements TaxServiceInterface
      * @return array Tax summary
      * @throws TaxCalculationException on calculation failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function calculateTax(array $orderData): array
     {
         $result = $this->calculateSquareTaxes($orderData);
@@ -63,6 +66,9 @@ class TaxService implements TaxServiceInterface
      * @param array $taxDetails Tax detail entries
      * @return float Effective tax rate
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getEffectiveTaxRate(array $taxDetails): float
     {
         $rate = 0.0;
@@ -79,6 +85,9 @@ class TaxService implements TaxServiceInterface
      * @param array $squareData Square data with tax information
      * @return array Tax calculation data
      * @throws TaxCalculationException on calculation failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function calculateSquareTaxes(array $squareData): array
     {
@@ -117,6 +126,9 @@ class TaxService implements TaxServiceInterface
      * @param array $faTaxData FA tax data
      * @return array Square tax data
      * @throws TaxMappingException on mapping failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function mapFATaxToSquare(array $faTaxData): array
     {
@@ -157,6 +169,9 @@ class TaxService implements TaxServiceInterface
      * @param array $squareTaxData Square tax data
      * @return array FA tax data
      * @throws TaxMappingException on mapping failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function mapSquareTaxToFA(array $squareTaxData): array
     {
@@ -213,6 +228,9 @@ class TaxService implements TaxServiceInterface
      * @param string $squareTaxId Square tax ID
      * @return array|null Tax rate data or null if not found
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getTaxRateBySquareId(string $squareTaxId): ?array
     {
         $mapping = $this->taxMappingDao->getMappingBySquareId($squareTaxId);
@@ -227,6 +245,9 @@ class TaxService implements TaxServiceInterface
      * 
      * @param int $faTaxTypeId FA tax type ID
      * @return array|null Tax rate data or null if not found
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getTaxRateByFaId(int $faTaxTypeId): ?array
     {
@@ -257,6 +278,9 @@ class TaxService implements TaxServiceInterface
      * Gets tax calculation statistics.
      * 
      * @return array Statistics array
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getTaxStatistics(): array
     {
@@ -315,6 +339,9 @@ class TaxService implements TaxServiceInterface
      * @param array $squareData Square data
      * @throws TaxCalculationException on validation failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function validateSquareData(array $squareData): void
     {
         if (empty($squareData)) {
@@ -331,6 +358,9 @@ class TaxService implements TaxServiceInterface
      * 
      * @param array $faTaxData FA tax data
      * @throws TaxMappingException on validation failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function validateFATaxData(array $faTaxData): void
     {
@@ -353,6 +383,9 @@ class TaxService implements TaxServiceInterface
      * @param array $squareTaxData Square tax data
      * @throws TaxMappingException on validation failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function validateSquareTaxData(array $squareTaxData): void
     {
         if (empty($squareTaxData)) {
@@ -373,6 +406,9 @@ class TaxService implements TaxServiceInterface
      * 
      * @param array $mappingData Mapping data
      * @throws TaxMappingException on validation failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function validateMappingData(array $mappingData): void
     {
@@ -395,6 +431,9 @@ class TaxService implements TaxServiceInterface
      * @param array $lineItems Line items
      * @return float Base total
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function calculateBaseTotal(array $lineItems): float
     {
         $total = 0;
@@ -414,6 +453,9 @@ class TaxService implements TaxServiceInterface
      * @param array $taxes Tax data
      * @param float $baseTotal Base total
      * @return array Tax calculations
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function calculateTaxes(array $taxes, float $baseTotal): array
     {
@@ -440,6 +482,9 @@ class TaxService implements TaxServiceInterface
      * @param float $baseTotal Base total
      * @return float Tax percentage
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getTaxPercentage(array $tax, float $baseTotal): float
     {
         if (isset($tax['percentage'])) {
@@ -458,6 +503,9 @@ class TaxService implements TaxServiceInterface
      * 
      * @param array $squareData Square data
      * @return bool Tax included status
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function isTaxIncluded(array $squareData): bool
     {
@@ -492,6 +540,9 @@ class TaxService implements TaxServiceInterface
      * @param array $squareTax Square tax data
      * @return array|null FA tax rate or null if not found
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function findClosestFATaxRate(array $squareTax): ?array
     {
         $squarePercentage = isset($squareTax['percentage']) ? (float)$squareTax['percentage'] : 0;
@@ -521,6 +572,9 @@ class TaxService implements TaxServiceInterface
      * @param array $squareTax Square tax data
      * @return array New FA tax rate
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function createNewFATaxRate(array $squareTax): array
     {
         $taxData = [
@@ -541,6 +595,9 @@ class TaxService implements TaxServiceInterface
      * Gets tax calculations table name.
      * 
      * @return string Table name
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function getTaxCalculationsTableName(): string
     {

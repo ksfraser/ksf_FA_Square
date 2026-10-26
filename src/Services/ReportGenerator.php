@@ -26,6 +26,9 @@ class ReportGenerator
      * @param array $reportData Report data
      * @return array Report results
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function generateReport(array $reportData): array
     {
         $startTime = microtime(true);
@@ -75,6 +78,9 @@ class ReportGenerator
      * 
      * @param array $filters Filter parameters
      * @return array Sales report data
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function generateSalesReport(array $filters): array
     {
@@ -175,6 +181,9 @@ class ReportGenerator
      * @param array $filters Filter parameters
      * @return array Customer report data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function generateCustomerReport(array $filters): array
     {
         $salesTable = $this->getSalesTableName();
@@ -248,6 +257,9 @@ class ReportGenerator
      * 
      * @param array $filters Filter parameters
      * @return array Inventory report data
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function generateInventoryReport(array $filters): array
     {
@@ -325,6 +337,9 @@ class ReportGenerator
      * @param array $filters Filter parameters
      * @return array Financial report data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function generateFinancialReport(array $filters): array
     {
         $salesTable = $this->getSalesTableName();
@@ -396,6 +411,9 @@ class ReportGenerator
      * @param array $filters Filter parameters
      * @return array Performance report data
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function generatePerformanceReport(array $filters): array
     {
         $salesTable = $this->getSalesTableName();
@@ -439,6 +457,9 @@ class ReportGenerator
      * @param array $filters Filter parameters
      * @return string Date condition
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function buildDateCondition(array $filters): string
     {
         $conditions = ["1=1"];
@@ -463,6 +484,9 @@ class ReportGenerator
      * 
      * @return string Table name
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getSalesTableName(): string
     {
         return $this->tablePrefix . 'sales';
@@ -482,6 +506,9 @@ class ReportGenerator
      * Gets inventory table name.
      * 
      * @return string Table name
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function getInventoryTableName(): string
     {

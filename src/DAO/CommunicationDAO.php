@@ -26,6 +26,9 @@ class CommunicationDAO
      * @param array $communicationData Communication data
      * @return int Communication ID
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function recordCommunication(array $communicationData): int
     {
         $tableName = $this->getTableName();
@@ -50,6 +53,9 @@ class CommunicationDAO
      * @param int $debtorNo Debtor number
      * @param int $limit Maximum number of communications to return
      * @return array Customer communications
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getCommunications(int $debtorNo, int $limit = 50): array
     {
@@ -80,6 +86,9 @@ class CommunicationDAO
      * @param int $limit Maximum number of communications to return
      * @return array Communications
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getCommunicationsByType(string $type, int $limit = 100): array
     {
         $tableName = $this->getTableName();
@@ -106,6 +115,9 @@ class CommunicationDAO
      * Gets communication statistics.
      * 
      * @return array Statistics array
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getCommunicationStatistics(): array
     {
@@ -153,6 +165,9 @@ class CommunicationDAO
     /**
      * Ensures the table exists.
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function ensureTableExists(): void
     {
         $tableName = $this->getTableName();
@@ -183,6 +198,9 @@ class CommunicationDAO
      * Gets the table name.
      * 
      * @return string Table name
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function getTableName(): string
     {

@@ -29,6 +29,9 @@ interface TaxServiceInterface
      * @return array Square tax data
      * @throws TaxMappingException on mapping failure
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function mapFATaxToSquare(array $faTaxData): array;
 
     /**
@@ -46,6 +49,9 @@ interface TaxServiceInterface
      * @param string $squareTaxId Square tax ID
      * @return array|null Tax rate data or null if not found
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getTaxRateBySquareId(string $squareTaxId): ?array;
 
     /**
@@ -62,6 +68,9 @@ interface TaxServiceInterface
      * @param array $mappingData Mapping data
      * @return int Mapping ID
      * @throws TaxMappingException on creation failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function createTaxMapping(array $mappingData): int;
 

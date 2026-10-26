@@ -62,6 +62,9 @@ class LineItemRepositoryAdapter implements LineItemRepositoryInterface
         return $id;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function findByTransactionId(int $transactionId): array
     {
         $tableName = $this->tablePrefix . 'staging_line_items';
@@ -81,6 +84,9 @@ class LineItemRepositoryAdapter implements LineItemRepositoryInterface
         return $models;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function findBySource(string $source, ?string $sourceId = null): array
     {
         $tableName = $this->tablePrefix . 'staging_line_items';
@@ -103,6 +109,9 @@ class LineItemRepositoryAdapter implements LineItemRepositoryInterface
         return $models;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function findByStatus(string $status, ?string $source = null): array
     {
         $tableName = $this->tablePrefix . 'staging_line_items';
@@ -125,6 +134,9 @@ class LineItemRepositoryAdapter implements LineItemRepositoryInterface
         return $models;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function updateStatus(int $id, string $status, ?string $error = null): void
     {
         $tableName = $this->tablePrefix . 'staging_line_items';
@@ -151,6 +163,9 @@ class LineItemRepositoryAdapter implements LineItemRepositoryInterface
         \db_query($sql);
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function deleteByTransactionId(int $transactionId): void
     {
         $tableName = $this->tablePrefix . 'staging_line_items';
@@ -184,6 +199,9 @@ class LineItemRepositoryAdapter implements LineItemRepositoryInterface
  * @since 1.0.0
  * @deprecated 1.1.0 Use StagingLineItem DTO via hooks
  */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function toModel(array $row): StagingLineItem
     {
         $item = new StagingLineItem();
@@ -208,6 +226,9 @@ class LineItemRepositoryAdapter implements LineItemRepositoryInterface
         return $item;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function insertAttributes(int $lineItemId, array $attributes): void
     {
         $attrTable = $this->tablePrefix . 'staging_line_item_attributes';

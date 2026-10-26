@@ -45,6 +45,9 @@ class AuditLogRepositoryAdapter implements AuditLogRepositoryInterface
         return (int)\db_insert_id();
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function findByRecord(string $recordType, int $recordId): array
     {
         $tableName = $this->tablePrefix . 'staging_log';
@@ -64,6 +67,9 @@ class AuditLogRepositoryAdapter implements AuditLogRepositoryInterface
         return $this->fetchRows($sql);
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function findByDateRange(DateTimeInterface $from, DateTimeInterface $to, ?string $action = null): array
     {
         $tableName = $this->tablePrefix . 'staging_log';
@@ -84,6 +90,9 @@ class AuditLogRepositoryAdapter implements AuditLogRepositoryInterface
         return $this->fetchRows($sql);
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function countByAction(?string $source = null): array
     {
         $tableName = $this->tablePrefix . 'staging_log';
@@ -117,6 +126,9 @@ class AuditLogRepositoryAdapter implements AuditLogRepositoryInterface
  * @since 1.0.0
  * @deprecated 1.1.0 Use StagingNote DTO via hooks
  */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function fetchRows(string $sql): array
     {
         $result = \db_query($sql);

@@ -62,6 +62,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param array $correctionData Correction data
      * @return array Correction results
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function correctDebtorAssignment(int $transactionId, int $newDebtorId, array $correctionData = []): array
     {
         try {
@@ -105,6 +108,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param int $newDebtorId New debtor ID
      * @param array $correctionData Correction data
      * @return array Correction results
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function performCloneVoidMethod(array $transaction, int $newDebtorId, array $correctionData = []): array
     {
@@ -154,6 +160,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @throws CorrectionException when correction is disabled
      * @throws TransactionException when transaction cannot be corrected
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function validateCorrectionRequest(int $transactionId, int $newDebtorId): void
     {
         if (!$this->config['enable_correction']) {
@@ -199,6 +208,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param int $transactionId Transaction ID
      * @param array $transaction Transaction details
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function setTransactionDetails(int $transactionId, array $transaction): void
     {
         $this->primedTransactions[$transactionId] = $transaction;
@@ -237,6 +249,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param int $transactionId Transaction ID
      * @param array $transaction Transaction details to prime (optional)
      * @return array Transaction details
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getTransactionDetails(int $transactionId, array $transaction = []): array
     {
@@ -328,6 +343,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param array $transaction Transaction details
      * @return bool True if direct change is supported
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function checkDirectDebtorChangeSupport(array $transaction): bool
     {
         // This would be implemented with actual FA version check
@@ -342,6 +360,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param int $newDebtorId New debtor ID
      * @param array $correctionData Correction data
      * @return array Correction results
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function performDirectDebtorChange(array $transaction, int $newDebtorId, array $correctionData = []): array
     {
@@ -379,6 +400,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param array $transaction Transaction details
      * @return string Transaction type
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function determineTransactionType(array $transaction): string
     {
         if (isset($transaction['payment_id']) && $transaction['payment_id'] > 0) {
@@ -393,6 +417,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * 
      * @param array $transaction Transaction details
      * @return array Cloned cart
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function cloneTransactionCart(array $transaction): array
     {
@@ -420,6 +447,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param int $originalTransactionId Original transaction ID
      * @return array Cloned attachments
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function cloneAttachments(array $attachments, int $originalTransactionId): array
     {
         $clonedAttachments = [];
@@ -443,6 +473,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param array $attachment Original attachment
      * @param int $originalTransactionId Original transaction ID
      * @return array Cloned attachment
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function createAttachmentClone(array $attachment, int $originalTransactionId): array
     {
@@ -469,6 +502,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * 
      * @param array $originalAttachment Original attachment
      * @param array $clonedAttachment Cloned attachment
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function updateAttachmentReference(array $originalAttachment, array $clonedAttachment): void
     {
@@ -507,6 +543,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param array $transaction Transaction details
      * @return array Void result
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function voidOriginalTransaction(array $transaction): array
     {
         try {
@@ -544,6 +583,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param int $newDebtorId New debtor ID
      * @param array $correctionData Correction data
      * @return array New transaction
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function createCorrectedTransaction(array $clonedCart, int $newDebtorId, array $correctionData = []): array
     {
@@ -586,6 +628,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param array $originalTransaction Original transaction
      * @param array $newTransaction New transaction
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function linkTransactions(array $originalTransaction, array $newTransaction): void
     {
         // Link original to new
@@ -603,6 +648,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * 
      * @param array $originalTransaction Original transaction
      * @param array $newTransaction New transaction
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function linkTransactionAttachments(array $originalTransaction, array $newTransaction): void
     {
@@ -627,6 +675,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param array $cartItems Cart items
      * @return array Extracted attachments
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function extractAttachmentsFromCart(array $cartItems): array
     {
         $attachments = [];
@@ -643,6 +694,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * 
      * @param array $originalAttachment Original attachment
      * @param array $newAttachment New attachment
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function createAttachmentLink(array $originalAttachment, array $newAttachment): void
     {
@@ -669,6 +723,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param array $originalTransaction Original transaction
      * @param array $newTransaction New transaction
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function updateTransactionHistory(array $originalTransaction, array $newTransaction): void
     {
         // Add correction entry to history
@@ -685,6 +742,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param int $newDebtorId New debtor ID
      * @param array $correctionData Correction data
      * @return array Correction results
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function correctFaTransaction(int $transactionId, int $newDebtorId, array $correctionData = []): array
     {
@@ -725,6 +785,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param int $transactionId FA transaction ID
      * @return array FA transaction details
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getFaTransactionDetails(int $transactionId): array
     {
         // This would be implemented with actual FA transaction retrieval
@@ -753,6 +816,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param array $transaction FA transaction details
      * @return bool True if direct change is supported
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function checkFaDebtorChangeSupport(array $transaction): bool
     {
         // This would be implemented with actual FA version check
@@ -767,6 +833,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param int $newDebtorId New debtor ID
      * @param array $correctionData Correction data
      * @return array Correction results
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function performFaDirectDebtorChange(array $transaction, int $newDebtorId, array $correctionData = []): array
     {
@@ -805,6 +874,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param int $newDebtorId New debtor ID
      * @param array $correctionData Correction data
      * @return array Correction results
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function performFaCloneVoidMethod(array $transaction, int $newDebtorId, array $correctionData = []): array
     {
@@ -848,6 +920,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param array $transaction Transaction details
      * @return bool True if transaction can be corrected
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function canCorrectTransaction(array $transaction): bool
     {
         // Check transaction age
@@ -878,6 +953,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param array $transaction Transaction details
      * @return bool True if transaction has been modified
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function hasTransactionBeenModified(array $transaction): bool
     {
         // This would be implemented with actual modification check
@@ -901,6 +979,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * 
      * @param array $originalTransaction Original transaction
      * @param array $newTransaction New transaction
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function addCorrectionEntry(array $originalTransaction, array $newTransaction): void
     {
@@ -928,6 +1009,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param array $originalTransaction Original transaction
      * @param array $newTransaction New transaction
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function updateLinkedReferences(array $originalTransaction, array $newTransaction): void
     {
         // Update the original transaction to reference the corrected one
@@ -942,6 +1026,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * 
      * @param int $transactionId Transaction ID
      * @param int $referenceId Reference ID
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function updateTransactionReference(int $transactionId, int $referenceId): void
     {
@@ -965,6 +1052,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param int $toId To transaction ID
      * @param string $type Link type
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function addLink(int $fromId, int $toId, string $type): void
     {
         // This would be implemented with actual database insertion logic
@@ -984,6 +1074,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * 
      * @param array $transaction FA transaction details
      * @return array Cloned cart
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function cloneFaTransactionCart(array $transaction): array
     {
@@ -1009,6 +1102,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * 
      * @param array $transaction FA transaction details
      * @return array Void result
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function voidFaOriginalTransaction(array $transaction): array
     {
@@ -1046,6 +1142,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param int $invoiceId Invoice ID
      * @return array Void result
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function voidFaInvoice(int $invoiceId): array
     {
         // This would be implemented with actual FA invoice void logic
@@ -1063,6 +1162,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * 
      * @param int $paymentId Payment ID
      * @return array Void result
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function voidFaPayment(int $paymentId): array
     {
@@ -1083,6 +1185,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param int $newDebtorId New debtor ID
      * @param array $correctionData Correction data
      * @return array New transaction
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function createFaCorrectedTransaction(array $clonedCart, int $newDebtorId, array $correctionData = []): array
     {
@@ -1127,6 +1232,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param array $correctionData Correction data
      * @return array Invoice result
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function createFaInvoice(array $cartItems, int $debtorId, array $correctionData = []): array
     {
         // This would be implemented with actual FA invoice creation logic
@@ -1162,6 +1270,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param array $correctionData Correction data
      * @return array Payment result
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function createFaPayment(array $invoice, array $correctionData = []): array
     {
         // This would be implemented with actual FA payment creation logic
@@ -1183,6 +1294,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param array $originalTransaction Original transaction
      * @param array $newTransaction New transaction
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function linkFaTransactions(array $originalTransaction, array $newTransaction): void
     {
         // Link original to new
@@ -1198,6 +1312,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param array $originalTransaction Original transaction
      * @param array $newTransaction New transaction
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function updateFaTransactionHistory(array $originalTransaction, array $newTransaction): void
     {
         // Add correction entry to FA history
@@ -1212,6 +1329,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * 
      * @param array $originalTransaction Original transaction
      * @param array $newTransaction New transaction
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function addFaCorrectionEntry(array $originalTransaction, array $newTransaction): void
     {
@@ -1239,6 +1359,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param array $originalTransaction Original transaction
      * @param array $newTransaction New transaction
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function updateFaLinkedReferences(array $originalTransaction, array $newTransaction): void
     {
         // Update the original transaction to reference the corrected one
@@ -1254,6 +1377,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param array $transaction FA transaction details
      * @param int $newDebtorId New debtor ID
      * @return array Update result
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function updateFaTransactionDebtor(array $transaction, int $newDebtorId): array
     {
@@ -1274,6 +1400,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param array $transaction FA transaction details
      * @param int $newDebtorId New debtor ID
      * @return array Update result
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function updateFaGLJournalEntries(array $transaction, int $newDebtorId): array
     {
@@ -1296,6 +1425,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param int $newDebtorId New debtor ID
      * @return array Update result
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function updateFaRelatedRecords(array $transaction, int $newDebtorId): array
     {
         // This would be implemented with actual FA related record update logic
@@ -1316,6 +1448,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param int $transactionId Transaction ID
      * @return bool True if active correction exists
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function hasActiveCorrection(int $transactionId): bool
     {
         foreach ($this->correctionQueue as $correction) {
@@ -1332,6 +1467,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param array $transaction Transaction details
      * @param int $newDebtorId New debtor ID
      * @return array Update result
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function updateTransactionDebtor(array $transaction, int $newDebtorId): array
     {
@@ -1353,6 +1491,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param int $newDebtorId New debtor ID
      * @return array Update result
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function updateGLJournalEntries(array $transaction, int $newDebtorId): array
     {
         // This would be implemented with actual GL update logic
@@ -1372,6 +1513,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param int $newDebtorId New debtor ID
      * @return array Update result
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function updateRelatedRecords(array $transaction, int $newDebtorId): array
     {
         // This would be implemented with actual related record update logic
@@ -1390,6 +1534,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param int $invoiceId Invoice ID
      * @return array Void result
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function voidInvoice(int $invoiceId): array
     {
         // This would be implemented with actual FA invoice void logic
@@ -1407,6 +1554,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * 
      * @param int $paymentId Payment ID
      * @return array Void result
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function voidPayment(int $paymentId): array
     {
@@ -1427,6 +1577,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param int $debtorId Debtor ID
      * @param array $correctionData Correction data
      * @return array Invoice result
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function createInvoice(array $cartItems, int $debtorId, array $correctionData = []): array
     {
@@ -1463,6 +1616,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param array $correctionData Correction data
      * @return array Payment result
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function createPayment(array $invoice, array $correctionData = []): array
     {
         // This would be implemented with actual FA payment creation logic
@@ -1483,6 +1639,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * 
      * @param array $originalTransaction Original transaction
      * @param array $newTransaction New transaction
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function linkOriginalToNew(array $originalTransaction, array $newTransaction): void
     {
@@ -1513,6 +1672,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * 
      * @param array $result Correction result
      * @param string $transactionSource Transaction source
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function logCorrection(array $result, string $transactionSource = 'unknown'): void
     {
@@ -1555,6 +1717,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * 
      * @return string Path to the shared correction ledger
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function getSharedCorrectionLogPath(): string
     {
         return sys_get_temp_dir() . '/' . self::SHARED_CORRECTION_LOG;
@@ -1590,6 +1755,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param int $transactionId Transaction ID
      * @return array Correction history
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getCorrectionHistory(int $transactionId): array
     {
         $filteredHistory = array_filter(
@@ -1604,6 +1772,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * Gets all correction history.
      * 
      * @return array All correction history
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getAllCorrectionHistory(): array
     {
@@ -1625,6 +1796,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * 
      * @param string $correctionId Correction ID
      * @return array Approval result
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function approveCorrection(string $correctionId): array
     {
@@ -1654,6 +1828,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param string $correctionId Correction ID
      * @param string $reason Rejection reason
      * @return array Rejection result
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function rejectCorrection(string $correctionId, string $reason): array
     {
@@ -1685,6 +1862,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param string $correctionId Correction ID
      * @return array|null Correction or null
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function findCorrectionById(string $correctionId): ?array
     {
         foreach ($this->correctionQueue as $correction) {
@@ -1700,6 +1880,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * 
      * @param array $originalTransaction Original transaction
      * @param array $newTransaction New transaction
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function updateTransactionReferences(array $originalTransaction, array $newTransaction): void
     {
@@ -1727,6 +1910,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param array $originalTransaction Original transaction
      * @param array $newTransaction New transaction
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function updateNewReferences(array $originalTransaction, array $newTransaction): void
     {
         // This would be implemented with actual FA reference update logic
@@ -1742,6 +1928,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * Gets configuration.
      * 
      * @return array Configuration
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getConfig(): array
     {
@@ -1762,6 +1951,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * Gets correction statistics.
      * 
      * @return array Correction statistics
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getCorrectionStatistics(): array
     {
@@ -1790,6 +1982,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
 
     /**
      * Clears correction history.
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function clearCorrectionHistory(): void
     {
@@ -1822,6 +2017,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param int $transactionId Transaction ID
      * @return array Audit trail
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getCorrectionAuditTrail(int $transactionId): array
     {
         $auditTrail = [];
@@ -1839,6 +2037,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * Generates a unique transaction ID for corrected transactions.
      * 
      * @return int Generated transaction ID
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function generateTransactionId(): int
     {
@@ -1865,6 +2066,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * 
      * @return array Supported correction methods
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getSupportedMethods(): array
     {
         $methods = ['clone_void'];
@@ -1884,6 +2088,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * Gets correction configuration.
      * 
      * @return array Correction configuration
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getConfiguration(): array
     {
@@ -1908,6 +2115,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param array $transaction Transaction details
      * @return bool True if attachment handling is supported
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function supportsAttachmentHandling(array $transaction): bool
     {
         foreach ($transaction['cart_items'] ?? [] as $item) {
@@ -1923,6 +2133,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * 
      * @param array $correctionData Correction data
      * @return array Validation result
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function validateCorrectionData(array $correctionData): array
     {
@@ -1944,6 +2157,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param int $transactionId Transaction ID
      * @return array Available debtor options
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getAvailableDebtorOptions(int $transactionId): array
     {
         // This would be implemented with actual debtor retrieval logic
@@ -1961,6 +2177,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param int $newDebtorId New debtor ID
      * @param array $correctionData Correction data
      * @return array Correction preview
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getCorrectionPreview(int $transactionId, int $newDebtorId, array $correctionData = []): array
     {
@@ -1986,6 +2205,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param int $newDebtorId New debtor ID
      * @param array $correctionData Correction data
      * @return array Simulation results
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function simulateCorrection(array $transaction, int $newDebtorId, array $correctionData = []): array
     {
@@ -2025,6 +2247,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * @param int $newDebtorId New debtor ID
      * @return array Impact assessment
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function validateCorrectionImpact(array $transaction, int $newDebtorId): array
     {
         $impact = [
@@ -2055,6 +2280,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * 
      * @return array Error handling capabilities
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getErrorHandlingCapabilities(): array
     {
         return [
@@ -2075,6 +2303,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * 
      * @param int $correctionId Correction ID
      * @return array Rollback results
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function performRollback(int $correctionId): array
     {
@@ -2101,6 +2332,9 @@ class TransactionCorrectionService implements TransactionCorrectionInterface
      * Gets correction rollback capabilities.
      * 
      * @return array Rollback capabilities
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getRollbackCapabilities(): array
     {

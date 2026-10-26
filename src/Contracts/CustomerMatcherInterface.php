@@ -5,6 +5,9 @@ namespace ksfraser\FrontAccounting\Square\Contracts;
 
 interface CustomerMatcherInterface
 {
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function findOrCreateDebtor(array $customerData): int;
 
     public function findOrCreateBranch(int $debtorNo, array $branchData): int;

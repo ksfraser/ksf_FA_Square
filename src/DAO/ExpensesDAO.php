@@ -26,6 +26,9 @@ class ExpensesDAO
      * @param int $expenseId Expense ID
      * @return array|null Expense data or null if not found
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getExpenseById(int $expenseId): ?array
     {
         $tableName = $this->getExpensesTableName();
@@ -45,6 +48,9 @@ class ExpensesDAO
      * 
      * @param array $expense Expense data
      * @return int New expense ID
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function insertExpense(array $expense): int
     {
@@ -75,6 +81,9 @@ class ExpensesDAO
      * 
      * @return array Expense categories
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getExpenseCategories(): array
     {
         $tableName = $this->getCategoriesTableName();
@@ -95,6 +104,9 @@ class ExpensesDAO
      * Gets expenses table name.
      * 
      * @return string Table name
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function getExpensesTableName(): string
     {

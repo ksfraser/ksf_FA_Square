@@ -38,6 +38,9 @@ class SquareImportLogDAO
      *
      * @return string
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getTableName(): string
     {
         return $this->tablePrefix . 'square_import_log';
@@ -77,6 +80,9 @@ class SquareImportLogDAO
      * @param int $limit Maximum number of entries to return
      * @return array Array of log entries
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getRecentLogs(int $limit = 10): array
     {
         $sql = "SELECT * FROM {$this->getTableName()} ORDER BY run_date DESC LIMIT " . (int)$limit;
@@ -99,6 +105,9 @@ class SquareImportLogDAO
      * @param string $environment
      * @param int $limit
      * @return array
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function getLogsByEnvironment(string $environment, int $limit = 10): array
     {
@@ -123,6 +132,9 @@ class SquareImportLogDAO
      *
      * @param string $environment
      * @return array
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function findDateGaps(string $environment): array
     {
@@ -168,6 +180,9 @@ class SquareImportLogDAO
      * @param string $environment
      * @return string|null Y-m-d format or null
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getLastImportedDate(string $environment): ?string
     {
         $tableName = $this->getTableName();
@@ -190,6 +205,9 @@ class SquareImportLogDAO
      * Checks if there are any import log entries.
      *
      * @return bool True if there are log entries, false otherwise
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function hasLogs(): bool
     {
@@ -219,6 +237,9 @@ class SquareImportLogDAO
      * @param string|null $locationFilter Location filter used
      * @return void
      * @throws Exception if query fails
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function insertLog(
         string $source,
@@ -279,6 +300,9 @@ class SquareImportLogDAO
      *
      * @return string
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getRefundLogTableName(): string
     {
         return $this->tablePrefix . 'square_refund_log';
@@ -306,6 +330,9 @@ class SquareImportLogDAO
      *                    fa_credit_note_id, amount, currency, reason, status,
      *                    created_at, updated_at
      * @return int Log row id, or 0 on failure
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function logRefund(array $data): int
     {
@@ -371,6 +398,9 @@ class SquareImportLogDAO
      * Idempotently creates the refund log table.
      *
      * @return void
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     private function ensureRefundTableExists(): void
     {

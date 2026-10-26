@@ -18,6 +18,9 @@ class SquareInvoiceMapDAO
         $this->tablePrefix = $tablePrefix;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     private function table(): string
     {
         return $this->tablePrefix . 'square_invoice_map';
@@ -57,6 +60,9 @@ class SquareInvoiceMapDAO
     /**
      * Insert a new mapping.
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function insert(array $data): bool
     {
         $sql = "INSERT INTO `" . $this->table() . "` (
@@ -82,6 +88,9 @@ class SquareInvoiceMapDAO
      * Inserts a new row, or updates the existing one when fa_invoice_no
      * already exists (e.g. FA reuses an invoice number, or a re-push
      * replaces the linked Square Invoice).
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function upsert(array $data): bool
     {
@@ -116,6 +125,9 @@ class SquareInvoiceMapDAO
     /**
      * Find mapping by FA invoice number.
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function findByFaInvoiceNo(int $faInvoiceNo): ?array
     {
         $sql = "SELECT * FROM `" . $this->table() . "`
@@ -137,6 +149,9 @@ class SquareInvoiceMapDAO
 
     /**
      * Find mapping by Square Order ID.
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function findBySquareOrderId(string $squareOrderId): ?array
     {
@@ -160,6 +175,9 @@ class SquareInvoiceMapDAO
     /**
      * Find all unpaid/pending mappings.
      */
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function findPending(): array
     {
         $sql = "SELECT * FROM `" . $this->table() . "`
@@ -175,6 +193,9 @@ class SquareInvoiceMapDAO
 
     /**
      * Delete a mapping.
+     */
+    /**
+     * @BABOK Related: NFR-ISU-007
      */
     public function delete(int $faInvoiceNo): bool
     {

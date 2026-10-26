@@ -34,6 +34,9 @@ class TerminalPayment implements TerminalPaymentInterface
         $this->settings = $settings;
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function createOrderFromInvoice(
         string $locationId,
         array $lineItems,
@@ -88,6 +91,9 @@ class TerminalPayment implements TerminalPaymentInterface
         }
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function createTerminalCheckout(
         Order $order,
         string $deviceId,
@@ -133,6 +139,9 @@ class TerminalPayment implements TerminalPaymentInterface
         }
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function getCheckoutStatus(string $checkoutId): TerminalCheckout
     {
         try {
@@ -152,6 +161,9 @@ class TerminalPayment implements TerminalPaymentInterface
         }
     }
 
+    /**
+     * @BABOK Related: NFR-ISU-007
+     */
     public function cancelCheckout(string $checkoutId): void
     {
         try {
