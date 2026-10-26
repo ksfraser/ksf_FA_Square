@@ -542,11 +542,11 @@ class hooks_ksf_FA_Square extends hooks {
                       'note'      => _("Square Invoice created for FA Sales Invoice #") . $faInvoiceNo,
                       'subject'   => _("Square Invoice"),
                       'note_type' => 'square_invoice',
-                      'owner'     => (int)$data['customer_id'],
+                      'owner'     => (string) ($_SESSION['wa_current_user']->loginname ?? ''),
                   ];
                   $noteOpts = [
                       'links' => [
-                          ['sales_invoice', (int)$faInvoiceNo, 'square_invoice'],
+                          ['customer', (int)$data['customer_id'], 'square_invoice'],
                       ],
                   ];
                   $noteResult = hook_invoke('ksf_FA_Notes', 'CREATE_NOTE', $noteData, $noteOpts);
