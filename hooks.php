@@ -561,17 +561,24 @@ class hooks_ksf_FA_Square extends hooks {
                       $created = !empty($result['created']);
                       if ($created) {
                           $msg = _("Square Invoice created") . ': #' . $faInvoiceNo;
-                          // Notify CRM of new Square Invoice (#19, #21)
-                          if (function_exists('hook_invoke_all')) {
-                              hook_invoke_all('ksf_FA_Square', 'square_invoice_created', [
-                                  'fa_invoice_no' => $faInvoiceNo,
-                                  'square_invoice_id' => $result['square_invoice_id'] ?? '',
-                                  'square_order_id' => $result['square_order_id'] ?? '',
-                                  'public_url' => $url,
-                                  'customer_id' => $data['customer_id'],
-                                  'amount_cents' => $result['amount_cents'] ?? 0,
-                                  'destination' => $data['destination'] ?? 'square_invoice',
-                              ]);
+                          // Explicitly create a CRM note for this Square Invoice
+                          // (#19, #21) — don't assume a listener is registered.
+                          $noteData = [
+                              'note'      => _("Square Invoice created for FA Sales Invoice #") . $faInvoiceNo,
+                              'subject'   => _("Square Invoice"),
+                              'note_type' => 'square_invoice',
+                              'owner'     => (int)$data['customer_id'],
+                          ];
+                          $noteOpts = [
+                              'links' => [
+                                  ['sales_invoice', (int)$faInvoiceNo, 'square_invoice'],
+                              ],
+                          ];
+                          $noteResult = hook_invoke('ksf_FA_Notes', 'CREATE_NOTE', $noteData, $noteOpts);
+                          if ($noteResult === false) {
+                              error_log('ksf_FA_Square: CREATE_NOTE failed for Square Invoice #' . $faInvoiceNo . ': ' . ($noteData['error'] ?? 'unknown'));
+                          } else {
+                              $msg .= ' — CRM note created';
                           }
                       } else {
                           $msg = _("Square Invoice already exists") . ': #' . $faInvoiceNo;
