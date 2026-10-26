@@ -489,6 +489,8 @@ class hooks_ksf_FA_Square extends hooks {
       $data = self::$pendingSquareInvoice;
       self::$pendingSquareInvoice = [];
 
+      $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
+
       // Get the invoice number from the cart
       $faInvoiceNo = 0;
       if (isset($cart->trans_no) && $cart->trans_no > 0) {
