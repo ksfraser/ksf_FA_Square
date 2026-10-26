@@ -539,8 +539,8 @@ class hooks_ksf_FA_Square extends hooks {
                   // Explicitly create a CRM note for this Square Invoice
                   // (#19, #21) — don't assume a listener is registered.
                   $noteData = [
-                      'note'      => _("Square Invoice created for FA Sales Invoice #") . $faInvoiceNo,
-                      'subject'   => _("Square Invoice"),
+                      'note'      => _("Square Invoice created for FA Sales Invoice #") . $faInvoiceNo . ' — Square Invoice: ' . ($result['public_url'] ?? ''),
+                      'subject'   => _("Square Invoice #") . $faInvoiceNo,
                       'note_type' => 'square_invoice',
                       'owner'     => (string) ($_SESSION['wa_current_user']->loginname ?? ''),
                   ];
@@ -551,7 +551,7 @@ class hooks_ksf_FA_Square extends hooks {
                   ];
                   $noteResult = hook_invoke('ksf_FA_Notes', 'CREATE_NOTE', $noteData, $noteOpts);
                   if ($noteResult === false) {
-                      error_log('ksf_FA_Square: CREATE_NOTE failed for Square Invoice #' . $faInvoiceNo . ': ' . ($noteData['error'] ?? 'unknown'));
+                      error_log('ksf_FA_Square: CREATE_NOTE failed for Square Invoice #' . $faInvoiceNo . ': ' . ($noteData['error'] ?? 'unknown') . ', customer_id=' . ($data['customer_id'] ?? 'NOT_SET'));
                   } else {
                       $msg .= ' — CRM note created';
                   }
