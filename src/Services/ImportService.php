@@ -45,6 +45,11 @@ class ImportService
     private $tablePrefix;
 
     /**
+     * @var string Company directory for log files
+     */
+    private $companyDir;
+
+    /**
      * @var Settings
      */
     private $settings;
@@ -106,7 +111,9 @@ class ImportService
         PaymentService $paymentService = null,
         IsuStagingGateway $gateway = null
     ) {
+        global $path_to_root;
         $this->tablePrefix = $tablePrefix;
+        $this->companyDir = rtrim($path_to_root, '/') . '/company/0/';
         $this->settings = $settings;
         $this->client = $client;
         $this->orderImporter = new OrderImporter($client, $settings);
@@ -135,6 +142,26 @@ class ImportService
             new CustomerService($this->client, $this->debtorsMasterDao, new SquareCustomerDAO($this->tablePrefix)),
             new PaymentMappingDAO($this->tablePrefix)
         );
+    }
+
+    /**
+     * Write a timestamped message to the company square sync log.
+     *
+     * @param string $level  INFO, WARN, ERROR
+     * @param string $message
+     * @param array  $context Optional key-value context to append
+     * @return void
+     */
+    private function logMessage(string $level, string $message, array $context = []): void
+    {
+        $logFile = $this->companyDir . 'square_sync.log';
+        $ts = date('Y-m-d H:i:s');
+        $line = sprintf("[%s] %s: %s", $ts, $level, $message);
+        if (!empty($context)) {
+            $line .= ' ' . json_encode($context, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        }
+        $line .= PHP_EOL;
+        @file_put_contents($logFile, $line, FILE_APPEND | LOCK_EX);
     }
 
     /**
@@ -225,6 +252,13 @@ class ImportService
     ): array {
         $this->ensureStagingTablesExist();
 
+        $this->logMessage('INFO', '=== Square import started ===', [
+            'from_date' => $fromDate->format('Y-m-d'),
+            'to_date' => $toDate->format('Y-m-d'),
+            'location_filter' => $locationFilter,
+            'environment' => $this->settings->getEnvironment(),
+        ]);
+
         $results = [
             'staged' => 0,
             'skipped' => 0,
@@ -236,18 +270,28 @@ class ImportService
         $env = $this->settings->getEnvironment();
 
         if (empty($locations)) {
+            $this->logMessage('ERROR', 'No Square locations configured for import');
             $results['errors'][] = _("No Square locations found. Check API connection and location configuration.");
             return $results;
         }
 
+        $this->logMessage('INFO', sprintf('Found %d Square location(s) configured', count($locations)));
+
         foreach ($locations as $locId => $locName) {
             if ($locationFilter !== '' && $locationFilter !== $locId) {
+                $results['locations_skipped']++;
                 continue;
             }
 
             $payments = $this->orderImporter->listPayments($fromDate, $toDate, $locId);
             $paymentCount = is_countable($payments) ? count($payments) : 0;
             $results['payments_found'] += $paymentCount;
+
+            $this->logMessage('INFO', sprintf('Location %s (%s): found %d payment(s)', $locName, $locId, $paymentCount), [
+                'location_id' => $locId,
+                'location_name' => $locName,
+                'payment_count' => $paymentCount,
+            ]);
 
             if ($paymentCount === 0) {
                 $results['errors'][] = _("Location '") . $locName . _("': No payments found for selected date range.");
@@ -257,6 +301,10 @@ class ImportService
                 $paymentId = $payment->getId();
 
                 if ($this->gateway->exists($paymentId)) {
+                    $this->logMessage('WARN', sprintf('Payment %s already staged, skipping', $paymentId), [
+                        'payment_id' => $paymentId,
+                        'reason' => 'already_staged',
+                    ]);
                     $results['errors'][] = _("Skipping (already staged): ") . $paymentId;
                     $results['skipped']++;
                     continue;
@@ -264,6 +312,11 @@ class ImportService
 
                 $refunded = $payment->getRefundedMoney();
                 if ($refunded !== null && $refunded->getAmount() != 0) {
+                    $this->logMessage('WARN', sprintf('Payment %s is refunded, skipping', $paymentId), [
+                        'payment_id' => $paymentId,
+                        'reason' => 'refunded',
+                        'refunded_amount' => $refunded->getAmount() / 100,
+                    ]);
                     $results['errors'][] = _("Skipping refund: ") . $paymentId;
                     $results['skipped']++;
                     continue;
@@ -271,6 +324,10 @@ class ImportService
 
                 $orderId = $payment->getOrderId();
                 if ($orderId === null) {
+                    $this->logMessage('WARN', sprintf('Payment %s has no order ID, skipping', $paymentId), [
+                        'payment_id' => $paymentId,
+                        'reason' => 'no_order_id',
+                    ]);
                     $results['errors'][] = _("Skipping (no order ID): ") . $paymentId;
                     $results['skipped']++;
                     continue;
@@ -281,19 +338,43 @@ class ImportService
                     $order = $orderResult['order'];
 
                     if ($order === null) {
+                        $this->logMessage('ERROR', sprintf('Cannot retrieve order %s for payment %s', $orderId, $paymentId), [
+                            'payment_id' => $paymentId,
+                            'order_id' => $orderId,
+                            'reason' => 'order_not_found',
+                        ]);
                         $results['errors'][] = _("Cannot retrieve order: ") . $orderId . _(" for payment: ") . $paymentId;
                         $results['skipped']++;
                         continue;
                     }
 
-                    $this->stagePaymentAndOrder($payment, $order, $locId, $locName, $env);
+                    $stagingId = $this->stagePaymentAndOrder($payment, $order, $locId, $locName, $env);
                     $results['staged']++;
                     $results['errors'][] = _("Staged: ") . $paymentId;
+
+                    $this->logMessage('INFO', sprintf('Payment %s staged successfully (ISU staging ID: %d)', $paymentId, $stagingId), [
+                        'payment_id' => $paymentId,
+                        'order_id' => $orderId,
+                        'staging_id' => $stagingId,
+                        'amount' => $payment->getTotalMoney() ? $payment->getTotalMoney()->getAmount() / 100 : 0,
+                        'currency' => $payment->getTotalMoney() ? $payment->getTotalMoney()->getCurrency() : 'USD',
+                    ]);
                 } catch (Exception $e) {
+                    $this->logMessage('ERROR', sprintf('Error staging payment %s: %s', $paymentId, $e->getMessage()), [
+                        'payment_id' => $paymentId,
+                        'error' => $e->getMessage(),
+                    ]);
                     $results['errors'][] = _("Error staging ") . $paymentId . ": " . $e->getMessage();
                 }
             }
         }
+
+        $this->logMessage('INFO', sprintf('Import staging complete: %d staged, %d skipped, %d errors', $results['staged'], $results['skipped'], count($results['errors'])), [
+            'staged' => $results['staged'],
+            'skipped' => $results['skipped'],
+            'errors' => count($results['errors']),
+            'payments_found' => $results['payments_found'],
+        ]);
 
         $this->squareImportLogDao->insertLog(
             'api',
@@ -409,7 +490,30 @@ class ImportService
             'square_order_id' => $order->getId(),
         ];
 
+        $this->logMessage('INFO', sprintf('Staging payment %s via ISU (order %s)', $payment->getId(), $order->getId()), [
+            'payment_id' => $payment->getId(),
+            'square_order_id' => $order->getId(),
+            'source_transaction_id' => $payment->getId(),
+            'amount' => $totalCollected,
+            'currency' => $totalMoney !== null ? $totalMoney->getCurrency() : 'USD',
+            'location_id' => $locationId,
+            'location_name' => $locationName,
+            'line_item_count' => count($lineItems),
+        ]);
+
         $stagingId = $this->gateway->stageSquareOrder($paymentData, $orderData, $lineItems);
+
+        if ($stagingId > 0) {
+            $this->logMessage('INFO', sprintf('Payment %s staged in ISU with staging ID %d', $payment->getId(), $stagingId), [
+                'payment_id' => $payment->getId(),
+                'staging_id' => $stagingId,
+            ]);
+        } else {
+            $this->logMessage('ERROR', sprintf('Payment %s failed to stage in ISU (staging ID is 0)', $payment->getId()), [
+                'payment_id' => $payment->getId(),
+                'reason' => 'staging_id_zero',
+            ]);
+        }
 
         return $stagingId;
     }
@@ -433,21 +537,50 @@ class ImportService
         string $adjustmentItem = '',
         string $tipsItem = ''
     ): array {
+        $this->logMessage('INFO', sprintf('Processing staged transaction ID %d for debtor %d', $stagingId, $debtorNo), [
+            'staging_id' => $stagingId,
+            'debtor_no' => $debtorNo,
+            'branch_code' => $branchCode,
+        ]);
+
         $trans = $this->gateway->getById($stagingId);
 
         if ($trans === null) {
+            $this->logMessage('ERROR', sprintf('Staged transaction ID %d not found in ISU', $stagingId), [
+                'staging_id' => $stagingId,
+                'reason' => 'not_found',
+            ]);
             throw new Exception(_("Staged transaction not found: ") . $stagingId);
         }
 
         $paymentId = $trans['source_payment_id'] ?? $trans['source_transaction_id'] ?? '';
 
+        $this->logMessage('INFO', sprintf('Processing staged payment %s (ISU ID %d)', $paymentId, $stagingId), [
+            'payment_id' => $paymentId,
+            'staging_id' => $stagingId,
+            'source' => $trans['source'] ?? 'unknown',
+            'status' => $trans['status'] ?? 'unknown',
+            'total_amount' => $trans['total_amount'] ?? 0,
+        ]);
+
         if ($this->salesOrdersDao->orderExists($paymentId)) {
+            $this->logMessage('WARN', sprintf('Payment %s already imported as FA invoice, skipping', $paymentId), [
+                'payment_id' => $paymentId,
+                'staging_id' => $stagingId,
+                'reason' => 'already_imported',
+            ]);
             $this->gateway->updateStatus($stagingId, 'imported', ['error_log' => 'Already imported']);
             return ['success' => false, 'message' => _("Already imported")];
         }
 
         $customer = $this->debtorsMasterDao->getDebtor($debtorNo);
         if (!$customer) {
+            $this->logMessage('ERROR', sprintf('Customer %d not found while processing staged payment %s', $debtorNo, $paymentId), [
+                'payment_id' => $paymentId,
+                'staging_id' => $stagingId,
+                'debtor_no' => $debtorNo,
+                'reason' => 'customer_not_found',
+            ]);
             throw new Exception(_("Customer not found: ") . $debtorNo);
         }
 
@@ -455,6 +588,12 @@ class ImportService
         if (!$branch) {
             $branches = $this->custBranchDao->getByDebtorNo($debtorNo);
             if (empty($branches)) {
+                $this->logMessage('ERROR', sprintf('No branches found for customer %d', $debtorNo), [
+                    'payment_id' => $paymentId,
+                    'staging_id' => $stagingId,
+                    'debtor_no' => $debtorNo,
+                    'reason' => 'no_branches',
+                ]);
                 throw new Exception(_("No branches found for customer: ") . $debtorNo);
             }
             $branch = $branches[0];
@@ -510,6 +649,16 @@ class ImportService
 
         $orderNo = $cart->write(1);
 
+        $this->logMessage('INFO', sprintf('FA invoice #%d created for staged payment %s', $orderNo, $paymentId), [
+            'payment_id' => $paymentId,
+            'staging_id' => $stagingId,
+            'fa_invoice_no' => $orderNo,
+            'fa_debtor_no' => $debtorNo,
+            'invoice_total' => $total,
+            'square_total' => $totalOrder,
+            'adjustment' => $adj,
+        ]);
+
         $this->gateway->updateStatus($stagingId, 'imported', [
             'fa_invoice_no' => (string)$orderNo,
             'fa_debtor_no' => (string)$debtorNo,
@@ -518,6 +667,13 @@ class ImportService
         $this->salesMatchDao->insertMatch($paymentId, $orderNo);
 
         $this->recordSquarePayment($this->buildSquarePaymentFromTransaction($trans), $debtorNo);
+
+        $this->logMessage('INFO', sprintf('Payment %s fully imported as FA invoice #%d', $paymentId, $orderNo), [
+            'payment_id' => $paymentId,
+            'staging_id' => $stagingId,
+            'fa_invoice_no' => $orderNo,
+            'reason' => 'fully_imported',
+        ]);
 
         $this->broadcastOrderImported([
             'source_order_id' => (string)$paymentId,

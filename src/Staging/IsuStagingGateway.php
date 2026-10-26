@@ -29,6 +29,37 @@ namespace ksfraser\FrontAccounting\Square\Staging;
 class IsuStagingGateway
 {
     /**
+     * @var string Company directory for log files
+     */
+    private $companyDir;
+
+    public function __construct()
+    {
+        global $path_to_root;
+        $this->companyDir = rtrim($path_to_root, '/') . '/company/0/';
+    }
+
+    /**
+     * Write a timestamped message to the company square sync log.
+     *
+     * @param string $level  INFO, WARN, ERROR
+     * @param string $message
+     * @param array  $context Optional key-value context to append
+     * @return void
+     */
+    private function logMessage(string $level, string $message, array $context = []): void
+    {
+        $logFile = $this->companyDir . 'square_sync.log';
+        $ts = date('Y-m-d H:i:s');
+        $line = sprintf("[%s] %s: %s", $ts, $level, $message);
+        if (!empty($context)) {
+            $line .= ' ' . json_encode($context, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        }
+        $line .= PHP_EOL;
+        @file_put_contents($logFile, $line, FILE_APPEND | LOCK_EX);
+    }
+
+    /**
      * Capability names, dispatched NOT by module.
      *
      * These were previously sent with hook_invoke(self::HOOK_MODULE, ...), which
@@ -146,6 +177,18 @@ class IsuStagingGateway
         );
 
         $data = $dto;
+
+        $this->logMessage('INFO', sprintf('Sending payment %s to ISU STAGE_ENTITY', $paymentData['payment_id'] ?? 'unknown'), [
+            'payment_id' => $paymentData['payment_id'] ?? '',
+            'square_order_id' => $orderData['square_order_id'] ?? '',
+            'amount' => $paymentData['total_collected'] ?? 0,
+            'currency' => $paymentData['currency'] ?? 'USD',
+            'source_customer_id' => $paymentData['square_customer_id'] ?? '',
+            'source_transaction_id' => $paymentData['payment_id'] ?? '',
+            'line_item_count' => count($lineItems),
+            'environment' => $paymentData['environment'] ?? '',
+        ]);
+
         $this->invokeCapability(self::CAP_STAGE_ENTITY, $data);
 
         // See exists() and AGENTS_ARCH.md §11.2: a DTO input must come back as
@@ -153,7 +196,18 @@ class IsuStagingGateway
         $stagingId = is_array($data) ? (int)($data['result']['stagingId'] ?? 0) : 0;
 
         if ($stagingId > 0) {
+            $this->logMessage('INFO', sprintf('Payment %s staged in ISU with staging ID %d', $paymentData['payment_id'] ?? 'unknown', $stagingId), [
+                'payment_id' => $paymentData['payment_id'] ?? '',
+                'staging_id' => $stagingId,
+                'source' => 'ISU_STAGE_ENTITY',
+            ]);
             $this->storeSquareMetadata($stagingId, $paymentData, $orderData);
+        } else {
+            $this->logMessage('ERROR', sprintf('Payment %s failed to stage in ISU - no staging ID returned', $paymentData['payment_id'] ?? 'unknown'), [
+                'payment_id' => $paymentData['payment_id'] ?? '',
+                'reason' => 'no_staging_id',
+                'response' => is_array($data) ? $data : 'null_response',
+            ]);
         }
 
         return $stagingId;
