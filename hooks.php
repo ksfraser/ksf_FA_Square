@@ -492,16 +492,19 @@ function db_prewrite(&$cart, $trans_type)
 
 $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
 
-      // Get the invoice number from the cart (set by write_sales_invoice before db_postwrite fires)
+      // Get the invoice number from the cart/session
+      // FA stores the new trans_no in $_SESSION['items']->trans_no after write_sales_invoice
       $faInvoiceNo = 0;
-      if (isset($cart->trans_no) && $cart->trans_no > 0) {
+      if (isset($_SESSION['items']->trans_no) && $_SESSION['items']->trans_no > 0) {
+          $faInvoiceNo = (int)$_SESSION['items']->trans_no;
+      } elseif (isset($cart->trans_no) && $cart->trans_no > 0) {
           $faInvoiceNo = (int)$cart->trans_no;
       } elseif (isset($cart->order_no) && $cart->order_no > 0) {
           $faInvoiceNo = (int)$cart->order_no;
       }
 
       if ($faInvoiceNo <= 0) {
-          error_log('ksf_FA_Square: db_postwrite could not determine invoice number (cart->trans_no=' . ($cart->trans_no ?? 'unset') . ')');
+          error_log('ksf_FA_Square: db_postwrite could not determine invoice number (session items trans_no=' . ($_SESSION['items']->trans_no ?? 'unset') . ', cart->trans_no=' . ($cart->trans_no ?? 'unset') . ')');
           return null;
       }
 
@@ -513,13 +516,15 @@ $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
       }
 
       // DEBUG: Log full cart for debugging
-$cartDebug = array(
-            'trans_no' => $faInvoiceNo,
-            'customer_id' => isset($cart->customer_id) ? (string)$cart->customer_id : 'unset',
-            'branch_code' => isset($cart->Branch) ? (string)$cart->Branch : (isset($cart->branch_code) ? (string)$cart->branch_code : 'unset'),
-            'terms_indicator' => isset($cart->payment_terms['terms_indicator']) ? (int)$cart->payment_terms['terms_indicator'] : 'unset',
-            'cash_sale' => isset($cart->payment_terms['cash_sale']) ? (int)$cart->payment_terms['cash_sale'] : 'unset',
-        );
+// DEBUG: Log full cart for debugging
+      $cartDebug = array(
+          'trans_no' => $faInvoiceNo,
+          'session_items_trans_no' => isset($_SESSION['items']->trans_no) ? (int)$_SESSION['items']->trans_no : 'unset',
+          'customer_id' => isset($cart->customer_id) ? (string)$cart->customer_id : 'unset',
+          'branch_code' => isset($cart->Branch) ? (string)$cart->Branch : (isset($cart->branch_code) ? (string)$cart->branch_code : 'unset'),
+          'terms_indicator' => isset($cart->payment_terms['terms_indicator']) ? (int)$cart->payment_terms['terms_indicator'] : 'unset',
+          'cash_sale' => isset($cart->payment_terms['cash_sale']) ? (int)$cart->payment_terms['cash_sale'] : 'unset',
+      );
       error_log('ksf_FA_Square: db_postwrite cart debug: ' . json_encode($cartDebug));
 
       try {
