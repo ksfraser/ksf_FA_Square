@@ -490,7 +490,7 @@ function db_prewrite(&$cart, $trans_type)
       $data = self::$pendingSquareInvoice;
       self::$pendingSquareInvoice = [];
 
-      $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
+$tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
 
       // Get the invoice number from the cart (set by write_sales_invoice before db_postwrite fires)
       $faInvoiceNo = 0;
@@ -512,7 +512,17 @@ function db_prewrite(&$cart, $trans_type)
           error_log('ksf_FA_Square: db_insert_id()=' . $lastInsertId . ' != cart->trans_no=' . $faInvoiceNo . ' - possible hook ordering issue');
       }
 
-try {
+      // DEBUG: Log full cart for debugging
+      $cartDebug = array(
+          'trans_no' => $faInvoiceNo,
+          'customer_id' => isset($cart->customer_id) ? (string)$cart->customer_id : 'unset',
+          'branch_code' => isset($cart->branch_code) ? (string)$cart->branch_code : 'unset',
+          'terms_indicator' => isset($cart->payment_terms['terms_indicator']) ? (int)$cart->payment_terms['terms_indicator'] : 'unset',
+          'cash_sale' => isset($cart->payment_terms['cash_sale']) ? (int)$cart->payment_terms['cash_sale'] : 'unset',
+      );
+      error_log('ksf_FA_Square: db_postwrite cart debug: ' . json_encode($cartDebug));
+
+      try {
             $service = $this->buildSquareInvoiceService();
             if ($service === null) {
                 error_log('ksf_FA_Square: SquareInvoiceService unavailable for invoice #' . $faInvoiceNo);
@@ -538,6 +548,16 @@ try {
                 $autoPaymentSource
             );
 
+            // DEBUG: Log Square API response
+            error_log('ksf_FA_Square: Square API response: ' . json_encode(array(
+                'fa_invoice_no' => $faInvoiceNo,
+                'square_invoice_id' => $result['square_invoice_id'] ?? 'unset',
+                'square_order_id' => $result['square_order_id'] ?? 'unset',
+                'public_url' => $result['public_url'] ?? 'unset',
+                'status' => $result['status'] ?? 'unset',
+                'created' => $result['created'] ?? 'unset',
+            )));
+
             // Build note links: debtor + branch contacts (type 'Invoice')
             $noteLinks = [
                 ['customer', (string)$data['customer_id'], 'square_invoice'],
@@ -548,6 +568,9 @@ try {
                     $noteLinks[] = ['contact', (int)$contactId, 'invoice_contact'];
                 }
             }
+
+            // DEBUG: Log note links being created
+            error_log('ksf_FA_Square: Creating note with links: ' . json_encode($noteLinks));
 
             // Log the activity
             if (function_exists('display_notification')) {
