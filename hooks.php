@@ -670,16 +670,7 @@ error_log('ksf_FA_Square: Full cart object debug: ' . json_encode($cartFullDebug
                 display_notification($msg);
             }
 
-            // Redirect to standard FA sales invoice success page
-            $path_to_root = defined('path_to_root') ? path_to_root : '../../..';
-            $redirectUrl = $path_to_root . '/sales/sales_order_entry.php?AddedDI=' . $faInvoiceNo . '&Type=0';
-            if (function_exists('meta_forward')) {
-                meta_forward($redirectUrl, 0);
-            } elseif (function_exists('header')) {
-                header('Location: ' . $redirectUrl);
-                exit;
-            }
-
+            // Return result to let FA continue its native flow (including redirect)
             return $result;
       } catch (\Throwable $e) {
           error_log('ksf_FA_Square: Square Invoice creation/update failed for #' . $faInvoiceNo . ': ' . $e->getMessage());
