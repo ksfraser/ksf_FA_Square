@@ -465,7 +465,7 @@ function db_prewrite(&$cart, $trans_type)
         // Store cart data for db_postwrite (including branch_code for contacts)
         self::$pendingSquareInvoice = [
             'customer_id'    => (int)$cart->customer_id,
-            'branch_code'    => isset($cart->branch_code) ? (string)$cart->branch_code : '',
+            'branch_code'    => isset($cart->Branch) ? (string)$cart->Branch : (isset($cart->branch_code) ? (string)$cart->branch_code : ''),
             'line_items'     => $this->extractLineItems($cart),
             'destination'    => $destination,
             'terms_indicator' => (int)$cart->payment_terms['terms_indicator'],
@@ -513,13 +513,13 @@ $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
       }
 
       // DEBUG: Log full cart for debugging
-      $cartDebug = array(
-          'trans_no' => $faInvoiceNo,
-          'customer_id' => isset($cart->customer_id) ? (string)$cart->customer_id : 'unset',
-          'branch_code' => isset($cart->branch_code) ? (string)$cart->branch_code : 'unset',
-          'terms_indicator' => isset($cart->payment_terms['terms_indicator']) ? (int)$cart->payment_terms['terms_indicator'] : 'unset',
-          'cash_sale' => isset($cart->payment_terms['cash_sale']) ? (int)$cart->payment_terms['cash_sale'] : 'unset',
-      );
+$cartDebug = array(
+            'trans_no' => $faInvoiceNo,
+            'customer_id' => isset($cart->customer_id) ? (string)$cart->customer_id : 'unset',
+            'branch_code' => isset($cart->Branch) ? (string)$cart->Branch : (isset($cart->branch_code) ? (string)$cart->branch_code : 'unset'),
+            'terms_indicator' => isset($cart->payment_terms['terms_indicator']) ? (int)$cart->payment_terms['terms_indicator'] : 'unset',
+            'cash_sale' => isset($cart->payment_terms['cash_sale']) ? (int)$cart->payment_terms['cash_sale'] : 'unset',
+        );
       error_log('ksf_FA_Square: db_postwrite cart debug: ' . json_encode($cartDebug));
 
       try {
