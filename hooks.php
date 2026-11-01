@@ -441,37 +441,38 @@ class hooks_ksf_FA_Square extends hooks {
    *
    * For non-square_invoice destinations, returns null to let other modules handle.
    */
-  function db_prewrite(&$cart, $trans_type)
-  {
-      if ($trans_type !== ST_SALESINVOICE) {
-          return null;
-      }
+function db_prewrite(&$cart, $trans_type)
+    {
+        if ($trans_type !== ST_SALESINVOICE) {
+            return null;
+        }
 
-      if (!isset($cart->payment_terms['terms_indicator'])) {
-          return null;
-      }
+        if (!isset($cart->payment_terms['terms_indicator'])) {
+            return null;
+        }
 
-      // Check if this payment term is a square_invoice* destination
-      $destination = $this->resolvePaymentDestination((int)$cart->payment_terms['terms_indicator']);
-      if ($destination === null
-          || (strpos($destination, 'square_invoice') !== 0
-              && strpos($destination, 'square invoice') !== 0)) {
-          return null; // Not our destination — pass to next handler
-      }
+        // Check if this payment term is a square_invoice* destination
+        $destination = $this->resolvePaymentDestination((int)$cart->payment_terms['terms_indicator']);
+        if ($destination === null
+            || (strpos($destination, 'square_invoice') !== 0
+                && strpos($destination, 'square invoice') !== 0)) {
+            return null; // Not our destination — pass to next handler
+        }
 
-      // Suppress auto-payment — Square Invoice is the payment mechanism
-      $cart->payment_terms['cash_sale'] = 0;
+        // Suppress auto-payment — Square Invoice is the payment mechanism
+        $cart->payment_terms['cash_sale'] = 0;
 
-      // Store cart data for db_postwrite
-      self::$pendingSquareInvoice = [
-          'customer_id'  => (int)$cart->customer_id,
-          'line_items'   => $this->extractLineItems($cart),
-          'destination'  => $destination,
-          'terms_indicator' => (int)$cart->payment_terms['terms_indicator'],
-      ];
+        // Store cart data for db_postwrite (including branch_code for contacts)
+        self::$pendingSquareInvoice = [
+            'customer_id'    => (int)$cart->customer_id,
+            'branch_code'    => isset($cart->branch_code) ? (string)$cart->branch_code : '',
+            'line_items'     => $this->extractLineItems($cart),
+            'destination'    => $destination,
+            'terms_indicator' => (int)$cart->payment_terms['terms_indicator'],
+        ];
 
-      return true; // We handled this — stop other handlers
-  }
+        return true; // We handled this — stop other handlers
+    }
 
   /**
    * Post-write hook: create the Square Invoice after the FA invoice is committed.
@@ -504,67 +505,92 @@ class hooks_ksf_FA_Square extends hooks {
           return null;
       }
 
-      try {
-          $service = $this->buildSquareInvoiceService();
-          if ($service === null) {
-              error_log('ksf_FA_Square: SquareInvoiceService unavailable for invoice #' . $faInvoiceNo);
-              return null;
-          }
+try {
+            $service = $this->buildSquareInvoiceService();
+            if ($service === null) {
+                error_log('ksf_FA_Square: SquareInvoiceService unavailable for invoice #' . $faInvoiceNo);
+                return null;
+            }
 
-          $dueDate = date('Y-m-d', strtotime('+30 days'));
-          $deliveryMethod = $data['destination'] === 'square_invoice_email'
-              ? 'EMAIL'
-              : 'SHARE_MANUALLY';
+            $dueDate = date('Y-m-d', strtotime('+30 days'));
+            $deliveryMethod = $data['destination'] === 'square_invoice_email'
+                ? 'EMAIL'
+                : 'SHARE_MANUALLY';
 
-          $autoPaymentSource = $data['destination'] === 'square_invoice_card'
-              ? 'CARD_ON_FILE'
-              : null;
+            $autoPaymentSource = $data['destination'] === 'square_invoice_card'
+                ? 'CARD_ON_FILE'
+                : null;
 
-          // Create or update Square Invoice via Square Invoices API
-          $result = $service->createInvoiceFromFA(
-              $faInvoiceNo,
-              $data['customer_id'],
-              $data['line_items'],
-              $dueDate,
-              $deliveryMethod,
-              $autoPaymentSource
-          );
+            // Create or update Square Invoice via Square Invoices API
+            $result = $service->createInvoiceFromFA(
+                $faInvoiceNo,
+                $data['customer_id'],
+                $data['line_items'],
+                $dueDate,
+                $deliveryMethod,
+                $autoPaymentSource
+            );
 
-          // Log the activity
-          if (function_exists('display_notification')) {
-              $url = $result['public_url'] ?? '';
-              $created = !empty($result['created']);
-              if ($created) {
-                  $msg = _("Square Invoice created") . ': #' . $faInvoiceNo;
-                  // Explicitly create a CRM note for this Square Invoice
-                  // (#19, #21) — don't assume a listener is registered.
-                  $noteData = [
-                      'note'      => _("Square Invoice created for FA Sales Invoice #") . $faInvoiceNo . ' — Square Invoice: ' . ($result['public_url'] ?? ''),
-                      'subject'   => _("Square Invoice #") . $faInvoiceNo,
-                      'note_type' => 'square_invoice',
-                      'owner'     => (string) ($_SESSION['wa_current_user']->loginname ?? ''),
-                  ];
-                  $noteOpts = [
-                      'links' => [
-                          ['customer', (int)$data['customer_id'], 'square_invoice'],
-                      ],
-                  ];
-                  $noteResult = hook_invoke('ksf_FA_Notes', 'CREATE_NOTE', $noteData, $noteOpts);
-                  if ($noteResult === false) {
-                      error_log('ksf_FA_Square: CREATE_NOTE failed for Square Invoice #' . $faInvoiceNo . ': ' . ($noteData['error'] ?? 'unknown') . ', customer_id=' . ($data['customer_id'] ?? 'NOT_SET'));
-                  } else {
-                      $msg .= ' — CRM note created';
-                  }
-              } else {
-                  $msg = _("Square Invoice already exists") . ': #' . $faInvoiceNo;
-              }
-              if ($url) {
-                  $msg .= ' — <a href="' . htmlspecialchars($url) . '" target="_blank">' . _("View") . '</a>';
-              }
-              display_notification($msg);
-          }
+            // Build note links: debtor + branch contacts (type 'Invoice')
+            $noteLinks = [
+                ['customer', (int)$data['customer_id'], 'square_invoice'],
+            ];
+            if (!empty($data['branch_code'])) {
+                $branchContacts = $this->getBranchInvoiceContacts($data['branch_code']);
+                foreach ($branchContacts as $contactId) {
+                    $noteLinks[] = ['contact', (int)$contactId, 'invoice_contact'];
+                }
+            }
 
-          return $result;
+            // Log the activity
+            if (function_exists('display_notification')) {
+                $url = $result['public_url'] ?? '';
+                $created = !empty($result['created']);
+                if ($created) {
+                    $msg = _("Square Invoice created") . ': #' . $faInvoiceNo;
+                    // Explicitly create a CRM note for this Square Invoice
+                    $noteData = [
+                        'note'      => _("Square Invoice created for FA Sales Invoice #") . $faInvoiceNo . ' — Square Invoice: ' . ($result['public_url'] ?? ''),
+                        'subject'   => _("Square Invoice #") . $faInvoiceNo,
+                        'note_type' => 'square_invoice',
+                        'owner'     => (string) ($_SESSION['wa_current_user']->loginname ?? ''),
+                    ];
+                    $noteOpts = [
+                        'links' => $noteLinks,
+                    ];
+                    $noteResult = hook_invoke('ksf_FA_Notes', 'CREATE_NOTE', $noteData, $noteOpts);
+                    if ($noteResult === false) {
+                        error_log('ksf_FA_Square: CREATE_NOTE failed for Square Invoice #' . $faInvoiceNo . ': ' . ($noteData['error'] ?? 'unknown') . ', customer_id=' . ($data['customer_id'] ?? 'NOT_SET'));
+                    } else {
+                        $noteId = $noteResult['note_id'] ?? 0;
+                        $noteUrl = $noteId > 0
+                            ? 'modules/ksf_FA_Notes/pages/notes.php?view=form&edit_id=' . $noteId
+                            : '';
+                        if ($noteUrl) {
+                            $msg .= ' — <a href="' . htmlspecialchars($noteUrl) . '" target="_blank">' . _("CRM note created") . '</a>';
+                        } else {
+                            $msg .= ' — ' . _("CRM note created");
+                        }
+                    }
+                } else {
+                    $msg = _("Square Invoice already exists") . ': #' . $faInvoiceNo;
+                }
+                if ($url) {
+                    $msg .= ' — <a href="' . htmlspecialchars($url) . '" target="_blank">' . _("View Square Payment Link") . '</a>';
+                }
+                display_notification($msg);
+            }
+
+            // Redirect to standard FA sales invoice success page
+            $redirectUrl = 'sales/sales_order_entry.php?AddedDI=' . $faInvoiceNo . '&Type=0';
+            if (function_exists('meta_forward')) {
+                meta_forward($redirectUrl, 0);
+            } elseif (function_exists('header')) {
+                header('Location: ' . $redirectUrl);
+                exit;
+            }
+
+            return $result;
       } catch (\Throwable $e) {
           error_log('ksf_FA_Square: Square Invoice creation/update failed for #' . $faInvoiceNo . ': ' . $e->getMessage());
           if (function_exists('display_error')) {
@@ -783,11 +809,51 @@ class hooks_ksf_FA_Square extends hooks {
               $mapDao,
               $locationId
           );
-      } catch (\Throwable $e) {
-          error_log('ksf_FA_Square: SquareInvoiceService init failed: ' . $e->getMessage());
-          return null;
-      }
-  }
+} catch (\Throwable $e) {
+            error_log('ksf_FA_Square: SquareInvoiceService init failed: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Get branch contacts that should receive invoices.
+     *
+     * Returns contact IDs from crm_persons linked to the branch via crm_contacts
+     * where the contact type indicates they should receive invoices.
+     *
+     * @param string $branchCode FA branch code
+     * @return int[] Contact IDs (person_id from crm_persons)
+     */
+    private function getBranchInvoiceContacts(string $branchCode): array
+    {
+        if (!function_exists('db_query') || $branchCode === '') {
+            return [];
+        }
+
+        $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
+
+        // Find contacts for this branch where type = 'cust_branch'
+        // and the contact category/role indicates they should receive invoices.
+        // We look for contacts with role 'invoice' or category 'Invoice'.
+        // The crm_contacts table links person_id to entity_id (branch_code) with type 'cust_branch'.
+        $sql = "SELECT p.id FROM " . $tablePrefix . "crm_persons p
+                JOIN " . $tablePrefix . "crm_contacts c ON c.person_id = p.id
+                WHERE c.type = 'cust_branch'
+                  AND c.entity_id = " . db_escape($branchCode) . "
+                  AND (c.link_role = 'invoice' OR c.link_role = 'Invoice' OR c.action = 'Invoice')
+                ORDER BY p.id";
+
+        $result = db_query($sql);
+        $contacts = [];
+
+        if ($result) {
+            while ($row = db_fetch($result)) {
+                $contacts[] = (int)$row['id'];
+            }
+        }
+
+        return $contacts;
+    }
 }
 
 /**

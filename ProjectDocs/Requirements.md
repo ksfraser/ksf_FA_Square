@@ -178,6 +178,10 @@ FrontAccounting (FA) users need to sell products through Square POS terminals an
 | FR-SQ-007-011 | Idempotent: return existing mapping if already mapped | `SquareInvoiceService` | ✅ |
 | FR-SQ-007-012 | Display notification with payment URL after creation | `hooks.php` | ✅ |
 | FR-SQ-007-013 | Coordinate with FA_PaymentDestinations (non-Square terms) | Hook execution order | ✅ |
+| FR-SQ-007-014 | Associate debtor AND branch contacts (type "Invoice") to CRM note | `hooks.php` + `NotesLinkRepository` | ✅ Implemented |
+| FR-SQ-007-015 | Success message: "View" → "View Square Payment Link" | `hooks.php` | ✅ Implemented |
+| FR-SQ-007-016 | "CRM note created" as clickable link opening note in new tab | `hooks.php` | ✅ Implemented |
+| FR-SQ-007-017 | After Square Invoice creation, redirect to FA standard invoice success page | `hooks.php` | ✅ Implemented |
 
 ---
 
