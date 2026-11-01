@@ -538,7 +538,7 @@ $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
                 ? 'CARD_ON_FILE'
                 : null;
 
-            // Create or update Square Invoice via Square Invoices API
+// Create or update Square Invoice via Square Invoices API
             $result = $service->createInvoiceFromFA(
                 $faInvoiceNo,
                 $data['customer_id'],
@@ -548,29 +548,74 @@ $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
                 $autoPaymentSource
             );
 
+            // Extract short Square invoice ID from full ID (format: inv:0-xxxxxxxx)
+            $squareInvoiceId = $result['square_invoice_id'] ?? '';
+            $squareInvoiceShortId = $squareInvoiceId;
+            if (strpos($squareInvoiceId, 'inv:0-') === 0) {
+                $parts = explode('-', $squareInvoiceId);
+                $squareInvoiceShortId = end($parts); // Last part after last '-'
+            }
+
+            // Build note links: debtor + branch contacts (type 'Invoice') + FA invoice
+            $noteLinks = array(
+                array('customer', (string)$data['customer_id'], 'square_invoice'),
+                array('invoice', (string)$faInvoiceNo, 'source_invoice'),
+            );
+            if (!empty($data['branch_code'])) {
+                $branchContacts = $this->getBranchInvoiceContacts($data['branch_code']);
+                foreach ($branchContacts as $contactId) {
+                    $noteLinks[] = array('contact', (int)$contactId, 'invoice_contact');
+                }
+            }
+
+            // DEBUG: Log note links being created
+            error_log('ksf_FA_Square: Creating note with links: ' . json_encode($noteLinks));
+
             // DEBUG: Log Square API response
             error_log('ksf_FA_Square: Square API response: ' . json_encode(array(
                 'fa_invoice_no' => $faInvoiceNo,
                 'square_invoice_id' => $result['square_invoice_id'] ?? 'unset',
+                'square_invoice_short_id' => $squareInvoiceShortId,
                 'square_order_id' => $result['square_order_id'] ?? 'unset',
                 'public_url' => $result['public_url'] ?? 'unset',
                 'status' => $result['status'] ?? 'unset',
                 'created' => $result['created'] ?? 'unset',
             )));
 
-            // Build note links: debtor + branch contacts (type 'Invoice')
-            $noteLinks = [
-                ['customer', (string)$data['customer_id'], 'square_invoice'],
-            ];
-            if (!empty($data['branch_code'])) {
-                $branchContacts = $this->getBranchInvoiceContacts($data['branch_code']);
-                foreach ($branchContacts as $contactId) {
-                    $noteLinks[] = ['contact', (int)$contactId, 'invoice_contact'];
+            // DEBUG: Full cart object dump (for trans_no debugging)
+            $cartFullDebug = array();
+            if ($cart) {
+                foreach ($cart as $key => $val) {
+                    if (is_scalar($val) || is_null($val)) {
+                        $cartFullDebug[$key] = $val;
+                    } elseif (is_array($val)) {
+                        $cartFullDebug[$key] = count($val) . ' items';
+                    } else {
+                        $cartFullDebug[$key] = get_class($val);
+                    }
                 }
             }
+error_log('ksf_FA_Square: Full cart object debug: ' . json_encode($cartFullDebug));
 
-            // DEBUG: Log note links being created
-            error_log('ksf_FA_Square: Creating note with links: ' . json_encode($noteLinks));
+            // Build noteData with all debug info
+            $noteData = array(
+                'note'      => _("Square Invoice created for FA Sales Invoice #") . $faInvoiceNo . ' — Square Invoice: ' . ($result['public_url'] ?? '') . "\n\nDEBUG CART: " . json_encode($cartDebug, JSON_PRETTY_PRINT) . "\n\nDEBUG SQUARE RESPONSE: " . json_encode(array(
+                        'square_invoice_id' => $result['square_invoice_id'] ?? 'unset',
+                        'square_order_id' => $result['square_order_id'] ?? 'unset',
+                        'public_url' => $result['public_url'] ?? 'unset',
+                        'status' => $result['status'] ?? 'unset',
+                        'created' => $result['created'] ?? 'unset',
+                    ), JSON_PRETTY_PRINT) . "\n\nDEBUG SESSION: " . json_encode(array(
+                        'user' => $_SESSION['wa_current_user']->loginname ?? 'unset',
+                        'cart' => $cart ? 'set' : 'unset',
+                    ), JSON_PRETTY_PRINT),
+                'subject'   => _("FA Invoice #") . $faInvoiceNo . ' / ' . _("Square Invoice #") . $squareInvoiceShortId,
+                'note_type' => 'square_invoice',
+                'owner'     => (string) ($_SESSION['wa_current_user']->loginname ?? ''),
+            );
+            $noteOpts = array(
+                'links' => $noteLinks,
+            );
 
             // Log the activity
             if (function_exists('display_notification')) {
@@ -579,15 +624,24 @@ $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
                 if ($created) {
                     $msg = _("Square Invoice created") . ': #' . $faInvoiceNo;
                     // Explicitly create a CRM note for this Square Invoice
-                    $noteData = [
-                        'note'      => _("Square Invoice created for FA Sales Invoice #") . $faInvoiceNo . ' — Square Invoice: ' . ($result['public_url'] ?? ''),
-                        'subject'   => _("FA Invoice #") . $faInvoiceNo . ' / ' . _("Square Invoice #") . ($result['square_invoice_id'] ?? 'pending'),
+                    $noteData = array(
+                        'note'      => _("Square Invoice created for FA Sales Invoice #") . $faInvoiceNo . ' — Square Invoice: ' . ($result['public_url'] ?? '') . "\n\nDEBUG CART: " . json_encode($cartDebug, JSON_PRETTY_PRINT) . "\n\nDEBUG SQUARE RESPONSE: " . json_encode(array(
+                                'square_invoice_id' => $result['square_invoice_id'] ?? 'unset',
+                                'square_order_id' => $result['square_order_id'] ?? 'unset',
+                                'public_url' => $result['public_url'] ?? 'unset',
+                                'status' => $result['status'] ?? 'unset',
+                                'created' => $result['created'] ?? 'unset',
+                            ), JSON_PRETTY_PRINT) . "\n\nDEBUG SESSION: " . json_encode(array(
+                                'user' => $_SESSION['wa_current_user']->loginname ?? 'unset',
+                                'cart' => $cart ? 'set' : 'unset',
+                            ), JSON_PRETTY_PRINT),
+'subject'   => _("FA Invoice #") . $faInvoiceNo . ' / ' . _("Square Invoice #") . $squareInvoiceShortId,
                         'note_type' => 'square_invoice',
                         'owner'     => (string) ($_SESSION['wa_current_user']->loginname ?? ''),
-                    ];
-                    $noteOpts = [
+                    );
+                    $noteOpts = array(
                         'links' => $noteLinks,
-                    ];
+                    );
                     $noteResult = hook_invoke('ksf_FA_Notes', 'CREATE_NOTE', $noteData, $noteOpts);
                     if ($noteResult === false) {
                         error_log('ksf_FA_Square: CREATE_NOTE failed for Square Invoice #' . $faInvoiceNo . ': ' . ($noteData['error'] ?? 'unknown') . ', customer_id=' . ($data['customer_id'] ?? 'NOT_SET'));
