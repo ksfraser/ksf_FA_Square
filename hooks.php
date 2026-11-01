@@ -493,11 +493,18 @@ function db_prewrite(&$cart, $trans_type)
       $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
 
       // Get the invoice number from the cart
+      // Primary: cart->trans_no (set by write_sales_invoice before db_postwrite)
+      // Fallback: db_insert_id() since the invoice was just inserted
       $faInvoiceNo = 0;
       if (isset($cart->trans_no) && $cart->trans_no > 0) {
           $faInvoiceNo = (int)$cart->trans_no;
-      } elseif (isset($cart->order_no)) {
+      } elseif (isset($cart->order_no) && $cart->order_no > 0) {
           $faInvoiceNo = (int)$cart->order_no;
+      }
+
+      // Fallback: the invoice was just inserted, so db_insert_id() should have the correct ID
+      if ($faInvoiceNo <= 0) {
+          $faInvoiceNo = (int)db_insert_id();
       }
 
       if ($faInvoiceNo <= 0) {
@@ -533,7 +540,7 @@ try {
 
             // Build note links: debtor + branch contacts (type 'Invoice')
             $noteLinks = [
-                ['customer', (int)$data['customer_id'], 'square_invoice'],
+                ['customer', (string)$data['customer_id'], 'square_invoice'],
             ];
             if (!empty($data['branch_code'])) {
                 $branchContacts = $this->getBranchInvoiceContacts($data['branch_code']);
