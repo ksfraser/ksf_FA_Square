@@ -492,9 +492,7 @@ function db_prewrite(&$cart, $trans_type)
 
       $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
 
-      // Get the invoice number from the cart
-      // Primary: cart->trans_no (set by write_sales_invoice before db_postwrite)
-      // Fallback: db_insert_id() since the invoice was just inserted
+      // Get the invoice number from the cart (set by write_sales_invoice before db_postwrite fires)
       $faInvoiceNo = 0;
       if (isset($cart->trans_no) && $cart->trans_no > 0) {
           $faInvoiceNo = (int)$cart->trans_no;
@@ -502,13 +500,8 @@ function db_prewrite(&$cart, $trans_type)
           $faInvoiceNo = (int)$cart->order_no;
       }
 
-      // Fallback: the invoice was just inserted, so db_insert_id() should have the correct ID
       if ($faInvoiceNo <= 0) {
-          $faInvoiceNo = (int)db_insert_id();
-      }
-
-      if ($faInvoiceNo <= 0) {
-          error_log('ksf_FA_Square: db_postwrite could not determine invoice number');
+          error_log('ksf_FA_Square: db_postwrite could not determine invoice number (cart->trans_no=' . ($cart->trans_no ?? 'unset') . ')');
           return null;
       }
 
@@ -558,7 +551,7 @@ try {
                     // Explicitly create a CRM note for this Square Invoice
                     $noteData = [
                         'note'      => _("Square Invoice created for FA Sales Invoice #") . $faInvoiceNo . ' — Square Invoice: ' . ($result['public_url'] ?? ''),
-                        'subject'   => _("Square Invoice #") . $faInvoiceNo,
+                        'subject'   => _("FA Invoice #") . $faInvoiceNo . ' / ' . _("Square Invoice #") . ($result['square_invoice_id'] ?? 'pending'),
                         'note_type' => 'square_invoice',
                         'owner'     => (string) ($_SESSION['wa_current_user']->loginname ?? ''),
                     ];
