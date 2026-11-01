@@ -582,7 +582,8 @@ try {
             }
 
             // Redirect to standard FA sales invoice success page
-            $redirectUrl = 'sales/sales_order_entry.php?AddedDI=' . $faInvoiceNo . '&Type=0';
+            $path_to_root = defined('path_to_root') ? path_to_root : '../../..';
+            $redirectUrl = $path_to_root . '/sales/sales_order_entry.php?AddedDI=' . $faInvoiceNo . '&Type=0';
             if (function_exists('meta_forward')) {
                 meta_forward($redirectUrl, 0);
             } elseif (function_exists('header')) {
