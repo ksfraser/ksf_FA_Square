@@ -505,6 +505,13 @@ function db_prewrite(&$cart, $trans_type)
           return null;
       }
 
+      // Sanity check: db_insert_id() should match trans_no if no other INSERT ran
+      // This validates FA set trans_no correctly, but we don't use it as fallback
+      $lastInsertId = (int)db_insert_id();
+      if ($lastInsertId > 0 && $lastInsertId !== $faInvoiceNo) {
+          error_log('ksf_FA_Square: db_insert_id()=' . $lastInsertId . ' != cart->trans_no=' . $faInvoiceNo . ' - possible hook ordering issue');
+      }
+
 try {
             $service = $this->buildSquareInvoiceService();
             if ($service === null) {
