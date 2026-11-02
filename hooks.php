@@ -14,6 +14,23 @@ define ('SS_ksf_FA_Square', 108<<8);
 define('KSF_SQUARE_MODULE_NAME', 'ksf_FA_Square');
 define('KSF_SQUARE_CAPABILITIES', 'export,import,payments,config');
 
+// ComposerDependencies.php is a per-module copy of
+// ksf_FA_Common/src/Utils/ComposerDependencies.template.php with MODULENAME
+// replaced in the namespace. It is copied rather than autoloaded precisely
+// because it is what MAKES the autoloader: a PSR-4 autoloader cannot be used
+// to load the thing that installs the vendor tree. Requiring it first breaks
+// that chicken-and-egg loop, and the namespace-scoped guard inside it means
+// several modules can each carry their own copy without redeclaring anything.
+require_once __DIR__ . '/ComposerDependencies.php';
+
+\ksfraser\FrontAccounting\Square\Utils\ComposerDependencies::ensure(__DIR__);
+
+/**
+ * Constants defined by this module for inter-module communication
+ * These can be discovered by other modules using hook_invoke
+ */
+define('KSF_SQUARE_CAPABILITIES', 'export,import,payments,config');
+
 class hooks_ksf_FA_Square extends hooks {
 
 	function __construct() {
