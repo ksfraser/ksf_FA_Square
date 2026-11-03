@@ -25,12 +25,6 @@ require_once __DIR__ . '/ComposerDependencies.php';
 
 \ksfraser\FrontAccounting\Square\Utils\ComposerDependencies::ensure(__DIR__);
 
-/**
- * Constants defined by this module for inter-module communication
- * These can be discovered by other modules using hook_invoke
- */
-define('KSF_SQUARE_CAPABILITIES', 'export,import,payments,config');
-
 class hooks_ksf_FA_Square extends hooks {
 
 	function __construct() {
@@ -580,7 +574,7 @@ $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
 
             // Build note links: debtor + branch contacts (type 'Invoice') + FA invoice
             $noteLinks = array(
-                array('customer', (string)$data['customer_id'], 'square_invoice'),
+                array('customer', (string)$data['customer_id'], 'reference'),
                 array('invoice', (string)$faInvoiceNo, 'source_invoice'),
             );
             if (!empty($data['branch_code'])) {
