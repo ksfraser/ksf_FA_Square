@@ -564,12 +564,20 @@ $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
                 $autoPaymentSource
             );
 
-            // Extract short Square invoice ID from full ID (format: inv:0-xxxxxxxx)
+            // Extract short Square invoice ID from full ID (format: inv:0-xxxxxxxx-xxxxxxxx)
             $squareInvoiceId = $result['square_invoice_id'] ?? '';
             $squareInvoiceShortId = $squareInvoiceId;
             if (strpos($squareInvoiceId, 'inv:0-') === 0) {
-                $parts = explode('-', $squareInvoiceId);
-                $squareInvoiceShortId = end($parts); // Last part after last '-'
+                // Format: inv:0-{prefix}-{short_id} where prefix may contain dashes
+                // Extract the last segment after the final dash
+                $lastDash = strrpos($squareInvoiceId, '-');
+                if ($lastDash !== false && $lastDash < strlen($squareInvoiceId) - 1) {
+                    $candidate = substr($squareInvoiceId, $lastDash + 1);
+                    // Validate it looks like a short ID (alphanumeric + underscore, min 6 chars)
+                    if (preg_match('/^[A-Za-z0-9_]{6,}$/', $candidate)) {
+                        $squareInvoiceShortId = $candidate;
+                    }
+                }
             }
 
             // Build note links: debtor + branch contacts (type 'Invoice') + FA invoice
@@ -578,7 +586,7 @@ $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
                 array('invoice', (string)$faInvoiceNo, 'source_invoice'),
             );
             if (!empty($data['branch_code'])) {
-                $branchContacts = $this->getBranchInvoiceContacts($data['branch_code']);
+                $branchContacts = $this->getBranchInvoiceContacts($data['branch_code'], $data['customer_id']);
                 foreach ($branchContacts as $contactId) {
                     $noteLinks[] = array('contact', (int)$contactId, 'invoice_contact');
                 }
@@ -629,56 +637,35 @@ error_log('ksf_FA_Square: Full cart object debug: ' . json_encode($cartFullDebug
                 'note_type' => 'square_invoice',
                 'owner'     => (string) ($_SESSION['wa_current_user']->loginname ?? ''),
             );
+            // Create CRM note for this Square Invoice (async via hook)
+            $noteData = array(
+                'note'      => _("Square Invoice created for FA Sales Invoice #") . $faInvoiceNo . ' — Square Invoice: ' . ($result['public_url'] ?? ''),
+                'subject'   => _("FA Invoice #") . $faInvoiceNo . ' / ' . _("Square Invoice #") . $squareInvoiceShortId,
+                'note_type' => 'square_invoice',
+                'owner'     => (string) ($_SESSION['wa_current_user']->loginname ?? ''),
+            );
             $noteOpts = array(
                 'links' => $noteLinks,
             );
+            $noteResult = hook_invoke('ksf_FA_Notes', 'CREATE_NOTE', $noteData, $noteOpts);
+            if ($noteResult === false) {
+                error_log('ksf_FA_Square: CREATE_NOTE failed for Square Invoice #' . $faInvoiceNo . ': ' . ($noteData['error'] ?? 'unknown') . ', customer_id=' . ($data['customer_id'] ?? 'NOT_SET'));
+            } else {
+                $noteId = $noteResult['note_id'] ?? 0;
+                error_log('ksf_FA_Square: CRM note created (id=' . $noteId . ') for Square Invoice #' . $faInvoiceNo);
+            }
 
-            // Log the activity
-            if (function_exists('display_notification')) {
-                $url = $result['public_url'] ?? '';
-                $created = !empty($result['created']);
-                if ($created) {
-                    $msg = _("Square Invoice created") . ': #' . $faInvoiceNo;
-                    // Explicitly create a CRM note for this Square Invoice
-                    $noteData = array(
-                        'note'      => _("Square Invoice created for FA Sales Invoice #") . $faInvoiceNo . ' — Square Invoice: ' . ($result['public_url'] ?? '') . "\n\nDEBUG CART: " . json_encode($cartDebug, JSON_PRETTY_PRINT) . "\n\nDEBUG SQUARE RESPONSE: " . json_encode(array(
-                                'square_invoice_id' => $result['square_invoice_id'] ?? 'unset',
-                                'square_order_id' => $result['square_order_id'] ?? 'unset',
-                                'public_url' => $result['public_url'] ?? 'unset',
-                                'status' => $result['status'] ?? 'unset',
-                                'created' => $result['created'] ?? 'unset',
-                            ), JSON_PRETTY_PRINT) . "\n\nDEBUG SESSION: " . json_encode(array(
-                                'user' => $_SESSION['wa_current_user']->loginname ?? 'unset',
-                                'cart' => $cart ? 'set' : 'unset',
-                            ), JSON_PRETTY_PRINT),
-'subject'   => _("FA Invoice #") . $faInvoiceNo . ' / ' . _("Square Invoice #") . $squareInvoiceShortId,
-                        'note_type' => 'square_invoice',
-                        'owner'     => (string) ($_SESSION['wa_current_user']->loginname ?? ''),
-                    );
-                    $noteOpts = array(
-                        'links' => $noteLinks,
-                    );
-                    $noteResult = hook_invoke('ksf_FA_Notes', 'CREATE_NOTE', $noteData, $noteOpts);
-                    if ($noteResult === false) {
-                        error_log('ksf_FA_Square: CREATE_NOTE failed for Square Invoice #' . $faInvoiceNo . ': ' . ($noteData['error'] ?? 'unknown') . ', customer_id=' . ($data['customer_id'] ?? 'NOT_SET'));
-                    } else {
-                        $noteId = $noteResult['note_id'] ?? 0;
-                        $noteUrl = $noteId > 0
-                            ? 'modules/ksf_FA_Notes/pages/notes.php?view=form&edit_id=' . $noteId
-                            : '';
-                        if ($noteUrl) {
-                            $msg .= ' — <a href="' . htmlspecialchars($noteUrl) . '" target="_blank">' . _("CRM note created") . '</a>';
-                        } else {
-                            $msg .= ' — ' . _("CRM note created");
-                        }
-                    }
-                } else {
-                    $msg = _("Square Invoice already exists") . ': #' . $faInvoiceNo;
-                }
+            // Log the activity (no display_notification to avoid interfering with FA redirect)
+            $url = $result['public_url'] ?? '';
+            $created = !empty($result['created']);
+            if ($created) {
+                $msg = _("Square Invoice created") . ': #' . $faInvoiceNo;
                 if ($url) {
                     $msg .= ' — <a href="' . htmlspecialchars($url) . '" target="_blank">' . _("View Square Payment Link") . '</a>';
                 }
-                display_notification($msg);
+                error_log('ksf_FA_Square: ' . $msg);
+            } else {
+                error_log('ksf_FA_Square: Square Invoice already exists: #' . $faInvoiceNo);
             }
 
             // Return result to let FA continue its native flow (including redirect)
@@ -916,31 +903,32 @@ error_log('ksf_FA_Square: Full cart object debug: ' . json_encode($cartFullDebug
      * @param string $branchCode FA branch code
      * @return int[] Contact IDs (person_id from crm_persons)
      */
-    private function getBranchInvoiceContacts(string $branchCode): array
+    private function getBranchInvoiceContacts(string $branchCode, string $customerId): array
     {
-        if (!function_exists('db_query') || $branchCode === '') {
+        if (!function_exists('db_query') || $branchCode === '' || $customerId === '') {
             return [];
         }
 
         $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
 
         // Find contacts for this branch where type = 'cust_branch'
-        // and the contact category/role indicates they should receive invoices.
-        // We look for contacts with role 'invoice' or category 'Invoice'.
+        // and the contact action = 'Invoice' for the specific customer.
         // The crm_contacts table links person_id to entity_id (branch_code) with type 'cust_branch'.
-        $sql = "SELECT p.id FROM " . $tablePrefix . "crm_persons p
-                JOIN " . $tablePrefix . "crm_contacts c ON c.person_id = p.id
+        // We join crm_persons to filter by customer ref (debtor_no).
+        $sql = "SELECT c.id FROM " . $tablePrefix . "crm_contacts c
+                JOIN " . $tablePrefix . "crm_persons p ON p.id = c.person_id
                 WHERE c.type = 'cust_branch'
                   AND c.entity_id = " . db_escape($branchCode) . "
-                  AND (c.link_role = 'invoice' OR c.link_role = 'Invoice' OR c.action = 'Invoice')
-                ORDER BY p.id";
+                  AND c.action = 'Invoice'
+                  AND p.ref = " . db_escape($customerId) . "
+                ORDER BY c.id";
 
         $result = db_query($sql);
         $contacts = [];
 
         if ($result) {
             while ($row = db_fetch($result)) {
-                $contacts[] = (int)$row['id'];
+                $contacts[] = (int)$row[0]; // c.id
             }
         }
 
