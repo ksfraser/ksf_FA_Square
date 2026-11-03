@@ -503,31 +503,29 @@ function db_prewrite(&$cart, $trans_type)
 
 $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
 
-      // Get the invoice number from the cart/session
-      // FA stores the new trans_no in $_SESSION['items']->trans_no after write_sales_invoice
-      $faInvoiceNo = 0;
-      if (isset($_SESSION['items']->trans_no) && $_SESSION['items']->trans_no > 0) {
-          $faInvoiceNo = (int)$_SESSION['items']->trans_no;
-      } elseif (isset($cart->trans_no) && $cart->trans_no > 0) {
+      // Get the invoice number from the most reliable source
+      // db_insert_id() is the most reliable after write_sales_invoice INSERT
+      $faInvoiceNo = (int)db_insert_id();
+      
+      // Fallback: cart object might have been updated by write_sales_invoice
+      if ($faInvoiceNo <= 0 && isset($cart->trans_no) && $cart->trans_no > 0) {
           $faInvoiceNo = (int)$cart->trans_no;
-      } elseif (isset($cart->order_no) && $cart->order_no > 0) {
+      } elseif ($faInvoiceNo <= 0 && isset($cart->order_no) && $cart->order_no > 0) {
           $faInvoiceNo = (int)$cart->order_no;
+      } elseif ($faInvoiceNo <= 0 && isset($_SESSION['items']->trans_no) && $_SESSION['items']->trans_no > 0) {
+          $faInvoiceNo = (int)$_SESSION['items']->trans_no;
       }
 
       if ($faInvoiceNo <= 0) {
-          error_log('ksf_FA_Square: db_postwrite could not determine invoice number (session items trans_no=' . ($_SESSION['items']->trans_no ?? 'unset') . ', cart->trans_no=' . ($cart->trans_no ?? 'unset') . ')');
+          error_log('ksf_FA_Square: db_postwrite could not determine invoice number (db_insert_id=' . (int)db_insert_id() . ', cart->trans_no=' . ($cart->trans_no ?? 'unset') . ', cart->order_no=' . ($cart->order_no ?? 'unset') . ', session items trans_no=' . ($_SESSION['items']->trans_no ?? 'unset') . ')');
           return null;
       }
 
       // Sanity check: db_insert_id() should match trans_no if no other INSERT ran
-      // This validates FA set trans_no correctly, but we don't use it as fallback
       $lastInsertId = (int)db_insert_id();
       if ($lastInsertId > 0 && $lastInsertId !== $faInvoiceNo) {
-          error_log('ksf_FA_Square: db_insert_id()=' . $lastInsertId . ' != cart->trans_no=' . $faInvoiceNo . ' - possible hook ordering issue');
+          error_log('ksf_FA_Square: db_insert_id()=' . $lastInsertId . ' != resolved faInvoiceNo=' . $faInvoiceNo . ' - possible hook ordering issue');
       }
-
-      // DEBUG: Log full cart for debugging
-// DEBUG: Log full cart for debugging
       $cartDebug = array(
           'trans_no' => $faInvoiceNo,
           'session_items_trans_no' => isset($_SESSION['items']->trans_no) ? (int)$_SESSION['items']->trans_no : 'unset',
