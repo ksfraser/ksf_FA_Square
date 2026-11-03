@@ -503,28 +503,50 @@ function db_prewrite(&$cart, $trans_type)
 
 $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
 
-      // Get the invoice number from the most reliable source
-      // db_insert_id() is the most reliable after write_sales_invoice INSERT
-      $faInvoiceNo = (int)db_insert_id();
+      // Get the invoice number - prioritize sources that can't be affected by other hooks
+      $faInvoiceNo = 0;
       
-      // Fallback: cart object might have been updated by write_sales_invoice
-      if ($faInvoiceNo <= 0 && isset($cart->trans_no) && $cart->trans_no > 0) {
+      // 1. Best: cart->trans_no is set by write_sales_invoice before postwrite hooks fire
+      if (isset($cart->trans_no) && $cart->trans_no > 0) {
           $faInvoiceNo = (int)$cart->trans_no;
-      } elseif ($faInvoiceNo <= 0 && isset($cart->order_no) && $cart->order_no > 0) {
-          $faInvoiceNo = (int)$cart->order_no;
-      } elseif ($faInvoiceNo <= 0 && isset($_SESSION['items']->trans_no) && $_SESSION['items']->trans_no > 0) {
+      }
+      // 2. Session items trans_no (FA sets this after write_sales_invoice)
+      elseif (isset($_SESSION['items']->trans_no) && $_SESSION['items']->trans_no > 0) {
           $faInvoiceNo = (int)$_SESSION['items']->trans_no;
+      }
+      // 3. Order number (for orders converted to invoices)
+      elseif (isset($cart->order_no) && $cart->order_no > 0) {
+          $faInvoiceNo = (int)$cart->order_no;
+      }
+      // 3. db_insert_id() - only as fallback (other hooks may have run INSERTs)
+      elseif (($lastInsertId = (int)db_insert_id()) > 0) {
+          $faInvoiceNo = $lastInsertId;
+      }
+      
+      // Last resort: query debtor_trans for most recent invoice for this customer
+      if ($faInvoiceNo <= 0 && isset($data['customer_id']) && $data['customer_id'] > 0) {
+          $today = date('Y-m-d');
+          $sql = "SELECT trans_no FROM " . TB_PREF . "debtor_trans 
+                  WHERE debtor_no = " . db_escape($data['customer_id']) . "
+                    AND type = " . ST_SALESINVOICE . "
+                    AND tran_date = " . db_escape($today) . "
+                  ORDER BY trans_no DESC LIMIT 1";
+          $result = db_query($sql);
+          if ($result && ($row = db_fetch($result))) {
+              $faInvoiceNo = (int)$row['trans_no'];
+              error_log('ksf_FA_Square: Resolved invoice number via customer+date query: ' . $faInvoiceNo);
+          }
       }
 
       if ($faInvoiceNo <= 0) {
-          error_log('ksf_FA_Square: db_postwrite could not determine invoice number (db_insert_id=' . (int)db_insert_id() . ', cart->trans_no=' . ($cart->trans_no ?? 'unset') . ', cart->order_no=' . ($cart->order_no ?? 'unset') . ', session items trans_no=' . ($_SESSION['items']->trans_no ?? 'unset') . ')');
+          error_log('ksf_FA_Square: db_postwrite could not determine invoice number (cart->trans_no=' . ($cart->trans_no ?? 'unset') . ', session items trans_no=' . ($_SESSION['items']->trans_no ?? 'unset') . ', cart->order_no=' . ($cart->order_no ?? 'unset') . ', db_insert_id=' . (int)db_insert_id() . ')');
           return null;
       }
 
-      // Sanity check: db_insert_id() should match trans_no if no other INSERT ran
+      // Sanity check: if db_insert_id differs from our resolved number, log it
       $lastInsertId = (int)db_insert_id();
       if ($lastInsertId > 0 && $lastInsertId !== $faInvoiceNo) {
-          error_log('ksf_FA_Square: db_insert_id()=' . $lastInsertId . ' != resolved faInvoiceNo=' . $faInvoiceNo . ' - possible hook ordering issue');
+          error_log('ksf_FA_Square: db_insert_id()=' . $lastInsertId . ' != resolved faInvoiceNo=' . $faInvoiceNo . ' - other hooks ran INSERTs between invoice write and postwrite');
       }
       $cartDebug = array(
           'trans_no' => $faInvoiceNo,
@@ -907,26 +929,20 @@ error_log('ksf_FA_Square: Full cart object debug: ' . json_encode($cartFullDebug
             return [];
         }
 
-        $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
+        if (!function_exists('get_crm_persons')) {
+            require_once($GLOBALS['path_to_root'] . '/includes/db/crm_contacts_db.inc');
+        }
 
-        // Find contacts for this branch where type = 'cust_branch'
-        // and the contact action = 'Invoice' for the specific customer.
-        // The crm_contacts table links person_id to entity_id (branch_code) with type 'cust_branch'.
-        // We join crm_persons to filter by customer ref (debtor_no).
-        $sql = "SELECT c.id FROM " . $tablePrefix . "crm_contacts c
-                JOIN " . $tablePrefix . "crm_persons p ON p.id = c.person_id
-                WHERE c.type = 'cust_branch'
-                  AND c.entity_id = " . db_escape($branchCode) . "
-                  AND c.action = 'Invoice'
-                  AND p.ref = " . db_escape($customerId) . "
-                ORDER BY c.id";
-
-        $result = db_query($sql);
+        // Use native FA function to get contacts for this branch with action 'Invoice'
+        $result = get_crm_persons('customer', 'Invoice', $branchCode);
+        
         $contacts = [];
-
         if ($result) {
-            while ($row = db_fetch($result)) {
-                $contacts[] = (int)$row[0]; // c.id
+            while ($row = db_fetch_assoc($result)) {
+                // Filter by customer (person ref = debtor_no)
+                if ((string)$row['ref'] === $customerId) {
+                    $contacts[] = (int)$row['contact_id'];
+                }
             }
         }
 
