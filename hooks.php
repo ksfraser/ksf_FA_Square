@@ -1,6 +1,6 @@
 <?php
 /**
- * KSF FrontAccounting Module Hooks — Square Integration
+ * KSF FrontAccounting Module Hooks -- Square Integration
  *
  * Hooks for Square POS integration: payment destinations, invoice creation,
  * CRM note creation, item sync, and webhook handling.
@@ -16,7 +16,7 @@ define('SS_ksf_FA_Square', 108 << 8);
 define('KSF_SQUARE_MODULE_NAME', 'ksf_FA_Square');
 define('KSF_SQUARE_CAPABILITIES', 'export,import,payments,config');
 
-// ComposerDependencies bootstrap — per-module copy of template
+// ComposerDependencies bootstrap -- per-module copy of template
 require_once __DIR__ . '/ComposerDependencies.php';
 
 \ksfraser\FrontAccounting\Square\Utils\ComposerDependencies::ensure(__DIR__);
@@ -44,6 +44,30 @@ class hooks_ksf_FA_Square extends hooks {
 
     function __construct() {
         $this->module_name = 'ksf_FA_Square';
+    }
+
+    /**
+     * Write a debug log entry to company log file.
+     */
+    private function sqLog($level, $message, array $context = []) {
+        if (function_exists("ksf_log")) {
+            ksf_log("square", $level, $message, $context);
+        }
+        // Also write directly to square log file as fallback
+        $logDir = company_path() . "/logs";
+        if (!is_dir($logDir)) {
+            @mkdir($logDir, 0775, true);
+        }
+        $file = $logDir . "/square_" . date("Y-m-d") . ".log";
+        $entry = [
+            "ts" => date("Y-m-d H:i:s.u"),
+            "level" => strtoupper($level),
+            "msg" => $message,
+            "ctx" => $context,
+            "pid" => getmypid(),
+        ];
+        @file_put_contents($logDir . "/square_" . date("Y-m-d") . ".log", json_encode($entry) . "
+", FILE_APPEND | LOCK_EX);
     }
 
     // =========================================================================
@@ -117,7 +141,7 @@ class hooks_ksf_FA_Square extends hooks {
     }
 
     // =========================================================================
-    // PREWRITE HOOK — detect Square payment destination, suppress auto-payment
+    // PREWRITE HOOK -- detect Square payment destination, suppress auto-payment
     // =========================================================================
 
     function db_prewrite(&$cart, $trans_type) {
@@ -143,27 +167,40 @@ class hooks_ksf_FA_Square extends hooks {
     }
 
     // =========================================================================
-    // POSTWRITE HOOK — create Square Invoice after FA invoice committed
+    // POSTWRITE HOOK -- create Square Invoice after FA invoice committed
     // =========================================================================
 
     function db_postwrite(&$cart, $trans_type) {
-        if ($trans_type !== ST_SALESINVOICE || empty(self::$pendingSquareInvoice)) return null;
+        $this->sqLog("info", "db_postwrite called", ["trans_type" => $trans_type, "pending_empty" => empty(self::$pendingSquareInvoice)]);
+        if ($trans_type !== ST_SALESINVOICE || empty(self::$pendingSquareInvoice)) {
+            $this->sqLog("warning", "db_postwrite early return", ["trans_type" => $trans_type, "pending_empty" => empty(self::$pendingSquareInvoice)]);
+            return null;
+        }
 
         $data = self::$pendingSquareInvoice;
         self::$pendingSquareInvoice = [];
 
         // Resolve FA invoice number
         $faInvoiceNo = $this->resolveInvoiceNumber($cart, $data);
-        if ($faInvoiceNo <= 0) return null;
+        $this->sqLog("info", "Resolved invoice number", ["faInvoiceNo" => $faInvoiceNo]);
+        if ($faInvoiceNo <= 0) {
+            $this->sqLog("warning", "Could not resolve invoice number", ["faInvoiceNo" => $faInvoiceNo]);
+            return null;
+        }
 
         try {
             $service = $this->buildSquareInvoiceService();
-            if ($service === null) return null;
+            $this->sqLog("info", "Built SquareInvoiceService", ["service" => $service ? "ok" : "null"]);
+            if ($service === null) {
+                $this->sqLog("warning", "SquareInvoiceService is null");
+                return null;
+            }
 
             $dueDate = date('Y-m-d', strtotime('+30 days'));
             $deliveryMethod = $data['destination'] === 'square_invoice_email' ? 'EMAIL' : 'SHARE_MANUALLY';
             $autoPaymentSource = $data['destination'] === 'square_invoice_card' ? 'CARD_ON_FILE' : null;
 
+            $this->sqLog("info", "Calling createInvoiceFromFA", ["faInvoiceNo" => $faInvoiceNo]);
             $result = $service->createInvoiceFromFA(
                 $faInvoiceNo,
                 $data['customer_id'],
@@ -174,10 +211,13 @@ class hooks_ksf_FA_Square extends hooks {
             );
 
             $squareInvoiceId = $result['square_invoice_id'] ?? '';
+            $this->sqLog("info", "Square API response", ["result" => $result]);
             $squareInvoiceShortId = SquareNoteService::extractShortSquareId($squareInvoiceId);
 
+            $this->sqLog("info", "Creating CRM note via SquareNoteService");
             // Create CRM note via SquareNoteService
             $noteService = new SquareNoteService();
+            $this->sqLog("info", "Calling SquareNoteService::createSquareInvoiceNote");
             $noteService->createSquareInvoiceNote(
                 $faInvoiceNo,
                 $squareInvoiceShortId,
@@ -187,21 +227,22 @@ class hooks_ksf_FA_Square extends hooks {
                 $data,
                 ['loginname' => $_SESSION['wa_current_user']->loginname ?? '']
             );
+            $this->sqLog("info", "SquareNoteService::createSquareInvoiceNote completed");
 
             // Log activity (no display_notification to avoid redirect interference)
             $url = $result['public_url'] ?? '';
             if (!empty($result['created'])) {
                 $msg = _("Square Invoice created") . ': #' . $faInvoiceNo;
-                if ($url) $msg .= ' — <a href="' . htmlspecialchars($url) . '" target="_blank">' . _("View Square Payment Link") . '</a>';
-                error_log('ksf_FA_Square: ' . $msg);
+                if ($url) $msg .= ' -- <a href="' . htmlspecialchars($url) . '" target="_blank">' . _("View Square Payment Link") . '</a>';
+                $this->sqLog('info', $msg);
             } else {
-                error_log('ksf_FA_Square: Square Invoice already exists: #' . $faInvoiceNo);
+                $this->sqLog('info', 'Square Invoice already exists: #', ['faInvoiceNo' => $faInvoiceNo]);
             }
 
             return $result;
 
         } catch (\Throwable $e) {
-            error_log('ksf_FA_Square: Square Invoice creation/update failed for #' . $faInvoiceNo . ': ' . $e->getMessage());
+            $this->sqLog('error', 'Square Invoice creation/update failed', ['faInvoiceNo' => $faInvoiceNo, 'error' => $e->getMessage()]);
             if (function_exists('display_error')) display_error(_("Square Invoice creation/update failed") . ': ' . $e->getMessage());
             return null;
         }
@@ -241,17 +282,17 @@ private function resolveInvoiceNumber($cart, $data): int {
             $result = db_query($sql);
             if ($result && ($row = db_fetch($result))) {
                 $faInvoiceNo = (int)$row['trans_no'];
-                error_log('ksf_FA_Square: Resolved invoice number via customer+date query: ' . $faInvoiceNo);
+                $this->sqLog('info', 'Resolved invoice number via customer+date query', ['faInvoiceNo' => $faInvoiceNo]);
             }
         }
 
         if ($faInvoiceNo <= 0) {
-            error_log('ksf_FA_Square: Could not resolve invoice number (cart->trans_no=' . ($cart->trans_no ?? 'unset') . ', session items trans_no=' . ($_SESSION['items']->trans_no ?? 'unset') . ', db_insert_id=' . (int)db_insert_id() . ')');
+            $this->sqLog('warning', 'Could not resolve invoice number', ['cart_trans_no' => $cart->trans_no ?? 'unset', 'session_trans_no' => $_SESSION['items']->trans_no ?? 'unset', 'db_insert_id' => (int)db_insert_id()]);
         }
 
         $lastInsertId = (int)db_insert_id();
         if ($lastInsertId > 0 && $lastInsertId !== $faInvoiceNo) {
-            error_log('ksf_FA_Square: db_insert_id=' . $lastInsertId . ' != resolved=' . $faInvoiceNo . ' - other hooks ran INSERTs between invoice write and postwrite');
+            $this->sqLog('warning', 'db_insert_id mismatch', ['db_insert_id' => $lastInsertId, 'resolved' => $faInvoiceNo]);
         }
 
         return $faInvoiceNo;
@@ -264,12 +305,25 @@ private function resolveInvoiceNumber($cart, $data): int {
         if (!function_exists('db_query')) return null;
 
         $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
+        
+        // First check the ksf_payment_destinations table
         $sql = "SELECT destination FROM " . $tablePrefix . "ksf_payment_destinations
                 WHERE terms_indicator = " . (int)$termsIndicator . " LIMIT 1";
         $result = db_query($sql);
         if ($result && ($row = db_fetch($result))) {
             $dest = trim((string)$row['destination']);
             if ($dest !== '') return $dest;
+        }
+
+        // Fallback: check payment term name for square_invoice pattern
+        $sql = "SELECT terms FROM " . $tablePrefix . "payment_terms
+                WHERE terms_indicator = " . (int)$termsIndicator . " LIMIT 1";
+        $result = db_query($sql);
+        if ($result && ($row = db_fetch($result))) {
+            $termName = strtolower(trim((string)$row['terms']));
+            if (strpos($termName, 'square_invoice') === 0 || strpos($termName, 'square invoice') === 0) {
+                return 'square_invoice';
+            }
         }
         return null;
     }
@@ -309,16 +363,18 @@ private function resolveInvoiceNumber($cart, $data): int {
     private function buildSquareInvoiceService(): ?SquareInvoiceService {
         if (!function_exists('db_query')) return null;
 
-        $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
-
-        // Get credentials from square_settings
-        $sql = "SELECT access_token, location_id, environment FROM " . $tablePrefix . "square_settings LIMIT 1";
+        // The 0_square table already includes the company prefix in its name
+        // so we query it directly without TB_PREF prefix
+        $sql = "SELECT name, value FROM 0_square WHERE name IN ('access_token', 'sandbox_access_token', 'environment', 'location_id')";
         $result = db_query($sql);
-        if (!$result || !($row = db_fetch($result))) return null;
+        $config = [];
+        while ($row = db_fetch($result)) {
+            $config[$row['name']] = $row['value'];
+        }
 
-        $accessToken = trim((string)$row['access_token']);
-        $locationId = trim((string)$row['location_id']);
-        $environment = trim((string)$row['environment']) ?: 'sandbox';
+        $accessToken = trim((string)($config['access_token'] ?? $config['sandbox_access_token'] ?? ''));
+        $locationId = trim((string)($config['location_id'] ?? ''));
+        $environment = trim((string)($config['environment'] ?? 'sandbox'));
 
         if ($accessToken === '' || $locationId === '') return null;
 
@@ -332,7 +388,7 @@ private function resolveInvoiceNumber($cart, $data): int {
             return new SquareInvoiceService($client, $mapDao, $locationId);
 
         } catch (\Throwable $e) {
-            error_log('ksf_FA_Square: Failed to build SquareInvoiceService: ' . $e->getMessage());
+            $this->sqLog('error', 'Failed to build SquareInvoiceService', ['error' => $e->getMessage()]);
             return null;
         }
     }
