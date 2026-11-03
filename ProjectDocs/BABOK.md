@@ -467,6 +467,9 @@ See `AGENTS_MODULE_COMMUNICATION_ADDENDUM.md` for the complete pattern that can 
 | FR-SQ-007-007-008 | BR-SQ-004 | Payment matching | DAO stores bidirectional mappings |
 | FR-SQ-007-009 | BR-SQ-005 | Multiple delivery channels | Configurable delivery method per term |
 | FR-SQ-007-010 | BR-SQ-001 | Recurring payments | Card-on-file automatic charging |
+| FR-SQ-007-011 | BR-SQ-006 | CRM note creation for Square Invoice | `SquareNoteService` creates note with customer/invoice/contact links |
+| FR-SQ-007-012 | BR-SQ-006 | Native FA contact resolution | `get_crm_persons()` filters by customer ref + action='Invoice' |
+| FR-SQ-007-013 | BR-SQ-007 | FA redirect after Square Invoice | `hooks.php` returns $result (no display_notification) |
 
 ### Stakeholder Analysis
 

@@ -88,6 +88,11 @@
 | **FR-09.12** | Display notification with payment URL | UC-09 | `hooks.php::db_postwrite()` | UAT-SQ-001 |
 | **FR-09.13** | resolvePaymentDestination checks both tables | UC-09 | `hooks.php::resolvePaymentDestination()` | UAT-SQ-005 |
 | **FR-09.14** | Payment term mapping via FA_PaymentDestinations | UC-11 | FA_PaymentDestinations module | UAT-SQ-006 |
+| **FR-09.15** | CRM note creation with customer/invoice/contact links | UC-09 | `src/Services/SquareNoteService::createSquareInvoiceNote()` | UAT-SQ-007 |
+| **FR-09.16** | Native FA contact resolution via get_crm_persons() | UC-09 | `SquareNoteService::getBranchInvoiceContacts()` | UAT-SQ-007 |
+| **FR-09.17** | FA redirect after Square Invoice (no display_notification) | UC-09 | `hooks.php::db_postwrite()` returns $result | UAT-SQ-007 |
+| **FR-09.18** | Short Square Invoice ID extraction (multi-dash) | UC-09 | `SquareNoteService::extractShortSquareId()` | UAT-SQ-007 |
+| **FR-09.19** | Branch Invoice contacts via native get_crm_persons() | UC-09 | `SquareNoteService::getBranchInvoiceContacts()` | UAT-SQ-007 |
 | **NFR-01** | PHP 7.3/7.4 compatibility | All | composer.json | PHP unit |
 | **NFR-02** | FA 2.4.x integration | All | hooks.php | Manual |
 | **NFR-03** | Square SDK ^40.0.0 | All | composer.json | CI |

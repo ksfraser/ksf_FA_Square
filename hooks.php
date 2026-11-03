@@ -214,23 +214,26 @@ class hooks_ksf_FA_Square extends hooks {
     /**
      * Resolve FA invoice number from cart/session/db.
      */
-    private function resolveInvoiceNumber($cart, $data): int {
+private function resolveInvoiceNumber($cart, $data): int {
         $faInvoiceNo = 0;
 
+        // Priority 1: cart->trans_no set by write_sales_invoice before postwrite hooks fire
         if (isset($cart->trans_no) && $cart->trans_no > 0) {
             $faInvoiceNo = (int)$cart->trans_no;
-        } elseif (isset($_SESSION['items']->trans_no) && $_SESSION['items']->trans_no > 0) {
+        }
+        // Priority 2: session items trans_no (FA sets this after write_sales_invoice)
+        elseif (isset($_SESSION['items']->trans_no) && $_SESSION['items']->trans_no > 0) {
             $faInvoiceNo = (int)$_SESSION['items']->trans_no;
-        } elseif (isset($cart->order_no) && $cart->order_no > 0) {
-            $faInvoiceNo = (int)$cart->order_no;
-        } elseif (($lastInsertId = (int)db_insert_id()) > 0) {
+        }
+        // Priority 3: db_insert_id() - only as fallback (other hooks may have run INSERTs)
+        elseif (($lastInsertId = (int)db_insert_id()) > 0) {
             $faInvoiceNo = $lastInsertId;
         }
 
         // Last resort: query debtor_trans for most recent invoice for this customer
         if ($faInvoiceNo <= 0 && isset($data['customer_id']) && $data['customer_id'] > 0) {
             $today = date('Y-m-d');
-            $sql = "SELECT trans_no FROM " . TB_PREF . "debtor_trans 
+            $sql = "SELECT trans_no FROM " . TB_PREF . "debtor_trans
                     WHERE debtor_no = " . db_escape($data['customer_id']) . "
                       AND type = " . ST_SALESINVOICE . "
                       AND tran_date = " . db_escape(date('Y-m-d')) . "
@@ -243,12 +246,12 @@ class hooks_ksf_FA_Square extends hooks {
         }
 
         if ($faInvoiceNo <= 0) {
-            error_log('ksf_FA_Square: Could not resolve invoice number');
+            error_log('ksf_FA_Square: Could not resolve invoice number (cart->trans_no=' . ($cart->trans_no ?? 'unset') . ', session items trans_no=' . ($_SESSION['items']->trans_no ?? 'unset') . ', db_insert_id=' . (int)db_insert_id() . ')');
         }
 
         $lastInsertId = (int)db_insert_id();
         if ($lastInsertId > 0 && $lastInsertId !== $faInvoiceNo) {
-            error_log('ksf_FA_Square: db_insert_id=' . $lastInsertId . ' != resolved=' . $faInvoiceNo);
+            error_log('ksf_FA_Square: db_insert_id=' . $lastInsertId . ' != resolved=' . $faInvoiceNo . ' - other hooks ran INSERTs between invoice write and postwrite');
         }
 
         return $faInvoiceNo;
