@@ -1,24 +1,12 @@
 <?php
 /**
  * KSF FrontAccounting Module Hooks -- Square Integration
- *
- * Hooks for Square POS integration: payment destinations, invoice creation,
- * CRM note creation, item sync, and webhook handling.
- *
- * @package ksf_FA_Square
- * @version 2.4.4
  */
 define('SS_ksf_FA_Square', 108 << 8);
-
-/**
- * Constants for inter-module communication
- */
 define('KSF_SQUARE_MODULE_NAME', 'ksf_FA_Square');
 define('KSF_SQUARE_CAPABILITIES', 'export,import,payments,config');
 
-// ComposerDependencies bootstrap -- per-module copy of template
 require_once __DIR__ . '/ComposerDependencies.php';
-
 \ksfraser\FrontAccounting\Square\Utils\ComposerDependencies::ensure(__DIR__);
 
 $autoload_path = __DIR__ . '/vendor/autoload.php';
@@ -37,28 +25,18 @@ class hooks_ksf_FA_Square extends hooks {
     var $module_name = 'ksf_FA_Square';
     var $version = '2.4.4';
 
-    /**
-     * Temporary storage for cart data between prewrite and postwrite
-     */
-    private static $pendingSquareInvoice = [];
-
     function __construct() {
         $this->module_name = 'ksf_FA_Square';
     }
 
-    /**
-     * Write a debug log entry to company log file.
-     */
     private function sqLog($level, $message, array $context = []) {
         if (function_exists("ksf_log")) {
             ksf_log("square", $level, $message, $context);
         }
-        // Also write directly to square log file as fallback
         $logDir = "/var/www/html/company/0/logs";
         if (!is_dir($logDir)) {
             @mkdir($logDir, 0775, true);
         }
-        $file = $logDir . "/square_" . date("Y-m-d") . ".log";
         $entry = [
             "ts" => date("Y-m-d H:i:s.u"),
             "level" => strtoupper($level),
@@ -66,13 +44,8 @@ class hooks_ksf_FA_Square extends hooks {
             "ctx" => $context,
             "pid" => getmypid(),
         ];
-        @file_put_contents($logDir . "/square_" . date("Y-m-d") . ".log", json_encode($entry) . "
-", FILE_APPEND | LOCK_EX);
+        @file_put_contents($logDir . "/square_" . date("Y-m-d") . ".log", json_encode($entry) . "\n", FILE_APPEND | LOCK_EX);
     }
-
-    // =========================================================================
-    // INTER-MODULE COMMUNICATION
-    // =========================================================================
 
     public function getModuleConstants(&$data, $opts = null) {
         $data['constants'] = [
@@ -109,10 +82,6 @@ class hooks_ksf_FA_Square extends hooks {
         }
     }
 
-    // =========================================================================
-    // FA CORE HOOKS
-    // =========================================================================
-
     function install_tabs($app) { }
     function install_options($app) { }
 
@@ -145,7 +114,7 @@ class hooks_ksf_FA_Square extends hooks {
     // =========================================================================
 
     function db_prewrite(&$cart, $trans_type) {
-        $this->sqLog("info", "db_prewrite called", ["trans_type" => $trans_type]);
+        $this->sqLog("info", "db_prewrite called", ["trans_type" => $trans_type, "terms_indicator" => $cart->payment_terms['terms_indicator'] ?? 'not set', "session_id" => session_id()]);
         if ($trans_type !== ST_SALESINVOICE) {
             $this->sqLog("debug", "db_prewrite early return: trans_type mismatch");
             return null;
@@ -163,25 +132,7 @@ class hooks_ksf_FA_Square extends hooks {
         }
 
         $cart->payment_terms['cash_sale'] = 0; // Suppress auto-payment
-
-        $pendingData = [
-            'customer_id'      => (int)$cart->customer_id,
-            'branch_code'      => isset($cart->Branch) ? (string)$cart->Branch : (isset($cart->branch_code) ? (string)$cart->branch_code : ''),
-            'line_items'       => $this->extractLineItems($cart),
-            'destination'      => $destination,
-            'terms_indicator'  => (int)$cart->payment_terms['terms_indicator'],
-        ];
-
-        // Store in session to persist across HTTP requests
-        if (!isset($_SESSION['ksf_FA_Square'])) {
-            $_SESSION['ksf_FA_Square'] = [];
-        }
-        $_SESSION['ksf_FA_Square']['pendingSquareInvoice'] = $pendingData;
-
-        // Also keep static for backward compatibility within same request
-        self::$pendingSquareInvoice = $pendingData;
-
-        $this->sqLog("info", "db_prewrite set pendingSquareInvoice", ["customer_id" => $pendingData['customer_id']]);
+        $this->sqLog("info", "db_prewrite Set payment_terms cash_sale to 0", ["destination" => $destination]);
         return true;
     }
 
@@ -190,29 +141,27 @@ class hooks_ksf_FA_Square extends hooks {
     // =========================================================================
 
     function db_postwrite(&$cart, $trans_type) {
-        $this->sqLog("info", "db_postwrite called", ["trans_type" => $trans_type, "pending_empty" => empty(self::$pendingSquareInvoice)]);
+        $this->sqLog("info", "db_postwrite called", ["trans_type" => $trans_type, "session_id" => session_id()]);
         
-        // Try to get pending data from session first (persists across requests)
-        $pendingData = null;
-        if (isset($_SESSION['ksf_FA_Square']['pendingSquareInvoice'])) {
-            $pendingData = $_SESSION['ksf_FA_Square']['pendingSquareInvoice'];
-            // Clear it after reading to avoid reuse
-            unset($_SESSION['ksf_FA_Square']['pendingSquareInvoice']);
-        } elseif (!empty(self::$pendingSquareInvoice)) {
-            $pendingData = self::$pendingSquareInvoice;
-            self::$pendingSquareInvoice = [];
-        }
-        
-        $this->sqLog("info", "db_postwrite retrieved pending data", ["has_data" => $pendingData !== null]);
-        if ($trans_type !== ST_SALESINVOICE || $pendingData === null) {
-            $this->sqLog("warning", "db_postwrite early return", ["trans_type" => $trans_type, "pending_empty" => $pendingData === null]);
+        if ($trans_type !== ST_SALESINVOICE) {
+            $this->sqLog("debug", "db_postwrite early return: trans_type mismatch");
             return null;
         }
         
-        $data = $pendingData;
+        // Check if this is a Square Invoice payment
+        if (!isset($cart->payment_terms['terms_indicator'])) {
+            $this->sqLog("debug", "db_postwrite early return: no terms_indicator");
+            return null;
+        }
+        
+        $destination = $this->resolvePaymentDestination((int)$cart->payment_terms['terms_indicator']);
+        if ($destination === null || (strpos($destination, 'square_invoice') !== 0 && strpos($destination, 'square invoice') !== 0)) {
+            $this->sqLog("debug", "db_postwrite early return: destination not square_invoice", ["destination" => $destination]);
+            return null;
+        }
 
-        // Resolve FA invoice number
-        $faInvoiceNo = $this->resolveInvoiceNumber($cart, $data);
+        // Resolve FA invoice number from cart/session
+        $faInvoiceNo = $this->resolveInvoiceNumber($cart);
         $this->sqLog("info", "Resolved invoice number", ["faInvoiceNo" => $faInvoiceNo]);
         if ($faInvoiceNo <= 0) {
             $this->sqLog("warning", "Could not resolve invoice number", ["faInvoiceNo" => $faInvoiceNo]);
@@ -228,15 +177,15 @@ class hooks_ksf_FA_Square extends hooks {
             }
 
             $dueDate = date('Y-m-d', strtotime('+30 days'));
-            $deliveryMethod = $data['destination'] === 'square_invoice_email' ? 'EMAIL' : 'SHARE_MANUALLY';
-            $autoPaymentSource = $data['destination'] === 'square_invoice_card' ? 'CARD_ON_FILE' : null;
+            $deliveryMethod = $destination === 'square_invoice_email' ? 'EMAIL' : 'SHARE_MANUALLY';
+            $autoPaymentSource = $destination === 'square_invoice_card' ? 'CARD_ON_FILE' : null;
 
             $this->sqLog("info", "Calling createInvoiceFromFA", ["faInvoiceNo" => $faInvoiceNo]);
             $result = $service->createInvoiceFromFA(
                 $faInvoiceNo,
-                $data['customer_id'],
-                $data['line_items'],
-                date('Y-m-d', strtotime('+30 days')),
+                (int)$cart->customer_id,
+                $this->extractLineItems($cart),
+                $dueDate,
                 $deliveryMethod,
                 $autoPaymentSource
             );
@@ -246,27 +195,27 @@ class hooks_ksf_FA_Square extends hooks {
             $squareInvoiceShortId = SquareNoteService::extractShortSquareId($squareInvoiceId);
 
             $this->sqLog("info", "Creating CRM note via SquareNoteService");
-            // Create CRM note via SquareNoteService
             $noteService = new SquareNoteService();
-            $this->sqLog("info", "Calling SquareNoteService::createSquareInvoiceNote");
             $noteService->createSquareInvoiceNote(
                 $faInvoiceNo,
                 $squareInvoiceShortId,
                 $result['public_url'] ?? '',
-                ['trans_no' => $faInvoiceNo, 'customer_id' => (string)$data['customer_id']],
+                ['trans_no' => $faInvoiceNo, 'customer_id' => (string)$cart->customer_id],
                 $result,
-                $data,
+                [
+                    'customer_id' => (int)$cart->customer_id,
+                    'branch_code' => isset($cart->Branch) ? (string)$cart->Branch : (isset($cart->branch_code) ? (string)$cart->branch_code : ''),
+                    'destination' => $destination,
+                ],
                 ['loginname' => $_SESSION['wa_current_user']->loginname ?? '']
             );
             $this->sqLog("info", "SquareNoteService::createSquareInvoiceNote completed");
 
-            // Log activity (no display_notification to avoid redirect interference)
             $url = $result['public_url'] ?? '';
             if (!empty($result['created'])) {
                 $msg = _("Square Invoice created") . ': #' . $faInvoiceNo;
                 if ($url) $msg .= ' -- <a href="' . htmlspecialchars($url) . '" target="_blank">' . _("View Square Payment Link") . '</a>';
                 $this->sqLog('info', $msg);
-                if (function_exists('display_notification')) display_notification($msg);
             } else {
                 $this->sqLog('info', 'Square Invoice already exists: #', ['faInvoiceNo' => $faInvoiceNo]);
             }
@@ -274,7 +223,6 @@ class hooks_ksf_FA_Square extends hooks {
             return $result;
 
         } catch (\Throwable $e) {
-            $errorMsg = 'Square Invoice creation/update failed: ' . $e->getMessage();
             $this->sqLog('error', 'Square Invoice creation/update failed', ['faInvoiceNo' => $faInvoiceNo, 'error' => $e->getMessage()]);
             if (function_exists('display_error')) display_error(_("Square Invoice creation/update failed") . ': ' . $e->getMessage());
             return null;
@@ -288,7 +236,7 @@ class hooks_ksf_FA_Square extends hooks {
     /**
      * Resolve FA invoice number from cart/session/db.
      */
-private function resolveInvoiceNumber($cart, $data): int {
+    private function resolveInvoiceNumber($cart): int {
         $faInvoiceNo = 0;
 
         // Priority 1: cart->trans_no set by write_sales_invoice before postwrite hooks fire
@@ -299,18 +247,17 @@ private function resolveInvoiceNumber($cart, $data): int {
         elseif (isset($_SESSION['items']->trans_no) && $_SESSION['items']->trans_no > 0) {
             $faInvoiceNo = (int)$_SESSION['items']->trans_no;
         }
-        // Priority 3: db_insert_id() - only as fallback (other hooks may have run INSERTs)
+        // Priority 3: db_insert_id() - only as fallback
         elseif (($lastInsertId = (int)db_insert_id()) > 0) {
             $faInvoiceNo = $lastInsertId;
         }
-
         // Last resort: query debtor_trans for most recent invoice for this customer
-        if ($faInvoiceNo <= 0 && isset($data['customer_id']) && $data['customer_id'] > 0) {
+        if ($faInvoiceNo <= 0 && isset($cart->customer_id) && $cart->customer_id > 0) {
             $today = date('Y-m-d');
             $sql = "SELECT trans_no FROM " . TB_PREF . "debtor_trans
-                    WHERE debtor_no = " . db_escape($data['customer_id']) . "
+                    WHERE debtor_no = " . db_escape($cart->customer_id) . "
                       AND type = " . ST_SALESINVOICE . "
-                      AND tran_date = " . db_escape(date('Y-m-d')) . "
+                      AND tran_date = " . db_escape($today) . "
                     ORDER BY trans_no DESC LIMIT 1";
             $result = db_query($sql);
             if ($result && ($row = db_fetch($result))) {
@@ -368,19 +315,23 @@ private function resolveInvoiceNumber($cart, $data): int {
         $items = [];
         if (isset($cart->line_items) && is_array($cart->line_items)) {
             foreach ($cart->line_items as $line) {
-                // Handle both arrays and line_details objects
-                $stock_id = isset($line['stock_id']) ? $line['stock_id'] : (isset($line->stock_id) ? $line->stock_id : '');
-                $item_description = isset($line['item_description']) ? $line['item_description'] : (isset($line->item_description) ? $line->item_description : '');
-                $quantity = isset($line['quantity']) ? $line['quantity'] : (isset($line->quantity) ? $line->quantity : 1);
-                $price = isset($line['price']) ? $line['price'] : (isset($line->price) ? $line->price : 0);
-                $tax_type_id = isset($line['tax_type_id']) ? $line['tax_type_id'] : (isset($line->tax_type_id) ? $line->tax_type_id : 0);
+                // line_details object properties
+                $stock_id = isset($line->stock_id) ? $line->stock_id : '';
+                $item_description = isset($line->item_description) ? $line->item_description : '';
+                $quantity = isset($line->quantity) ? $line->quantity : 1;
+                $price = isset($line->price) ? $line->price : 0;
+                $tax_type_id = isset($line->tax_type_id) ? $line->tax_type_id : 0;
+                $discount_percent = isset($line->discount_percent) ? $line->discount_percent : 0;
+
+                // Apply per-line discount
+                $discountedPrice = $price * (1 - $discount_percent / 100);
 
                 if (!empty($stock_id)) {
                     $items[] = [
                         'stock_id'       => $stock_id,
                         'item_description' => $item_description,
                         'quantity'       => $quantity,
-                        'price'          => $price,
+                        'price'          => round($discountedPrice, user_price_dec()),
                         'tax_type_id'    => $tax_type_id,
                     ];
                 } elseif (!empty($item_description)) {
@@ -388,12 +339,25 @@ private function resolveInvoiceNumber($cart, $data): int {
                         'stock_id'       => '',
                         'item_description' => $item_description,
                         'quantity'       => $quantity,
-                        'price'          => $price,
+                        'price'          => round($discountedPrice, user_price_dec()),
                         'tax_type_id'    => $tax_type_id,
                     ];
                 }
             }
         }
+        
+        // Add shipping / freight as its own line item
+        $freight = (float)($cart->freight_cost ?? 0);
+        if ($freight > 0) {
+            $items[] = [
+                'stock_id'         => 'SHIPPING',
+                'item_description' => _('Shipping'),
+                'quantity'         => 1,
+                'price'            => $freight,
+                'tax_type_id'      => 0,
+            ];
+        }
+        
         return $items;
     }
 
@@ -404,7 +368,6 @@ private function resolveInvoiceNumber($cart, $data): int {
         if (!function_exists('db_query')) return null;
 
         // The 0_square table already includes the company prefix in its name
-        // so we query it directly without TB_PREF prefix
         $sql = "SELECT name, value FROM 0_square WHERE name IN ('access_token', 'sandbox_access_token', 'environment', 'location_id')";
         $result = db_query($sql);
         $config = [];
@@ -445,36 +408,5 @@ private function resolveInvoiceNumber($cart, $data): int {
             $stockId = $fun_args['stock_id'];
             // Tab logic handled by FA_ProductAttributes
         }
-    }
-
-    // =========================================================================
-    // INTERNAL HELPERS
-    // =========================================================================
-
-    private function injectSquareInvoicePaymentTerm() {
-        // Inject square_invoice_* payment terms if not present
-    }
-
-    private function ensureSquareInvoiceMapTable() {
-        if (!function_exists('db_query')) return;
-        $tablePrefix = defined('TB_PREF') ? TB_PREF : '0_';
-        $sql = "CREATE TABLE IF NOT EXISTS " . $tablePrefix . "square_invoice_map (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            fa_invoice_no INT NOT NULL,
-            square_invoice_id VARCHAR(64) NOT NULL,
-            square_order_id VARCHAR(64) NOT NULL,
-            square_customer_id VARCHAR(64) DEFAULT '',
-            amount_cents BIGINT NOT NULL DEFAULT 0,
-            currency CHAR(3) DEFAULT 'CAD',
-            destination VARCHAR(32) NOT NULL DEFAULT 'square_invoice',
-            status VARCHAR(32) DEFAULT 'UNPAID',
-            public_url TEXT,
-            version INT DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            UNIQUE KEY uq_fa_invoice (fa_invoice_no),
-            KEY idx_square_invoice (square_invoice_id)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
-        db_query($sql, "Could not create square_invoice_map table");
     }
 }

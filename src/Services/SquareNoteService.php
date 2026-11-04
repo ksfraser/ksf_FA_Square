@@ -50,13 +50,21 @@ class SquareNoteService
 
         $noteResult = hook_invoke('ksf_FA_Notes', 'CREATE_NOTE', $noteData, $noteOpts);
         
+        // Debug log the result
+        $this->sqLog('info', 'CREATE_NOTE hook result', [
+            'result' => $noteResult,
+            'noteData_error' => $noteData['error'] ?? 'none',
+            'noteData_note_id' => $noteData['note_id'] ?? 'none',
+            'noteData_links_added' => $noteData['links_added'] ?? 'none',
+        ]);
+        
         if ($noteResult === false) {
-            error_log('ksf_FA_Square: CREATE_NOTE failed for Square Invoice #' . $faInvoiceNo . ': ' . ($noteData['error'] ?? 'unknown') . ', customer_id=' . ($data['customer_id'] ?? 'NOT_SET'));
+            $this->sqLog('error', 'CREATE_NOTE failed for Square Invoice #' . $faInvoiceNo . ': ' . ($noteData['error'] ?? 'unknown') . ', customer_id=' . ($data['customer_id'] ?? 'NOT_SET'));
             return ['ok' => false, 'error' => $noteData['error'] ?? 'unknown'];
         }
 
-        $noteId = $noteResult['note_id'] ?? 0;
-        error_log('ksf_FA_Square: CRM note created (id=' . $noteId . ') for Square Invoice #' . $faInvoiceNo);
+        $noteId = $noteData['note_id'] ?? 0;
+        $this->sqLog('info', 'CRM note created (id=' . $noteId . ') for Square Invoice #' . $faInvoiceNo, ['links_added' => $noteData['links_added'] ?? 0]);
         
         return ['ok' => true, 'note_id' => $noteId];
     }
