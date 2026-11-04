@@ -54,7 +54,7 @@ class hooks_ksf_FA_Square extends hooks {
             ksf_log("square", $level, $message, $context);
         }
         // Also write directly to square log file as fallback
-        $logDir = company_path() . "/logs";
+        $logDir = "/var/www/html/company/0/logs";
         if (!is_dir($logDir)) {
             @mkdir($logDir, 0775, true);
         }
@@ -164,7 +164,7 @@ class hooks_ksf_FA_Square extends hooks {
 
         $cart->payment_terms['cash_sale'] = 0; // Suppress auto-payment
 
-        self::$pendingSquareInvoice = [
+        $pendingData = [
             'customer_id'      => (int)$cart->customer_id,
             'branch_code'      => isset($cart->Branch) ? (string)$cart->Branch : (isset($cart->branch_code) ? (string)$cart->branch_code : ''),
             'line_items'       => $this->extractLineItems($cart),
@@ -172,7 +172,16 @@ class hooks_ksf_FA_Square extends hooks {
             'terms_indicator'  => (int)$cart->payment_terms['terms_indicator'],
         ];
 
-        $this->sqLog("info", "db_prewrite set pendingSquareInvoice", ["customer_id" => self::$pendingSquareInvoice['customer_id']]);
+        // Store in session to persist across HTTP requests
+        if (!isset($_SESSION['ksf_FA_Square'])) {
+            $_SESSION['ksf_FA_Square'] = [];
+        }
+        $_SESSION['ksf_FA_Square']['pendingSquareInvoice'] = $pendingData;
+
+        // Also keep static for backward compatibility within same request
+        self::$pendingSquareInvoice = $pendingData;
+
+        $this->sqLog("info", "db_prewrite set pendingSquareInvoice", ["customer_id" => $pendingData['customer_id']]);
         return true;
     }
 
@@ -182,13 +191,25 @@ class hooks_ksf_FA_Square extends hooks {
 
     function db_postwrite(&$cart, $trans_type) {
         $this->sqLog("info", "db_postwrite called", ["trans_type" => $trans_type, "pending_empty" => empty(self::$pendingSquareInvoice)]);
-        if ($trans_type !== ST_SALESINVOICE || empty(self::$pendingSquareInvoice)) {
-            $this->sqLog("warning", "db_postwrite early return", ["trans_type" => $trans_type, "pending_empty" => empty(self::$pendingSquareInvoice)]);
+        
+        // Try to get pending data from session first (persists across requests)
+        $pendingData = null;
+        if (isset($_SESSION['ksf_FA_Square']['pendingSquareInvoice'])) {
+            $pendingData = $_SESSION['ksf_FA_Square']['pendingSquareInvoice'];
+            // Clear it after reading to avoid reuse
+            unset($_SESSION['ksf_FA_Square']['pendingSquareInvoice']);
+        } elseif (!empty(self::$pendingSquareInvoice)) {
+            $pendingData = self::$pendingSquareInvoice;
+            self::$pendingSquareInvoice = [];
+        }
+        
+        $this->sqLog("info", "db_postwrite retrieved pending data", ["has_data" => $pendingData !== null]);
+        if ($trans_type !== ST_SALESINVOICE || $pendingData === null) {
+            $this->sqLog("warning", "db_postwrite early return", ["trans_type" => $trans_type, "pending_empty" => $pendingData === null]);
             return null;
         }
-
-        $data = self::$pendingSquareInvoice;
-        self::$pendingSquareInvoice = [];
+        
+        $data = $pendingData;
 
         // Resolve FA invoice number
         $faInvoiceNo = $this->resolveInvoiceNumber($cart, $data);
@@ -245,6 +266,7 @@ class hooks_ksf_FA_Square extends hooks {
                 $msg = _("Square Invoice created") . ': #' . $faInvoiceNo;
                 if ($url) $msg .= ' -- <a href="' . htmlspecialchars($url) . '" target="_blank">' . _("View Square Payment Link") . '</a>';
                 $this->sqLog('info', $msg);
+                if (function_exists('display_notification')) display_notification($msg);
             } else {
                 $this->sqLog('info', 'Square Invoice already exists: #', ['faInvoiceNo' => $faInvoiceNo]);
             }
@@ -252,6 +274,7 @@ class hooks_ksf_FA_Square extends hooks {
             return $result;
 
         } catch (\Throwable $e) {
+            $errorMsg = 'Square Invoice creation/update failed: ' . $e->getMessage();
             $this->sqLog('error', 'Square Invoice creation/update failed', ['faInvoiceNo' => $faInvoiceNo, 'error' => $e->getMessage()]);
             if (function_exists('display_error')) display_error(_("Square Invoice creation/update failed") . ': ' . $e->getMessage());
             return null;
