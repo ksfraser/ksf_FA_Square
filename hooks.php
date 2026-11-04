@@ -145,11 +145,20 @@ class hooks_ksf_FA_Square extends hooks {
     // =========================================================================
 
     function db_prewrite(&$cart, $trans_type) {
-        if ($trans_type !== ST_SALESINVOICE) return null;
-        if (!isset($cart->payment_terms['terms_indicator'])) return null;
+        $this->sqLog("info", "db_prewrite called", ["trans_type" => $trans_type]);
+        if ($trans_type !== ST_SALESINVOICE) {
+            $this->sqLog("debug", "db_prewrite early return: trans_type mismatch");
+            return null;
+        }
+        if (!isset($cart->payment_terms['terms_indicator'])) {
+            $this->sqLog("debug", "db_prewrite early return: no terms_indicator");
+            return null;
+        }
 
         $destination = $this->resolvePaymentDestination((int)$cart->payment_terms['terms_indicator']);
+        $this->sqLog("info", "db_prewrite resolved destination", ["destination" => $destination]);
         if ($destination === null || (strpos($destination, 'square_invoice') !== 0 && strpos($destination, 'square invoice') !== 0)) {
+            $this->sqLog("debug", "db_prewrite early return: destination not square_invoice");
             return null;
         }
 
@@ -163,6 +172,7 @@ class hooks_ksf_FA_Square extends hooks {
             'terms_indicator'  => (int)$cart->payment_terms['terms_indicator'],
         ];
 
+        $this->sqLog("info", "db_prewrite set pendingSquareInvoice", ["customer_id" => self::$pendingSquareInvoice['customer_id']]);
         return true;
     }
 
@@ -335,21 +345,28 @@ private function resolveInvoiceNumber($cart, $data): int {
         $items = [];
         if (isset($cart->line_items) && is_array($cart->line_items)) {
             foreach ($cart->line_items as $line) {
-                if (!empty($line['stock_id'])) {
+                // Handle both arrays and line_details objects
+                $stock_id = isset($line['stock_id']) ? $line['stock_id'] : (isset($line->stock_id) ? $line->stock_id : '');
+                $item_description = isset($line['item_description']) ? $line['item_description'] : (isset($line->item_description) ? $line->item_description : '');
+                $quantity = isset($line['quantity']) ? $line['quantity'] : (isset($line->quantity) ? $line->quantity : 1);
+                $price = isset($line['price']) ? $line['price'] : (isset($line->price) ? $line->price : 0);
+                $tax_type_id = isset($line['tax_type_id']) ? $line['tax_type_id'] : (isset($line->tax_type_id) ? $line->tax_type_id : 0);
+
+                if (!empty($stock_id)) {
                     $items[] = [
-                        'stock_id'       => $line['stock_id'],
-                        'item_description' => $line['item_description'] ?? '',
-                        'quantity'       => $line['quantity'] ?? 1,
-                        'price'          => $line['price'] ?? 0,
-                        'tax_type_id'    => $line['tax_type_id'] ?? 0,
+                        'stock_id'       => $stock_id,
+                        'item_description' => $item_description,
+                        'quantity'       => $quantity,
+                        'price'          => $price,
+                        'tax_type_id'    => $tax_type_id,
                     ];
-                } elseif (!empty($line['item_description'])) {
+                } elseif (!empty($item_description)) {
                     $items[] = [
                         'stock_id'       => '',
-                        'item_description' => $line['item_description'],
-                        'quantity'       => $line['quantity'] ?? 1,
-                        'price'          => $line['price'] ?? 0,
-                        'tax_type_id'    => $line['tax_type_id'] ?? 0,
+                        'item_description' => $item_description,
+                        'quantity'       => $quantity,
+                        'price'          => $price,
+                        'tax_type_id'    => $tax_type_id,
                     ];
                 }
             }
