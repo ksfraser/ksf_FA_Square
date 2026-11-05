@@ -83,7 +83,37 @@ class hooks_ksf_FA_Square extends hooks {
     }
 
     function install_tabs($app) { }
-    function install_options($app) { }
+    function install_options($app) {
+        global $path_to_root;
+
+        $hasExternal = false;
+        foreach ($app->modules as $mod) {
+            if ($mod->name === _("External")) {
+                $hasExternal = true;
+                break;
+            }
+        }
+        if (!$hasExternal) {
+            $app->add_module(_("External"));
+        }
+
+        $externalLevel = 3;
+        foreach ($app->modules as $idx => $mod) {
+            if ($mod->name === _("External")) {
+                $externalLevel = $idx;
+                break;
+            }
+        }
+
+        $app->add_lapp_function($externalLevel, _('Square Dashboard'),
+          $path_to_root.'/modules/'.$this->module_name.'/pages/dashboard.php', 'SA_SQUARE_VIEW');
+        $app->add_rapp_function($externalLevel, _('Square Configuration'),
+          $path_to_root.'/modules/'.$this->module_name.'/pages/config.php', 'SA_SQUARE_MANAGE');
+        $app->add_lapp_function($externalLevel, _('Import Square Orders'),
+          $path_to_root.'/modules/'.$this->module_name.'/pages/import.php', 'SA_SQUARE_MANAGE');
+        $app->add_lapp_function($externalLevel, _('Export to Square'),
+          $path_to_root.'/modules/'.$this->module_name.'/pages/export.php', 'SA_SQUARE_MANAGE');
+    }
 
     function install_access() {
         $security_sections[SS_ksf_FA_Square] = _("Square POS");

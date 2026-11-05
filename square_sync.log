@@ -1,0 +1,36 @@
+[2026-10-27 07:26:08] INFO: === Square import started === {"from_date":"2026-08-01","to_date":"2026-08-21","location_filter":"","environment":"sandbox"}
+[2026-10-27 07:26:08] ERROR: No Square locations configured for import
+[2026-10-27 07:26:08] INFO: === Square import started === {"from_date":"2026-08-01","to_date":"2026-08-21","location_filter":"","environment":"sandbox"}
+[2026-10-27 07:26:08] INFO: Found 1 Square location(s) configured
+[2026-10-27 07:26:08] INFO: Location Main Store (LOC_1): found 0 payment(s) {"location_id":"LOC_1","location_name":"Main Store","payment_count":0}
+[2026-10-27 07:26:08] INFO: Import staging complete: 0 staged, 0 skipped, 1 errors {"staged":0,"skipped":0,"errors":1,"payments_found":0}
+[2026-10-27 07:26:08] INFO: === Square import started === {"from_date":"2026-08-01","to_date":"2026-08-21","location_filter":"","environment":"sandbox"}
+[2026-10-27 07:26:08] INFO: Found 1 Square location(s) configured
+[2026-10-27 07:26:08] INFO: Location Main Store (LOC_1): found 1 payment(s) {"location_id":"LOC_1","location_name":"Main Store","payment_count":1}
+[2026-10-27 07:26:08] WARN: Payment pay_100 already staged, skipping {"payment_id":"pay_100","reason":"already_staged"}
+[2026-10-27 07:26:08] INFO: Import staging complete: 0 staged, 1 skipped, 1 errors {"staged":0,"skipped":1,"errors":1,"payments_found":1}
+[2026-10-27 07:26:08] INFO: === Square import started === {"from_date":"2026-08-01","to_date":"2026-08-21","location_filter":"","environment":"sandbox"}
+[2026-10-27 07:26:08] INFO: Found 1 Square location(s) configured
+[2026-10-27 07:26:08] INFO: Location Main Store (LOC_1): found 1 payment(s) {"location_id":"LOC_1","location_name":"Main Store","payment_count":1}
+[2026-10-27 07:26:08] WARN: Payment pay_refund is refunded, skipping {"payment_id":"pay_refund","reason":"refunded","refunded_amount":25}
+[2026-10-27 07:26:08] INFO: Import staging complete: 0 staged, 1 skipped, 1 errors {"staged":0,"skipped":1,"errors":1,"payments_found":1}
+[2026-10-27 07:26:08] INFO: === Square import started === {"from_date":"2026-08-01","to_date":"2026-08-21","location_filter":"","environment":"sandbox"}
+[2026-10-27 07:26:08] INFO: Found 1 Square location(s) configured
+[2026-10-27 07:26:08] INFO: Location Main Store (LOC_1): found 1 payment(s) {"location_id":"LOC_1","location_name":"Main Store","payment_count":1}
+[2026-10-27 07:26:08] WARN: Payment pay_noorder has no order ID, skipping {"payment_id":"pay_noorder","reason":"no_order_id"}
+[2026-10-27 07:26:08] INFO: Import staging complete: 0 staged, 1 skipped, 1 errors {"staged":0,"skipped":1,"errors":1,"payments_found":1}
+[2026-10-27 07:26:09] INFO: === Square import started === {"from_date":"2026-08-01","to_date":"2026-08-21","location_filter":"","environment":"sandbox"}
+[2026-10-27 07:26:09] INFO: Found 1 Square location(s) configured
+[2026-10-27 07:26:09] INFO: Location Main Store (LOC_1): found 1 payment(s) {"location_id":"LOC_1","location_name":"Main Store","payment_count":1}
+[2026-10-27 07:26:09] INFO: Staging payment pay_001 via ISU (order ord_001) {"payment_id":"pay_001","square_order_id":"ord_001","source_transaction_id":"pay_001","amount":50,"currency":"USD","location_id":"LOC_1","location_name":"Main Store","line_item_count":1}
+[2026-10-27 07:26:09] INFO: Payment pay_001 staged in ISU with staging ID 1 {"payment_id":"pay_001","staging_id":1}
+[2026-10-27 07:26:09] INFO: Payment pay_001 staged successfully (ISU staging ID: 1) {"payment_id":"pay_001","order_id":"ord_001","staging_id":1,"amount":50,"currency":"USD"}
+[2026-10-27 07:26:09] INFO: Import staging complete: 1 staged, 0 skipped, 1 errors {"staged":1,"skipped":0,"errors":1,"payments_found":1}
+[2026-10-27 07:26:09] INFO: === Square import started === {"from_date":"2026-08-01","to_date":"2026-08-21","location_filter":"LOC_1","environment":"sandbox"}
+[2026-10-27 07:26:09] INFO: Found 2 Square location(s) configured
+[2026-10-27 07:26:09] INFO: Location Main Store (LOC_1): found 0 payment(s) {"location_id":"LOC_1","location_name":"Main Store","payment_count":0}
+[2026-10-27 07:26:09] INFO: Import staging complete: 0 staged, 0 skipped, 1 errors {"staged":0,"skipped":0,"errors":1,"payments_found":0}
+[2026-10-27 07:26:09] INFO: === Square import started === {"from_date":"2026-08-01","to_date":"2026-08-21","location_filter":"","environment":"sandbox"}
+[2026-10-27 07:26:09] INFO: Found 1 Square location(s) configured
+[2026-10-27 07:26:09] INFO: Location Main Store (LOC_1): found 0 payment(s) {"location_id":"LOC_1","location_name":"Main Store","payment_count":0}
+[2026-10-27 07:26:09] INFO: Import staging complete: 0 staged, 0 skipped, 1 errors {"staged":0,"skipped":0,"errors":1,"payments_found":0}

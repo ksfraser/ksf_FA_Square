@@ -51,7 +51,7 @@ class SquareNoteService
         $noteResult = hook_invoke('ksf_FA_Notes', 'CREATE_NOTE', $noteData, $noteOpts);
         
         // Debug log the result
-        $this->sqLog('info', 'CREATE_NOTE hook result', [
+        $this->log('info', 'CREATE_NOTE hook result', [
             'result' => $noteResult,
             'noteData_error' => $noteData['error'] ?? 'none',
             'noteData_note_id' => $noteData['note_id'] ?? 'none',
@@ -59,14 +59,36 @@ class SquareNoteService
         ]);
         
         if ($noteResult === false) {
-            $this->sqLog('error', 'CREATE_NOTE failed for Square Invoice #' . $faInvoiceNo . ': ' . ($noteData['error'] ?? 'unknown') . ', customer_id=' . ($data['customer_id'] ?? 'NOT_SET'));
+            $this->log('error', 'CREATE_NOTE failed for Square Invoice #' . $faInvoiceNo . ': ' . ($noteData['error'] ?? 'unknown') . ', customer_id=' . ($data['customer_id'] ?? 'NOT_SET'));
             return ['ok' => false, 'error' => $noteData['error'] ?? 'unknown'];
         }
 
         $noteId = $noteData['note_id'] ?? 0;
-        $this->sqLog('info', 'CRM note created (id=' . $noteId . ') for Square Invoice #' . $faInvoiceNo, ['links_added' => $noteData['links_added'] ?? 0]);
+        $this->log('info', 'CRM note created (id=' . $noteId . ') for Square Invoice #' . $faInvoiceNo, ['links_added' => $noteData['links_added'] ?? 0]);
         
         return ['ok' => true, 'note_id' => $noteId];
+    }
+
+    /**
+     * Simple logger for this service.
+     */
+    private function log(string $level, string $message, array $context = []): void
+    {
+        if (function_exists('ksf_log')) {
+            ksf_log('square', $level, $message, $context);
+        }
+        $logDir = "/var/www/html/company/0/logs";
+        if (!is_dir($logDir)) {
+            @mkdir($logDir, 0775, true);
+        }
+        $entry = [
+            "ts" => date("Y-m-d H:i:s.u"),
+            "level" => strtoupper($level),
+            "msg" => $message,
+            "ctx" => $context,
+            "pid" => getmypid(),
+        ];
+        @file_put_contents($logDir . "/square_" . date("Y-m-d") . ".log", json_encode($entry) . "\n", FILE_APPEND | LOCK_EX);
     }
 
     /**
@@ -84,7 +106,9 @@ class SquareNoteService
         ];
 
         if (!empty($data['branch_code'])) {
-            $branchContacts = $this->getBranchInvoiceContacts($data['branch_code'], $data['customer_id']);
+            $this->log('info', 'Looking up branch contacts', ['branch_code' => $data['branch_code'], 'customer_id' => (string)$data['customer_id']]);
+            $branchContacts = $this->getBranchInvoiceContacts($data['branch_code'], (string)$data['customer_id']);
+            $this->log('info', 'Found branch contacts', ['branchContacts' => $branchContacts]);
             foreach ($branchContacts as $contactId) {
                 $noteLinks[] = ['contact', (int)$contactId, 'invoice_contact'];
             }

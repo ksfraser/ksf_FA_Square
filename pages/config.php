@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-$page_security = 'SA_ksf_FA_SquareMANAGE';
+$page_security = 'SA_SQUARE_CONFIG';
 $path_to_root = "../../..";
 
 include_once $path_to_root . "/includes/session.inc";
@@ -104,6 +104,9 @@ if (isset($_POST['action'])) {
 
                 $defaultTaxGroup = $_POST['default_tax_group'] ?? '';
                 Settings::saveToDatabase($tablePrefix, 'default_tax_group', $defaultTaxGroup);
+
+                $locationId = $_POST['location_id'] ?? '';
+                Settings::saveToDatabase($tablePrefix, 'location_id', $locationId);
 
                 // Save absorbed import config fields
                 $importFields = [
@@ -261,6 +264,20 @@ echo array_selector('default_tax_group', $defaultTaxGroup, $taxGroups, [
 ]);
 echo '</td></tr>';
 label_row('', _('(Used to set the tax rate on items pushed to Square; leave unset to push items tax-free)'));
+
+// Square Invoice Location (used by Square Invoices API)
+$locationId = $settings->getDefaultLocation() ?? $settings->toArray()['default_location'] ?? '';
+$locOptions = ['' => _('-- Select Location --')];
+foreach ($squareLocations as $code => $name) {
+    $locOptions[$code] = $name . ' (' . $code . ')';
+}
+echo '<tr><td class="label">' . _("Square Invoice Location:") . '</td><td>';
+echo array_selector('location_id', $locationId, $locOptions, [
+    'select_submit' => false,
+    'async' => false,
+]);
+echo '</td></tr>';
+label_row('', _('The Square location where Invoices are created. Must have Orders permission.'));
 
 end_table(1);
 
