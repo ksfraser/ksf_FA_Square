@@ -143,34 +143,23 @@ class SquareNoteService
         }
 
         // Branch contacts are type "cust_branch" with action "invoice"
-        // First get the debtor ref for this customer_id
-        $debtorRef = $customerId;
-        if (!function_exists('get_customer')) {
-            require_once($GLOBALS['path_to_root'] . '/sales/includes/db/customers_db.inc');
-        }
-        $customer = get_customer((int)$customerId);
-        $this->log('info', 'get_customer result', ['customerId' => $customerId, 'customer' => $customer ? 'found' : 'null', 'debtor_ref' => $customer['debtor_ref'] ?? 'none']);
-        if ($customer && !empty($customer['debtor_ref'])) {
-            $debtorRef = $customer['debtor_ref'];
-        }
-
+        // get_crm_persons already filters by branch and action; all returned
+        // rows are valid branch invoice contacts.
         $result = get_crm_persons('cust_branch', 'invoice', $branchCode);
         $this->log('info', 'get_crm_persons result', ['branchCode' => $branchCode, 'rowCount' => db_num_rows($result)]);
         
         $contacts = [];
         if ($result) {
             while ($row = db_fetch_assoc($result)) {
-                $this->log('info', 'CRM person row', ['ref' => $row['ref'] ?? 'none', 'person_id' => $row['id'] ?? 'none', 'contact_id' => $row['contact_id'] ?? 'none', 'debtorRef' => $debtorRef, 'match' => ((string)$row['ref'] === $debtorRef)]);
-                if ((string)$row['ref'] === $debtorRef) {
-                    // Send the CONTACT RELATION id (crm_contacts.id as contact_id),
-                    // NOT the person id. The Notes detail page renders via
-                    // RelatedRecordsRenderer which calls ContactResolver::findContactById()
-                    // — that looks up the relation row by crm_contacts.id and returns
-                    // both the person's name (for the label) and the relation id
-                    // (for the clickable URL crm/crm_contacts.php?contact_id=...).
-                    // This is FA's contact id, NOT a Square contact id.
-                    $contacts[] = (int)$row['contact_id'];
-                }
+                $this->log('info', 'CRM person row', ['ref' => $row['ref'] ?? 'none', 'person_id' => $row['id'] ?? 'none', 'contact_id' => $row['contact_id'] ?? 'none']);
+                // Send the CONTACT RELATION id (crm_contacts.id as contact_id),
+                // NOT the person id. The Notes detail page renders via
+                // RelatedRecordsRenderer which calls ContactResolver::findContactById()
+                // — that looks up the relation row by crm_contacts.id and returns
+                // both the person's name (for the label) and the relation id
+                // (for the clickable URL crm/crm_contacts.php?contact_id=...).
+                // This is FA's contact id, NOT a Square contact id.
+                $contacts[] = (int)$row['contact_id'];
             }
         }
 
