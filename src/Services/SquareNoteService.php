@@ -48,13 +48,6 @@ class SquareNoteService
         ];
         $noteOpts = ['links' => $noteLinks];
 
-        // Debug: append contact list to note body for troubleshooting
-        $contactLinks = array_filter($noteLinks, fn($l) => $l[0] === 'contact');
-        if (!empty($contactLinks)) {
-            $contactIds = array_column($contactLinks, 1);
-            $noteData['note'] .= ' [DEBUG contacts: ' . implode(',', $contactIds) . ']';
-        }
-
         $noteResult = hook_invoke('ksf_FA_Notes', 'CREATE_NOTE', $noteData, $noteOpts);
         
         // Debug log the result
