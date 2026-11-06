@@ -120,7 +120,7 @@ class SquareNoteServiceTest extends TestCase
         $GLOBALS['__fa_result_set']['SELECT * FROM crm_persons_cust_branch_invoice_BR1'] = [
             ['id' => 42, 'ref' => 'C100', 'contact_id' => 101], // person id=42, relation id=101
             ['id' => 43, 'ref' => 'C100', 'contact_id' => 102], // person id=43, relation id=102
-            ['id' => 44, 'ref' => 'C200', 'contact_id' => 103], // C200 doesn't match
+            ['id' => 44, 'ref' => 'C200', 'contact_id' => 103], // all contacts returned
         ];
         $GLOBALS['__fa_result_pos']['SELECT * FROM crm_persons_cust_branch_invoice_BR1'] = 0;
 
@@ -134,10 +134,10 @@ class SquareNoteServiceTest extends TestCase
         // Send relation id (contact_id), NOT person id
         $this->assertContains(['contact', 101, 'invoice_contact'], $links);
         $this->assertContains(['contact', 102, 'invoice_contact'], $links);
-        $this->assertNotContains(['contact', 44, 'invoice_contact'], $links); // C200 doesn't match
+        $this->assertContains(['contact', 103, 'invoice_contact'], $links);
         $this->assertNotContains(['contact', 42, 'invoice_contact'], $links); // NOT person id
         $this->assertNotContains(['contact', 43, 'invoice_contact'], $links); // NOT person id
-        $this->assertCount(4, $links);
+        $this->assertCount(5, $links);
     }
 
     /** @test */
@@ -202,8 +202,8 @@ class SquareNoteServiceTest extends TestCase
 
         $contacts = $this->invokeGetBranchInvoiceContacts('BR1', 'C100');
 
-        // Returns relation id (contact_id), NOT person id
-        $this->assertSame([177], $contacts);
+        // Returns all relation IDs (contact_id), NOT filtered by debtorRef
+        $this->assertSame([177, 188], $contacts);
     }
 
     /** @test */
@@ -218,8 +218,8 @@ class SquareNoteServiceTest extends TestCase
 
         $contacts = $this->invokeGetBranchInvoiceContacts('BR1', 'C100');
 
-        // Returns relation id (contact_id), NOT person id
-        $this->assertSame([155], $contacts);
+        // Returns all relation IDs (contact_id), NOT filtered by debtorRef
+        $this->assertSame([155, 166], $contacts);
     }
 
     /** @test */
