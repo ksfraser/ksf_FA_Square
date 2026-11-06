@@ -131,11 +131,12 @@ class SquareNoteServiceTest extends TestCase
 
         $this->assertContains(['customer', 'C100', 'reference'], $links);
         $this->assertContains(['invoice', '42', 'source_invoice'], $links);
-        $this->assertContains(['contact', 42, 'invoice_contact'], $links); // person id
-        $this->assertContains(['contact', 43, 'invoice_contact'], $links); // person id
+        // Send relation id (contact_id), NOT person id
+        $this->assertContains(['contact', 101, 'invoice_contact'], $links);
+        $this->assertContains(['contact', 102, 'invoice_contact'], $links);
         $this->assertNotContains(['contact', 44, 'invoice_contact'], $links); // C200 doesn't match
-        $this->assertNotContains(['contact', 101, 'invoice_contact'], $links); // NOT relation id
-        $this->assertNotContains(['contact', 102, 'invoice_contact'], $links); // NOT relation id
+        $this->assertNotContains(['contact', 42, 'invoice_contact'], $links); // NOT person id
+        $this->assertNotContains(['contact', 43, 'invoice_contact'], $links); // NOT person id
         $this->assertCount(4, $links);
     }
 
@@ -201,7 +202,8 @@ class SquareNoteServiceTest extends TestCase
 
         $contacts = $this->invokeGetBranchInvoiceContacts('BR1', 'C100');
 
-        $this->assertSame([77], $contacts);
+        // Returns relation id (contact_id), NOT person id
+        $this->assertSame([177], $contacts);
     }
 
     /** @test */
@@ -216,7 +218,8 @@ class SquareNoteServiceTest extends TestCase
 
         $contacts = $this->invokeGetBranchInvoiceContacts('BR1', 'C100');
 
-        $this->assertSame([55], $contacts);
+        // Returns relation id (contact_id), NOT person id
+        $this->assertSame([155], $contacts);
     }
 
     /** @test */
@@ -295,11 +298,13 @@ class SquareNoteServiceTest extends TestCase
 
         $this->assertSame(['ok' => true, 'note_id' => 0], $result);
 
+        // Verify hook_invoke was called with links containing contact 109 (relation id)
         $inv = $this->findInvocation('ksf_FA_Notes', 'CREATE_NOTE');
         $this->assertNotNull($inv);
         $noteOpts = $inv[3];
         $this->assertArrayHasKey('links', $noteOpts);
-        $this->assertContains(['contact', 9, 'invoice_contact'], $noteOpts['links']);
+        $this->assertContains(['contact', 109, 'invoice_contact'], $noteOpts['links']);
+        $this->assertNotContains(['contact', 9, 'invoice_contact'], $noteOpts['links']); // NOT person id
     }
 
     /** @test */
