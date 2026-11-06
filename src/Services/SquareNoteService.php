@@ -107,6 +107,7 @@ class SquareNoteService
 
         if (!empty($data['branch_code'])) {
             $this->log('info', 'Looking up branch contacts', ['branch_code' => $data['branch_code'], 'customer_id' => (string)$data['customer_id']]);
+            // Branch contacts are type "cust_branch" with action "invoice"
             $branchContacts = $this->getBranchInvoiceContacts($data['branch_code'], (string)$data['customer_id']);
             $this->log('info', 'Found branch contacts', ['branchContacts' => $branchContacts]);
             foreach ($branchContacts as $contactId) {
@@ -134,12 +135,26 @@ class SquareNoteService
             require_once($GLOBALS['path_to_root'] . '/includes/db/crm_contacts_db.inc');
         }
 
-        $result = get_crm_persons('customer', 'Invoice', $branchCode);
+        // Branch contacts are type "cust_branch" with action "invoice"
+        // First get the debtor ref for this customer_id
+        $debtorRef = $customerId;
+        if (!function_exists('get_customer')) {
+            require_once($GLOBALS['path_to_root'] . '/sales/includes/db/customers_db.inc');
+        }
+        $customer = get_customer((int)$customerId);
+        $this->log('info', 'get_customer result', ['customerId' => $customerId, 'customer' => $customer ? 'found' : 'null', 'debtor_ref' => $customer['debtor_ref'] ?? 'none']);
+        if ($customer && !empty($customer['debtor_ref'])) {
+            $debtorRef = $customer['debtor_ref'];
+        }
+
+        $result = get_crm_persons('cust_branch', 'invoice', $branchCode);
+        $this->log('info', 'get_crm_persons result', ['branchCode' => $branchCode, 'rowCount' => db_num_rows($result)]);
         
         $contacts = [];
         if ($result) {
             while ($row = db_fetch_assoc($result)) {
-                if ((string)$row['ref'] === $customerId) {
+                $this->log('info', 'CRM person row', ['ref' => $row['ref'] ?? 'none', 'contact_id' => $row['contact_id'] ?? 'none', 'debtorRef' => $debtorRef, 'match' => ((string)$row['ref'] === $debtorRef)]);
+                if ((string)$row['ref'] === $debtorRef) {
                     $contacts[] = (int)$row['contact_id'];
                 }
             }

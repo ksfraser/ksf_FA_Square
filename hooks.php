@@ -270,12 +270,23 @@ class hooks_ksf_FA_Square extends hooks {
         $faInvoiceNo = 0;
 
         // Priority 1: cart->trans_no set by write_sales_invoice before postwrite hooks fire
-        if (isset($cart->trans_no) && $cart->trans_no > 0) {
-            $faInvoiceNo = (int)$cart->trans_no;
+        // FA sets trans_no to array($invoice_no=>0) for new invoices
+        if (isset($cart->trans_no)) {
+            $trans_no = $cart->trans_no;
+            if (is_array($trans_no)) {
+                $faInvoiceNo = (int)key($trans_no);
+            } elseif ($trans_no > 0) {
+                $faInvoiceNo = (int)$trans_no;
+            }
         }
         // Priority 2: session items trans_no (FA sets this after write_sales_invoice)
-        elseif (isset($_SESSION['items']->trans_no) && $_SESSION['items']->trans_no > 0) {
-            $faInvoiceNo = (int)$_SESSION['items']->trans_no;
+        elseif (isset($_SESSION['items']->trans_no)) {
+            $trans_no = $_SESSION['items']->trans_no;
+            if (is_array($trans_no)) {
+                $faInvoiceNo = (int)key($trans_no);
+            } elseif ($trans_no > 0) {
+                $faInvoiceNo = (int)$trans_no;
+            }
         }
         // Priority 3: db_insert_id() - only as fallback
         elseif (($lastInsertId = (int)db_insert_id()) > 0) {
