@@ -153,9 +153,14 @@ class SquareNoteService
         $contacts = [];
         if ($result) {
             while ($row = db_fetch_assoc($result)) {
-                $this->log('info', 'CRM person row', ['ref' => $row['ref'] ?? 'none', 'contact_id' => $row['contact_id'] ?? 'none', 'debtorRef' => $debtorRef, 'match' => ((string)$row['ref'] === $debtorRef)]);
+                $this->log('info', 'CRM person row', ['ref' => $row['ref'] ?? 'none', 'person_id' => $row['id'] ?? 'none', 'contact_id' => $row['contact_id'] ?? 'none', 'debtorRef' => $debtorRef, 'match' => ((string)$row['ref'] === $debtorRef)]);
                 if ((string)$row['ref'] === $debtorRef) {
-                    $contacts[] = (int)$row['contact_id'];
+                    // Send the PERSON id (crm_persons.id), not the contact
+                    // relation id (crm_contacts.id as contact_id). The Notes
+                    // Renderer resolves via ContactResolver::findById() which
+                    // calls FA's get_crm_person($personId) — that looks up by
+                    // crm_persons.id, not crm_contacts.id.
+                    $contacts[] = (int)$row['id'];
                 }
             }
         }

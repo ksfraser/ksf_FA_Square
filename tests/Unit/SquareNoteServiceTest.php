@@ -118,9 +118,9 @@ class SquareNoteServiceTest extends TestCase
     public function buildNoteLinksAddsContactLinksForBranch(): void
     {
         $GLOBALS['__fa_result_set']['SELECT * FROM crm_persons_cust_branch_invoice_BR1'] = [
-            ['ref' => 'C100', 'contact_id' => 42],
-            ['ref' => 'C100', 'contact_id' => 43],
-            ['ref' => 'C200', 'contact_id' => 44],
+            ['id' => 42, 'ref' => 'C100', 'contact_id' => 101], // person id=42, relation id=101
+            ['id' => 43, 'ref' => 'C100', 'contact_id' => 102], // person id=43, relation id=102
+            ['id' => 44, 'ref' => 'C200', 'contact_id' => 103], // C200 doesn't match
         ];
         $GLOBALS['__fa_result_pos']['SELECT * FROM crm_persons_cust_branch_invoice_BR1'] = 0;
 
@@ -131,9 +131,11 @@ class SquareNoteServiceTest extends TestCase
 
         $this->assertContains(['customer', 'C100', 'reference'], $links);
         $this->assertContains(['invoice', '42', 'source_invoice'], $links);
-        $this->assertContains(['contact', 42, 'invoice_contact'], $links);
-        $this->assertContains(['contact', 43, 'invoice_contact'], $links);
+        $this->assertContains(['contact', 42, 'invoice_contact'], $links); // person id
+        $this->assertContains(['contact', 43, 'invoice_contact'], $links); // person id
         $this->assertNotContains(['contact', 44, 'invoice_contact'], $links); // C200 doesn't match
+        $this->assertNotContains(['contact', 101, 'invoice_contact'], $links); // NOT relation id
+        $this->assertNotContains(['contact', 102, 'invoice_contact'], $links); // NOT relation id
         $this->assertCount(4, $links);
     }
 
@@ -192,8 +194,8 @@ class SquareNoteServiceTest extends TestCase
     {
         $GLOBALS['ksf_test_stub_get_customer'] = ['debtor_no' => 100, 'debtor_ref' => 'CUST-REF-100'];
         $GLOBALS['__fa_result_set']['SELECT * FROM crm_persons_cust_branch_invoice_BR1'] = [
-            ['ref' => 'CUST-REF-100', 'contact_id' => 77],
-            ['ref' => 'C100',            'contact_id' => 88], // customer_id, not debtor_ref
+            ['id' => 77, 'ref' => 'CUST-REF-100', 'contact_id' => 177], // person id=77, relation id=177
+            ['id' => 88, 'ref' => 'C100',            'contact_id' => 188], // customer_id, not debtor_ref
         ];
         $GLOBALS['__fa_result_pos']['SELECT * FROM crm_persons_cust_branch_invoice_BR1'] = 0;
 
@@ -207,8 +209,8 @@ class SquareNoteServiceTest extends TestCase
     {
         $GLOBALS['ksf_test_stub_get_customer'] = ['debtor_no' => 100, 'debtor_ref' => ''];
         $GLOBALS['__fa_result_set']['SELECT * FROM crm_persons_cust_branch_invoice_BR1'] = [
-            ['ref' => 'C100', 'contact_id' => 55],
-            ['ref' => 'OTHER', 'contact_id' => 66],
+            ['id' => 55, 'ref' => 'C100', 'contact_id' => 155], // person id=55, relation id=155
+            ['id' => 66, 'ref' => 'OTHER', 'contact_id' => 166],
         ];
         $GLOBALS['__fa_result_pos']['SELECT * FROM crm_persons_cust_branch_invoice_BR1'] = 0;
 
@@ -273,7 +275,7 @@ class SquareNoteServiceTest extends TestCase
         $GLOBALS['ksf_test_invoke_returns']['ksf_FA_Notes::CREATE_NOTE'] = true;
         $GLOBALS['ksf_test_stub_get_customer'] = ['debtor_no' => 100, 'debtor_ref' => 'C100'];
         $GLOBALS['__fa_result_set']['SELECT * FROM crm_persons_cust_branch_invoice_BR1'] = [
-            ['ref' => 'C100', 'contact_id' => 9],
+            ['id' => 9, 'ref' => 'C100', 'contact_id' => 109], // person id=9, relation id=109
         ];
         $GLOBALS['__fa_result_pos']['SELECT * FROM crm_persons_cust_branch_invoice_BR1'] = 0;
 
