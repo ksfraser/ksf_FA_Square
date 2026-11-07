@@ -24,6 +24,7 @@ use Square\Models\CustomerQuery;
 use Square\Models\CustomerFilter;
 use Square\Models\CustomerTextFilter;
 use Square\Exceptions\ApiException;
+use ksfraser\FrontAccounting\Square\Config\Settings;
 use ksfraser\FrontAccounting\Square\Contracts\SquareInvoiceServiceInterface;
 use ksfraser\FrontAccounting\Square\DAO\SquareInvoiceMapDAO;
 
@@ -46,15 +47,18 @@ class SquareInvoiceService implements SquareInvoiceServiceInterface
     private SquareClient $client;
     private SquareInvoiceMapDAO $mapDao;
     private string $locationId;
+    private Settings $settings;
 
     public function __construct(
         SquareClient $client,
         SquareInvoiceMapDAO $mapDao,
-        string $locationId = ''
+        string $locationId = '',
+        ?Settings $settings = null
     ) {
         $this->client = $client;
         $this->mapDao = $mapDao;
         $this->locationId = $locationId;
+        $this->settings = $settings ?? new Settings();
     }
 
     /**
@@ -88,6 +92,7 @@ class SquareInvoiceService implements SquareInvoiceServiceInterface
         // Step 2: Look up or create Square Customer (required to publish)
         $squareCustomerId = $this->resolveOrCreateSquareCustomer($debtorNo);
         $debtorEmail = $this->lookupDebtorEmail($debtorNo);
+        $debtorName = $this->lookupDebtorName($debtorNo);
 
         // Step 3: Build Invoice
         $invoice = new Invoice();
@@ -105,6 +110,15 @@ class SquareInvoiceService implements SquareInvoiceServiceInterface
             $invoice->setPrimaryRecipient($recipient);
         }
 
+        // Build invoice title from template
+        $titleTemplate = $this->settings->getInvoiceTitleTemplate();
+        $invoiceTitle = str_replace(
+            ['{customer_name}', '{debtor_name}', '{invoice_number}', '{invoice_number_short}', '{invoice_date}'],
+            [$debtorName, $debtorName, $faInvoiceNo, $squareInvoiceShortId ?? $faInvoiceNo, $dueDate],
+            $titleTemplate
+        );
+        $invoice->setTitle($invoiceTitle);
+
         $paymentRequest = new InvoicePaymentRequest();
         $paymentRequest->setRequestType(InvoiceRequestType::BALANCE);
         $paymentRequest->setDueDate($dueDate);
@@ -112,6 +126,29 @@ class SquareInvoiceService implements SquareInvoiceServiceInterface
         if ($automaticPaymentSource && $automaticPaymentSource !== 'NONE') {
             $paymentRequest->setAutomaticPaymentSource($automaticPaymentSource);
         }
+
+        // Build note message with service date and custom message
+        $messageTemplate = $this->settings->getInvoiceMessage();
+        $message = str_replace(
+            ['{customer_name}', '{debtor_name}', '{invoice_number}', '{invoice_number_short}', '{invoice_date}', '{due_date}'],
+            [$debtorName, $debtorName, $faInvoiceNo, $squareInvoiceShortId ?? $faInvoiceNo, $dueDate, $dueDate],
+            $messageTemplate
+        );
+
+        $description = "FA Invoice #{$faInvoiceNo}\n";
+        if (!empty($message)) {
+            $description .= "\n\n{$message}";
+        }
+
+        // Add PDF attachment link if enabled
+        if ($this->settings->isSendInvoicePdf()) {
+            $pdfUrl = $this->buildInvoicePdfUrl($faInvoiceNo);
+            if ($pdfUrl) {
+                $description .= "\n\nInvoice PDF: {$pdfUrl}";
+            }
+        }
+
+        $paymentRequest->setDescription($description);
 
         $invoice->setPaymentRequests([$paymentRequest]);
 
@@ -683,6 +720,33 @@ class SquareInvoiceService implements SquareInvoiceServiceInterface
         }
 
         return '';
+    }
+
+    /**
+     * Build URL to view/print the FA invoice PDF.
+     *
+     * Returns a URL that can be included in Square Invoice descriptions so
+     * customers can view/download the PDF invoice.
+     *
+     * @param int $faInvoiceNo FA invoice number
+     * @return string|null URL to the invoice view page, or null if unavailable
+     */
+    private function buildInvoicePdfUrl(int $faInvoiceNo): ?string
+    {
+        if (!function_exists('db_query')) {
+            return null;
+        }
+
+        // Build URL to view the invoice in FA
+        $url = "/sales/invoice_view.php?trans_no=" . (int)$faInvoiceNo . "&type=" . ST_SALESINVOICE;
+
+        // If we know the site URL, prepend it for absolute URLs
+        $siteUrl = $this->settings->getSquareInvoiceBaseUrl();
+        if ($siteUrl) {
+            return rtrim($siteUrl, '/') . $url;
+        }
+
+        return $url;
     }
 
     /**

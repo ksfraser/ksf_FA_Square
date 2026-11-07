@@ -36,6 +36,9 @@ class Settings implements SettingsInterface
             'allowSkuChange' => 0,
             'default_pricebook' => '',
             'payment_destination' => 0,
+            'square_invoice_title_template' => '{company_name} Invoice #{fa_invoice_no}',
+            'square_invoice_message' => '',
+            'square_send_invoice_pdf' => 0,
         ], $config);
     }
 
@@ -408,6 +411,136 @@ class Settings implements SettingsInterface
     }
 
     /**
+     * Gets the base URL for Square Invoice links (e.g., https://example.com).
+     * Used to construct absolute URLs for invoice PDF links.
+     *
+     * @return string Base URL without trailing slash
+     * @since 2.5.0
+     */
+    public function getSquareInvoiceBaseUrl(): string
+    {
+        return (string)($this->config['square_invoice_base_url'] ?? '');
+    }
+
+    /**
+     * Sets the base URL for Square Invoice links.
+     *
+     * @param string $url Base URL without trailing slash
+     * @return void
+     * @since 2.5.0
+     */
+    public function setSquareInvoiceBaseUrl(string $url): void
+    {
+        $this->config['square_invoice_base_url'] = $url;
+    }
+
+    /**
+     * Gets the template for Square Invoice title.
+     *
+     * @return string Template string with placeholders like {customer_name}, {invoice_number}, {invoice_number_short}
+     * @since 2.5.0
+     */
+    public function getInvoiceTitleTemplate(): string
+    {
+        return (string)($this->config['square_invoice_title_template'] ?? '{company_name} Invoice #{fa_invoice_no}');
+    }
+
+    /**
+     * Sets the template for Square Invoice title.
+     *
+     * @param string $template Template string with placeholders
+     * @return void
+     * @since 2.5.0
+     */
+    public function setInvoiceTitleTemplate(string $template): void
+    {
+        $this->config['square_invoice_title_template'] = $template;
+    }
+
+    /**
+     * Gets the custom message to include on Square Invoices.
+     *
+     * @return string Message text
+     * @since 2.5.0
+     */
+    public function getInvoiceMessage(): string
+    {
+        return (string)($this->config['square_invoice_message'] ?? '');
+    }
+
+    /**
+     * Sets the custom message to include on Square Invoices.
+     *
+     * @param string $message Message text
+     * @return void
+     * @since 2.5.0
+     */
+    public function setInvoiceMessage(string $message): void
+    {
+        $this->config['square_invoice_message'] = $message;
+    }
+
+    /**
+     * Gets whether to attach PDF invoice to Square Invoices.
+     *
+     * @return bool True if PDF attachment is enabled
+     * @since 2.5.0
+     */
+    public function isSendInvoicePdf(): bool
+    {
+        return (bool)($this->config['square_send_invoice_pdf'] ?? false);
+    }
+
+    /**
+     * Sets whether to attach PDF invoice to Square Invoices.
+     *
+     * @param bool $enabled True to enable PDF attachment
+     * @return void
+     * @since 2.5.0
+     */
+    public function setSendInvoicePdf(bool $enabled): void
+    {
+        $this->config['square_send_invoice_pdf'] = $enabled ? 1 : 0;
+    }
+
+
+
+    /**
+     * Sets the custom message to include on Square Invoices.
+     *
+     * @param string $message Message text
+     * @return void
+     * @since 2.5.0
+     */
+    public function setInvoiceMessage(string $message): void
+    {
+        $this->config['square_invoice_message'] = $message;
+    }
+
+    /**
+     * Gets whether to attach PDF invoice to Square Invoices.
+     *
+     * @return bool True if PDF attachment is enabled
+     * @since 2.5.0
+     */
+    public function isSendInvoicePdf(): bool
+    {
+        return (bool)($this->config['square_send_invoice_pdf'] ?? 0);
+    }
+
+    /**
+     * Sets whether to attach PDF invoice to Square Invoices.
+     *
+     * @param bool $enabled True to enable PDF attachment
+     * @return void
+     * @since 2.5.0
+     */
+    public function setSendInvoicePdf(bool $enabled): void
+    {
+        $this->config['square_send_invoice_pdf'] = $enabled ? 1 : 0;
+    }
+
+    /**
      * Builds a SourceConfig-compatible array for ISU processing.
      *
      * @return array<string, mixed>
@@ -431,6 +564,10 @@ class Settings implements SettingsInterface
             'allowSkuChange'    => $this->isAllowSkuChange(),
             'default_pricebook' => $this->getDefaultPricebook(),
             'payment_destination' => $this->getPaymentDestination(),
+            'square_invoice_title_template' => $this->getInvoiceTitleTemplate(),
+            'square_invoice_message' => $this->getInvoiceMessage(),
+            'square_send_invoice_pdf' => $this->isSendInvoicePdf(),
+            'square_invoice_base_url' => $this->getSquareInvoiceBaseUrl(),
         ];
     }
 
